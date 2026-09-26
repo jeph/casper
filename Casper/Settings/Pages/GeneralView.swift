@@ -54,7 +54,7 @@ struct GeneralView: View {
         } label: {
           Label {
             Text("Dictation Shortcut")
-            Text("Press this shortcut to start dictating.")
+            Text("The shortcut used to start dictation.")
           } icon: {
             Image(systemName: "keyboard")
           }

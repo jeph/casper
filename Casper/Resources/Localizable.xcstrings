@@ -59,9 +59,6 @@
     "Permissions" : {
       "comment" : "Settings sidebar item and page title for system permissions."
     },
-    "Press this shortcut to start dictating." : {
-      "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
-    },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
     },
@@ -85,6 +82,9 @@
     },
     "The microphone Casper listens to when you dictate." : {
       "comment" : "Explanation under the Input Device picker in Settings > General."
+    },
+    "The shortcut used to start dictation." : {
+      "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
     },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
