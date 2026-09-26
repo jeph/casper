@@ -1,9 +1,11 @@
 import AVFoundation
 import AppKit
+import ApplicationServices
 import SwiftUI
 
 struct PermissionsView: View {
   @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+  @State private var isAccessibilityTrusted = AXIsProcessTrusted()
 
   var body: some View {
     Form {
@@ -18,6 +20,16 @@ struct PermissionsView: View {
             Image(systemName: "mic")
           }
         }
+        LabeledContent {
+          accessibilityControl
+        } label: {
+          Label {
+            Text("Accessibility")
+            Text("Casper uses accessibility to type what you dictate into other apps.")
+          } icon: {
+            Image(systemName: "accessibility")
+          }
+        }
       }
     }
     .formStyle(.grouped)
@@ -25,6 +37,7 @@ struct PermissionsView: View {
     // The user may change access in System Settings while this pane is open.
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
       microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+      isAccessibilityTrusted = AXIsProcessTrusted()
     }
   }
 
@@ -48,6 +61,20 @@ struct PermissionsView: View {
       openSystemSettingsButton
     @unknown default:
       openSystemSettingsButton
+    }
+  }
+
+  @ViewBuilder
+  private var accessibilityControl: some View {
+    if isAccessibilityTrusted {
+      Label("Allowed", systemImage: "checkmark.circle.fill")
+        .foregroundStyle(.green)
+    } else {
+      Button("Allow Access") {
+        // Shows the system prompt that adds Casper to Accessibility in System Settings. The literal is the value of
+        // `kAXTrustedCheckOptionPrompt`, which Swift 6 rejects as a global mutable variable.
+        AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+      }
     }
   }
 
