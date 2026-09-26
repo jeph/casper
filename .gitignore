@@ -3,6 +3,9 @@ Casper.xcodeproj/
 Casper/Info.plist
 Casper/Casper.entitlements
 
+# Downloaded by scripts/download-model.sh; only the checksum files are committed.
+Models/*/
+
 build/
 DerivedData/
 *.xcuserstate
