@@ -1,12 +1,16 @@
 import AppKit
 
-/// Applies the launch-at-login default, and keeps Casper menu bar only whenever none of its windows are open.
+/// Starts dictation, applies the launch-at-login default, and keeps Casper menu bar only whenever none of its windows
+/// are open.
 ///
 /// `LSUIElement` starts the app without a Dock icon. Opening a window through
 /// `NSApplication.openWindowInFront(_:)` shows the icon, and closing the last one hides it again.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+  private var dictation: DictationController?
+
   func applicationDidFinishLaunching(_ notification: Notification) {
+    dictation = DictationController()
     LaunchAtLogin.applyDefaultOnFirstLaunch()
     NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) {
       notification in

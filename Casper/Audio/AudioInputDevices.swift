@@ -48,6 +48,26 @@ final class AudioInputDevices {
       .flatMap(Self.device)
   }
 
+  /// The Core Audio ID of the device with this UID, or `nil` if it isn't connected.
+  static func deviceID(forUID uid: String) -> AudioObjectID? {
+    var address = address(kAudioHardwarePropertyTranslateUIDToDevice)
+    var qualifier = uid as CFString
+    var id = AudioObjectID(kAudioObjectUnknown)
+    var size = UInt32(MemoryLayout<AudioObjectID>.size)
+    let status = withUnsafeMutablePointer(to: &qualifier) {
+      AudioObjectGetPropertyData(
+        AudioObjectID(kAudioObjectSystemObject),
+        &address,
+        UInt32(MemoryLayout<CFString>.size),
+        $0,
+        &size,
+        &id
+      )
+    }
+    guard status == noErr, id != kAudioObjectUnknown else { return nil }
+    return id
+  }
+
   private static func device(_ id: AudioObjectID) -> AudioInputDevice? {
     guard let uid = string(from: id, selector: kAudioDevicePropertyDeviceUID),
       let name = string(from: id, selector: kAudioObjectPropertyName)

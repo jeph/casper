@@ -69,7 +69,9 @@ struct Hotkey: Equatable, Sendable {
   ]
 
   /// The character the key types in the user's current keyboard layout, so a key shows as "Z" on QWERTZ too.
-  @MainActor private static func characterInCurrentLayout(_ keyCode: UInt16) -> String? {
+  ///
+  /// `carbonModifiers` holds Carbon modifier flags such as `cmdKey`, for layouts that change while a modifier is held.
+  @MainActor static func characterInCurrentLayout(_ keyCode: UInt16, carbonModifiers: Int = 0) -> String? {
     guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
       let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
     else { return nil }
@@ -82,7 +84,7 @@ struct Hotkey: Equatable, Sendable {
         bytes.bindMemory(to: UCKeyboardLayout.self).baseAddress,
         keyCode,
         UInt16(kUCKeyActionDisplay),
-        0,
+        UInt32(carbonModifiers >> 8) & 0xFF,
         UInt32(LMGetKbdType()),
         OptionBits(kUCKeyTranslateNoDeadKeysMask),
         &deadKeyState,
