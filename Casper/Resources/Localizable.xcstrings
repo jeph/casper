@@ -17,11 +17,23 @@
       "comment" : "App name, used as the menu bar icon's accessibility label.",
       "shouldTranslate" : false
     },
+    "Casper is turned off in Login Items in System Settings." : {
+      "comment" : "Note in Settings > General when the user has turned Casper off in the macOS Login Items settings."
+    },
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
     },
+    "General" : {
+      "comment" : "Settings sidebar item and page title for general app settings."
+    },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
+    },
+    "Open Casper automatically when you log in to your Mac." : {
+      "comment" : "Explanation under the Start at Login toggle in Settings > General."
+    },
+    "Open Login Items" : {
+      "comment" : "Button in Settings > General that opens the macOS Login Items settings."
     },
     "Open System Settings" : {
       "comment" : "Button in Settings > Permissions that opens the macOS microphone privacy settings after access was denied."
@@ -34,6 +46,9 @@
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
+    },
+    "Start at Login" : {
+      "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."
     }
   },
   "version" : "1.0"

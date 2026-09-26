@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @State private var selection: SettingsPane? = .permissions
+  @State private var selection: SettingsPane? = .general
 
   var body: some View {
     NavigationSplitView {
@@ -16,6 +16,8 @@ struct SettingsView: View {
       .toolbar(removing: .sidebarToggle)
     } detail: {
       switch selection {
+      case .general:
+        GeneralView()
       case .permissions:
         PermissionsView()
       case nil:
@@ -27,18 +29,21 @@ struct SettingsView: View {
 }
 
 private enum SettingsPane: CaseIterable, Identifiable {
+  case general
   case permissions
 
   var id: Self { self }
 
   var title: LocalizedStringResource {
     switch self {
+    case .general: "General"
     case .permissions: "Permissions"
     }
   }
 
   var systemImage: String {
     switch self {
+    case .general: "gearshape"
     case .permissions: "hand.raised"
     }
   }
