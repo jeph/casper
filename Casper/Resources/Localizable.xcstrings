@@ -4,9 +4,30 @@
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
     },
+    "Allow Access" : {
+      "comment" : "Button in Settings > Permissions that shows the macOS microphone access prompt."
+    },
+    "Allowed" : {
+      "comment" : "Status in Settings > Permissions when the app has microphone access."
+    },
+    "Blocked by a device policy" : {
+      "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
+    },
     "Casper" : {
       "comment" : "App name, used as the menu bar icon's accessibility label.",
       "shouldTranslate" : false
+    },
+    "Casper uses the microphone to hear what you dictate." : {
+      "comment" : "Explanation under the Microphone row in Settings > Permissions."
+    },
+    "Microphone" : {
+      "comment" : "Row title in Settings > Permissions."
+    },
+    "Open System Settings" : {
+      "comment" : "Button in Settings > Permissions that opens the macOS microphone privacy settings after access was denied."
+    },
+    "Permissions" : {
+      "comment" : "Settings sidebar item and page title for system permissions."
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
