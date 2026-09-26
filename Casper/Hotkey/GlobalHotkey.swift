@@ -10,8 +10,8 @@ import OSLog
 final class GlobalHotkey {
   private let onPress: () -> Void
   private let onRelease: () -> Void
-  private var registered: Hotkey?
-  private var hotKeyRef: EventHotKeyRef?
+  /// The registered shortcut and Carbon's reference to it, which is `nil` if registering failed.
+  private var registration: (hotkey: Hotkey, ref: EventHotKeyRef?)?
 
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "GlobalHotkey")
   /// The four-character code "CSPR", which identifies Casper's hot keys to Carbon.
@@ -64,20 +64,21 @@ final class GlobalHotkey {
     let hotkey =
       UserDefaults.standard.string(forKey: Hotkey.dictationStorageKey).flatMap(Hotkey.init(rawValue:))
       ?? .dictationDefault
-    guard hotkey != registered else { return }
-    if let hotKeyRef {
-      UnregisterEventHotKey(hotKeyRef)
-      self.hotKeyRef = nil
+    guard hotkey != registration?.hotkey else { return }
+    if let ref = registration?.ref {
+      UnregisterEventHotKey(ref)
     }
-    registered = hotkey
+    var ref: EventHotKeyRef?
     let status = RegisterEventHotKey(
       UInt32(hotkey.keyCode),
       Self.carbonModifiers(hotkey.modifiers),
       EventHotKeyID(signature: Self.signature, id: 1),
       GetApplicationEventTarget(),
       0,
-      &hotKeyRef
+      &ref
     )
+    // Recorded even when registration fails, so the same shortcut isn't retried on every settings change.
+    registration = (hotkey, ref)
     if status != noErr {
       // Another app has most likely registered the same shortcut.
       Self.logger.error("Couldn't register the dictation hotkey \(hotkey.rawValue): \(status)")

@@ -11,8 +11,10 @@ final class AudioRecorder {
     case unsupportedFormat(AVAudioFormat)
   }
 
-  private var engine: AVAudioEngine?
-  private var recording: Recording?
+  /// The engine and the samples it's collecting, while recording.
+  private var session: (engine: AVAudioEngine, recording: Recording)?
+
+  var isRecording: Bool { session != nil }
 
   /// Starts recording, replacing any recording in progress.
   func start(sampleRate: Double) throws {
@@ -46,17 +48,16 @@ final class AudioRecorder {
     input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat, block: recording.tapBlock())
     engine.prepare()
     try engine.start()
-    self.engine = engine
-    self.recording = recording
+    session = (engine, recording)
   }
 
   /// Stops recording and returns the samples recorded since `start(sampleRate:)`, or none if nothing was recording.
   func stop() -> [Float] {
-    engine?.inputNode.removeTap(onBus: 0)
-    engine?.stop()
-    engine = nil
-    defer { recording = nil }
-    return recording?.samples() ?? []
+    guard let session else { return [] }
+    self.session = nil
+    session.engine.inputNode.removeTap(onBus: 0)
+    session.engine.stop()
+    return session.recording.samples()
   }
 
   /// The chosen input device, or `nil` for the system default, which is also used while the chosen one is unplugged.

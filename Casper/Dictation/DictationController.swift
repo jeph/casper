@@ -11,7 +11,6 @@ final class DictationController {
   private let transcriber: Task<any Transcriber, any Error>
   private let recorder = AudioRecorder()
   private var hotkey: GlobalHotkey?
-  private var isRecording = false
   /// The latest transcription, which the next one waits for so transcripts are typed in the order they were spoken.
   private var latestTranscription: Task<Void, Never>?
 
@@ -30,7 +29,7 @@ final class DictationController {
   }
 
   private func startRecording() {
-    guard !isRecording else { return }
+    guard !recorder.isRecording else { return }
     switch AVCaptureDevice.authorizationStatus(for: .audio) {
     case .authorized:
       break
@@ -43,15 +42,13 @@ final class DictationController {
     }
     do {
       try recorder.start(sampleRate: model.sampleRate)
-      isRecording = true
     } catch {
       Self.logger.error("Couldn't start recording: \(error)")
     }
   }
 
   private func finishRecording() {
-    guard isRecording else { return }
-    isRecording = false
+    guard recorder.isRecording else { return }
     let samples = recorder.stop()
     guard !samples.isEmpty else { return }
     let sampleRate = model.sampleRate
