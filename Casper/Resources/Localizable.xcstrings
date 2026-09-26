@@ -29,8 +29,14 @@
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
     },
+    "Dictation Shortcut" : {
+      "comment" : "Row title in Settings > General for the keyboard shortcut that starts dictation."
+    },
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
+    },
+    "Key %u" : {
+      "comment" : "Fallback name for a key with no printable character."
     },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
@@ -47,14 +53,26 @@
     "Permissions" : {
       "comment" : "Settings sidebar item and page title for system permissions."
     },
+    "Press this shortcut to start dictating." : {
+      "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
+    },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
+    },
+    "Reset to Default" : {
+      "comment" : "Tooltip and accessibility label for the button that restores the default dictation shortcut, Option-Space."
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
     },
+    "Space" : {
+      "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
+    },
     "Start at Login" : {
       "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."
+    },
+    "Type Shortcut" : {
+      "comment" : "Placeholder in the shortcut field while it waits for a key."
     }
   },
   "version" : "1.0"

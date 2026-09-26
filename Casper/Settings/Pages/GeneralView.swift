@@ -4,6 +4,7 @@ import SwiftUI
 
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
+  @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
 
   var body: some View {
     Form {
@@ -24,6 +25,28 @@ struct GeneralView: View {
           } label: {
             Text("Casper is turned off in Login Items in System Settings.")
               .foregroundStyle(.secondary)
+          }
+        }
+      }
+      Section {
+        LabeledContent {
+          HStack {
+            if dictationHotkey != .dictationDefault {
+              Button("Reset to Default", systemImage: "arrow.counterclockwise") {
+                dictationHotkey = .dictationDefault
+              }
+              .labelStyle(.iconOnly)
+              .buttonStyle(.borderless)
+              .help(Text("Reset to Default"))
+            }
+            HotkeyRecorder(hotkey: $dictationHotkey)
+          }
+        } label: {
+          Label {
+            Text("Dictation Shortcut")
+            Text("Press this shortcut to start dictating.")
+          } icon: {
+            Image(systemName: "keyboard")
           }
         }
       }
