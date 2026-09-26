@@ -9,6 +9,16 @@ struct GeneralView: View {
   var body: some View {
     Form {
       Section {
+        InputDevicePicker {
+          Label {
+            Text("Input Device")
+            Text("The microphone Casper listens to when you dictate.")
+          } icon: {
+            Image(systemName: "mic")
+          }
+        }
+      }
+      Section {
         Toggle(isOn: launchAtLogin) {
           Label {
             Text("Start at Login")

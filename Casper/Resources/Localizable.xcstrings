@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ (Not Connected)" : {
+      "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
+    },
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
     },
@@ -34,6 +37,9 @@
     },
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
+    },
+    "Input Device" : {
+      "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
     },
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
@@ -70,6 +76,15 @@
     },
     "Start at Login" : {
       "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."
+    },
+    "System Default" : {
+      "comment" : "Input device option that follows the macOS sound settings."
+    },
+    "System Default (%@)" : {
+      "comment" : "Input device option that follows the macOS sound settings, followed by the current default device."
+    },
+    "The microphone Casper listens to when you dictate." : {
+      "comment" : "Explanation under the Input Device picker in Settings > General."
     },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
