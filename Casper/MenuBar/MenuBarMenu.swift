@@ -6,13 +6,10 @@ struct MenuBarMenu: View {
 
   var body: some View {
     Button("About Casper") {
-      // Menu bar apps are never frontmost, so windows would open behind other apps.
-      NSApp.activate()
-      NSApp.orderFrontStandardAboutPanel(nil)
+      NSApp.openWindowInFront { NSApp.orderFrontStandardAboutPanel(nil) }
     }
     Button("Settings…") {
-      NSApp.activate()
-      openSettings()
+      NSApp.openWindowInFront { openSettings() }
     }
     .keyboardShortcut(",")
     Divider()
