@@ -65,8 +65,9 @@ final class DictationController {
           "Transcribed \(seconds, format: .fixed(precision: 1)) s of audio in \(ContinuousClock.now - start, privacy: .public)"
         )
         await previous?.value
-        if !text.isEmpty {
-          TextInserter.insert(text)
+        // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
+        if let last = text.last {
+          TextInserter.insert(last.isWhitespace ? text : text + " ")
         }
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
