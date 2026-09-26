@@ -22,6 +22,10 @@ make lint      # check formatting with swift-format
 make format    # apply swift-format
 ```
 
+## Translations
+
+All user-facing text lives in String Catalogs: `Casper/Localizable.xcstrings` for the app and `Casper/InfoPlist.xcstrings` for system prompts such as the microphone permission. Write UI text as string literals in SwiftUI (`Text("…")`, `Button("…")`) and Xcode adds them to the catalog when you build in Xcode. To add a language, open a catalog in Xcode and click **+** in the language list.
+
 ## License
 
 [MIT](LICENSE)

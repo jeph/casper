@@ -1,0 +1,19 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "About Casper" : {
+      "comment" : "Menu bar item that opens the About window."
+    },
+    "Casper" : {
+      "comment" : "App name, used as the menu bar icon's accessibility label.",
+      "shouldTranslate" : false
+    },
+    "Quit Casper" : {
+      "comment" : "Menu bar item that quits the app."
+    },
+    "Settings…" : {
+      "comment" : "Menu bar item that opens the Settings window."
+    }
+  },
+  "version" : "1.0"
+}
