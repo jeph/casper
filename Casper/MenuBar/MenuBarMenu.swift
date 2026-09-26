@@ -1,19 +1,7 @@
 import AppKit
 import SwiftUI
 
-@main
-struct CasperApp: App {
-  var body: some Scene {
-    MenuBarExtra("Casper", systemImage: "waveform") {
-      MenuContent()
-    }
-    Settings {
-      SettingsView()
-    }
-  }
-}
-
-private struct MenuContent: View {
+struct MenuBarMenu: View {
   @Environment(\.openSettings) private var openSettings
 
   var body: some View {
