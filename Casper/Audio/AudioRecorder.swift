@@ -54,6 +54,24 @@ final class AudioRecorder {
         UInt32(MemoryLayout<AudioObjectID>.size)
       )
     }
+    let capture = try installCapture(on: engine)
+    engine.prepare()
+    try engine.start()
+    // Posted when the device's format changes, or the system default changes while it's in use; the engine has
+    // stopped by then. Choosing the device above also causes one, shortly after the engine starts.
+    let observer = NotificationCenter.default.addObserver(
+      forName: .AVAudioEngineConfigurationChange,
+      object: engine,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.restart() }
+    }
+    session = (engine, deviceID, capture, observer)
+  }
+
+  /// Sends the engine's input, in its current format, to a new capture.
+  private func installCapture(on engine: AVAudioEngine) throws -> Capture {
+    let input = engine.inputNode
     let inputFormat = input.outputFormat(forBus: 0)
     guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else { throw RecordingError.noInput }
     guard
@@ -68,18 +86,28 @@ final class AudioRecorder {
     converter.downmix = true
     let capture = Capture(converter: converter)
     input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat, block: capture.tapBlock())
-    engine.prepare()
-    try engine.start()
-    // Posted when the device's format changes, or the system default changes while it's in use; the engine has
-    // stopped by then.
-    let observer = NotificationCenter.default.addObserver(
-      forName: .AVAudioEngineConfigurationChange,
-      object: engine,
-      queue: .main
-    ) { [weak self] _ in
-      MainActor.assumeIsolated { self?.reopen() }
+    return capture
+  }
+
+  /// Restarts the engine after macOS stopped it for an audio configuration change, continuing any recording.
+  ///
+  /// The same engine is restarted rather than a new one opened, because choosing the device on a new engine causes
+  /// another configuration change, which would repeat this endlessly.
+  private func restart() {
+    guard let session else { return }
+    let recorded = session.capture.isRecording ? session.capture.end() : nil
+    session.engine.inputNode.removeTap(onBus: 0)
+    do {
+      let capture = try installCapture(on: session.engine)
+      try session.engine.start()
+      self.session = (session.engine, session.deviceID, capture, session.observer)
+      if let recorded {
+        capture.begin(continuing: recorded)
+      }
+    } catch {
+      Self.logger.error("Couldn't turn the microphone back on after an audio configuration change: \(error)")
+      close()
     }
-    session = (engine, deviceID, capture, observer)
   }
 
   /// Turns the microphone off, ending any recording in progress.
