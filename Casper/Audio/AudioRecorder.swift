@@ -22,6 +22,9 @@ final class AudioRecorder {
   /// to, and the observer that rebuilds the engine when the audio configuration changes.
   private var session:
     (engine: AVAudioEngine, deviceID: AudioObjectID?, capture: Capture, observer: any NSObjectProtocol)?
+  /// What was recorded before the microphone failed partway through a recording, kept for `stop()` so the recording
+  /// still ends normally.
+  private var interruptedRecording: [Float]?
 
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "AudioRecorder")
 
@@ -35,7 +38,7 @@ final class AudioRecorder {
   }
 
   var isOpen: Bool { session != nil }
-  var isRecording: Bool { session?.capture.isRecording ?? false }
+  var isRecording: Bool { interruptedRecording != nil || session?.capture.isRecording == true }
 
   /// Turns the microphone on, if it isn't already, without recording.
   func open() throws {
@@ -106,6 +109,7 @@ final class AudioRecorder {
       }
     } catch {
       Self.logger.error("Couldn't turn the microphone back on after an audio configuration change: \(error)")
+      interruptedRecording = recorded
       close()
     }
   }
@@ -126,9 +130,13 @@ final class AudioRecorder {
     session?.capture.begin()
   }
 
-  /// Stops recording and returns the samples recorded since `start()`, leaving the microphone on.
+  /// Stops recording and returns the samples recorded since `start()`, leaving the microphone on if it still is.
   func stop() -> [Float] {
-    session?.capture.end() ?? []
+    if let interruptedRecording {
+      self.interruptedRecording = nil
+      return interruptedRecording
+    }
+    return session?.capture.end() ?? []
   }
 
   private func reopenIfDeviceChanged() {
@@ -147,6 +155,7 @@ final class AudioRecorder {
       }
     } catch {
       Self.logger.error("Couldn't turn the microphone back on after an audio device change: \(error)")
+      interruptedRecording = recorded
     }
   }
 
