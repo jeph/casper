@@ -1,6 +1,6 @@
 import Foundation
 
-/// Keeps something dictation needs, such as the microphone or the speech model, ready for as long as its keep-alive
+/// Keeps something dictation needs, such as the microphone or the models, ready for as long as its keep-alive
 /// setting says.
 ///
 /// The owner reports when a dictation starts and stops using the resource. The schedule decides when to prepare and

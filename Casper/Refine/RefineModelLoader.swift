@@ -3,7 +3,7 @@ import OSLog
 /// Loads the refine model when dictation needs it, and unloads it to free memory.
 ///
 /// The model counts as in use from when a recording starts until its transcript is refined. When to unload it is up to
-/// the speech model's `KeepAliveSchedule`, and to the refine setting.
+/// the `KeepAliveSchedule` it shares with the speech model, and to the refine setting.
 @MainActor
 final class RefineModelLoader {
   typealias Loading = Task<TranscriptRefiner, any Error>

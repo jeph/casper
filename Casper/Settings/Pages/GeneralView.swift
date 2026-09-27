@@ -38,9 +38,9 @@ struct GeneralView: View {
             Image(systemName: "wand.and.sparkles")
           }
         }
-        KeepAlivePicker(storageKey: KeepAlive.speechModelStorageKey) {
+        KeepAlivePicker(storageKey: KeepAlive.modelStorageKey) {
           Label {
-            Text("Speech Model Keep Alive")
+            Text("Keep Model Alive")
             Text(
               "How long the speech and refine models stay in memory after your last dictation. Loading them again adds a delay."
             )
