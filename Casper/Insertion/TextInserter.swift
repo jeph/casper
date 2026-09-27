@@ -59,14 +59,7 @@ enum TextInserter {
     postCommandV()
 
     let changeCount = pasteboard.changeCount
-    let task = Task {
-      do {
-        try await Task.sleep(for: restoreDelay)
-      } catch {
-        return
-      }
-      // The sleep can finish just before a newer paste cancels the task, in which case it doesn't throw.
-      guard !Task.isCancelled else { return }
+    let task = Task.afterDelay(restoreDelay) {
       pendingRestore = nil
       // Leave the clipboard alone if something else was copied in the meantime.
       if pasteboard.changeCount == changeCount {

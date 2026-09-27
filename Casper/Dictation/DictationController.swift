@@ -92,16 +92,9 @@ final class DictationController {
 
   private func hotkeyReleased() {
     guard recorder.isRecording, pendingStop == nil else { return }
-    pendingStop = Task {
-      do {
-        try await Task.sleep(for: Self.recordingTail)
-      } catch {
-        return
-      }
-      // The sleep can finish just before a re-press cancels the task, in which case it doesn't throw.
-      guard !Task.isCancelled else { return }
-      pendingStop = nil
-      finishRecording()
+    pendingStop = Task.afterDelay(Self.recordingTail) { [weak self] in
+      self?.pendingStop = nil
+      self?.finishRecording()
     }
   }
 
