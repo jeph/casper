@@ -61,7 +61,7 @@ final class DictationController {
     closeMicrophone = nil
     guard !recorder.isRecording else { return }
     switch keepAlive {
-    case .off:
+    case .never:
       recorder.close()
     case .always:
       // Asking for access is left to the first dictation, rather than prompting as Casper launches.

@@ -2,7 +2,8 @@ import Foundation
 
 /// How long the microphone stays on after a dictation, so the next one starts without waiting for it to turn on.
 enum MicrophoneKeepAlive: String, CaseIterable, Identifiable {
-  case off
+  /// Off as soon as each dictation ends.
+  case never
   case oneMinute
   case fiveMinutes
   case tenMinutes
@@ -21,10 +22,10 @@ enum MicrophoneKeepAlive: String, CaseIterable, Identifiable {
 
   var id: Self { self }
 
-  /// How long the microphone stays on after a dictation, or `nil` for Off and Always, which don't turn it off later.
+  /// How long the microphone stays on after a dictation, or `nil` for Never and Always, which don't use a timer.
   var timeout: Duration? {
     switch self {
-    case .off, .always: nil
+    case .never, .always: nil
     case .oneMinute: .seconds(60)
     case .fiveMinutes: .seconds(5 * 60)
     case .tenMinutes: .seconds(10 * 60)
@@ -34,7 +35,7 @@ enum MicrophoneKeepAlive: String, CaseIterable, Identifiable {
 
   var title: LocalizedStringResource {
     switch self {
-    case .off: "Off"
+    case .never: "Never"
     case .oneMinute: "1 Minute"
     case .fiveMinutes: "5 Minutes"
     case .tenMinutes: "10 Minutes"
