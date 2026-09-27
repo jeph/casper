@@ -11,7 +11,12 @@ struct PermissionsView: View {
     Form {
       Section {
         LabeledContent {
-          microphoneControl
+          // Stacked so the outgoing button and the incoming status overlap while they crossfade.
+          ZStack(alignment: .trailing) {
+            microphoneControl
+              .transition(Self.statusTransition)
+          }
+          .animation(.easeInOut(duration: 0.2), value: microphoneStatus)
         } label: {
           Label {
             Text("Microphone")
@@ -21,7 +26,11 @@ struct PermissionsView: View {
           }
         }
         LabeledContent {
-          accessibilityControl
+          ZStack(alignment: .trailing) {
+            accessibilityControl
+              .transition(Self.statusTransition)
+          }
+          .animation(.easeInOut(duration: 0.2), value: isAccessibilityTrusted)
         } label: {
           Label {
             Text("Accessibility")
@@ -40,6 +49,13 @@ struct PermissionsView: View {
       isAccessibilityTrusted = AXIsProcessTrusted()
     }
   }
+
+  /// Slides a control in from the left and out to the right while fading it, the way the Voice Models page's
+  /// controls glide when switching models.
+  private static let statusTransition = AnyTransition.asymmetric(
+    insertion: .opacity.combined(with: .offset(x: -20)),
+    removal: .opacity.combined(with: .offset(x: 20))
+  )
 
   @ViewBuilder
   private var microphoneControl: some View {
