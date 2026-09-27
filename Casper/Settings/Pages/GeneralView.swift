@@ -5,6 +5,7 @@ import SwiftUI
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
+  @AppStorage(MicrophoneKeepAlive.storageKey) private var microphoneKeepAlive = MicrophoneKeepAlive.defaultValue
 
   var body: some View {
     Form {
@@ -15,6 +16,18 @@ struct GeneralView: View {
             Text("The microphone Casper listens to when you dictate.")
           } icon: {
             Image(systemName: "mic")
+          }
+        }
+        Picker(selection: $microphoneKeepAlive) {
+          ForEach(MicrophoneKeepAlive.allCases) { option in
+            Text(option.title).tag(option)
+          }
+        } label: {
+          Label {
+            Text("Keep Microphone On")
+            Text("How long the microphone stays on after your last dictation, to prevent recording delay.")
+          } icon: {
+            Image(systemName: "timer")
           }
         }
       }

@@ -9,12 +9,16 @@ final class DictationController {
   private let model = SpeechModel.qwen3ASR17B
   /// Loads while Casper starts, so the model is usually ready by the first dictation.
   private let transcriber: Task<any Transcriber, any Error>
-  private let recorder = AudioRecorder()
+  private let recorder: AudioRecorder
   private var hotkey: GlobalHotkey?
   /// The latest transcription, which the next one waits for so transcripts are typed in the order they were spoken.
   private var latestTranscription: Task<Void, Never>?
   /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
+  /// The keep-alive setting in effect, compared against the stored one when settings change.
+  private var keepAlive = MicrophoneKeepAlive.stored
+  /// Turns the microphone off once the keep-alive time has passed since the last dictation.
+  private var closeMicrophone: Task<Void, Never>?
 
   /// How long recording continues after the hotkey is released.
   ///
@@ -24,6 +28,7 @@ final class DictationController {
 
   init() {
     let model = model
+    recorder = AudioRecorder(sampleRate: model.sampleRate)
     transcriber = Task.detached(priority: .userInitiated) {
       let start = ContinuousClock.now
       let transcriber = try await model.loadTranscriber()
@@ -34,6 +39,52 @@ final class DictationController {
       onPress: { [weak self] in self?.hotkeyPressed() },
       onRelease: { [weak self] in self?.hotkeyReleased() }
     )
+    NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
+      [weak self] _ in
+      MainActor.assumeIsolated { self?.keepAliveSettingMayHaveChanged() }
+    }
+    applyKeepAlive()
+  }
+
+  private func keepAliveSettingMayHaveChanged() {
+    let stored = MicrophoneKeepAlive.stored
+    guard stored != keepAlive else { return }
+    keepAlive = stored
+    applyKeepAlive()
+  }
+
+  /// Turns the microphone on or off, or schedules it to turn off, as the keep-alive setting says.
+  ///
+  /// Runs at launch, after each dictation, and when the setting changes. A timed setting counts from when this runs.
+  private func applyKeepAlive() {
+    closeMicrophone?.cancel()
+    closeMicrophone = nil
+    guard !recorder.isRecording else { return }
+    switch keepAlive {
+    case .off:
+      recorder.close()
+    case .always:
+      // Asking for access is left to the first dictation, rather than prompting as Casper launches.
+      guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else { return }
+      do {
+        try recorder.open()
+      } catch {
+        Self.logger.error("Couldn't turn the microphone on: \(error)")
+      }
+    case .oneMinute, .fiveMinutes, .tenMinutes, .fifteenMinutes:
+      guard recorder.isOpen, let timeout = keepAlive.timeout else { return }
+      closeMicrophone = Task {
+        do {
+          try await Task.sleep(for: timeout)
+        } catch {
+          return
+        }
+        // The sleep can finish just before a dictation cancels the task, in which case it doesn't throw.
+        guard !Task.isCancelled else { return }
+        closeMicrophone = nil
+        recorder.close()
+      }
+    }
   }
 
   private func hotkeyPressed() {
@@ -73,8 +124,10 @@ final class DictationController {
       Self.logger.error("Microphone access is off.")
       return
     }
+    closeMicrophone?.cancel()
+    closeMicrophone = nil
     do {
-      try recorder.start(sampleRate: model.sampleRate)
+      try recorder.start()
     } catch {
       Self.logger.error("Couldn't start recording: \(error)")
     }
@@ -83,6 +136,7 @@ final class DictationController {
   private func finishRecording() {
     guard recorder.isRecording else { return }
     let samples = recorder.stop()
+    applyKeepAlive()
     guard !samples.isEmpty else { return }
     let sampleRate = model.sampleRate
     let previous = latestTranscription

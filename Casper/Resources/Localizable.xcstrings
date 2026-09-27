@@ -4,6 +4,18 @@
     "%@ (Not Connected)" : {
       "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
     },
+    "1 Minute" : {
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+    },
+    "10 Minutes" : {
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+    },
+    "15 Minutes" : {
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+    },
+    "5 Minutes" : {
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+    },
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
     },
@@ -15,6 +27,9 @@
     },
     "Allowed" : {
       "comment" : "Status in Settings > Permissions when the app has been granted a permission, such as microphone or accessibility access."
+    },
+    "Always" : {
+      "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper is running."
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
@@ -38,14 +53,23 @@
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
     },
+    "How long the microphone stays on after your last dictation, to prevent recording delay." : {
+      "comment" : "Description of the Keep Microphone On setting, whose options are Off, a number of minutes, or Always."
+    },
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
+    },
+    "Keep Microphone On" : {
+      "comment" : "Setting that keeps the microphone on after a dictation."
     },
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
     },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
+    },
+    "Off" : {
+      "comment" : "Option in the Keep Microphone On setting: the microphone turns off as soon as a dictation ends."
     },
     "Open Casper automatically when you log in to your Mac." : {
       "comment" : "Explanation under the Start at Login toggle in Settings > General."
