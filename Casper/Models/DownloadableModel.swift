@@ -17,6 +17,8 @@ protocol DownloadableModel: Identifiable, Sendable where ID == String {
   var repository: String { get }
   /// The Hugging Face commit to download, fixed so the files can't change.
   var revision: String { get }
+  /// The files and folders the model needs from its repository, or `nil` if it needs all of them.
+  var files: [String]? { get }
   /// Whether the model's page recommends it, for its balance of speed and quality.
   var isRecommended: Bool { get }
 
@@ -33,6 +35,8 @@ extension DownloadableModel {
   static var active: Self? {
     UserDefaults.standard.string(forKey: activeStorageKey).flatMap { id in all.first { $0.id == id } }
   }
+
+  var files: [String]? { nil }
 
   /// The model's name, size and precision, such as "Qwen3-ASR 0.6B, 5-bit".
   var title: LocalizedStringResource {

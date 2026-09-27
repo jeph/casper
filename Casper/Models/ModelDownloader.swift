@@ -78,7 +78,9 @@ enum ModelDownloader {
     try checkStatus(of: response, for: url)
     return try JSONDecoder().decode([RemoteFile].self, from: data)
       .filter { file in
-        file.type == "file" && !["README.md", ".gitattributes"].contains(file.path)
+        guard file.type == "file" else { return false }
+        guard let needed = model.files else { return !["README.md", ".gitattributes"].contains(file.path) }
+        return needed.contains { file.path == $0 || file.path.hasPrefix("\($0)/") }
       }
   }
 
