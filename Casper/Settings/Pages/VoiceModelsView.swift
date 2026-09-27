@@ -69,7 +69,7 @@ private struct SpeechModelRow: View {
     if store.installed.contains(model.id) {
       let isActive = activeModelID == model.id
       HStack {
-        // Both stay laid out so the row keeps its size and alignment, and the trash button its place, when switching.
+        // Both stay laid out so the row keeps its size and alignment when switching.
         ZStack(alignment: .trailing) {
           Label("Active", systemImage: "checkmark.circle.fill")
             .foregroundStyle(.green)
@@ -91,6 +91,8 @@ private struct SpeechModelRow: View {
           .help(Text("Delete"))
         }
       }
+      // Crossfades Use and Active, on this row and the one that was active, and glides the trash button in or out.
+      .animation(.easeInOut(duration: 0.2), value: isActive)
     } else {
       switch store.downloads[model.id] {
       case .downloading(let progress):
