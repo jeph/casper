@@ -44,6 +44,9 @@
     "5 Minutes" : {
       "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
+    "A bubble on screen that shows when Casper is listening. Drag it to move it." : {
+      "comment" : "Description of the General setting that shows or hides the floating voice bubble."
+    },
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
     },
@@ -158,6 +161,9 @@
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
+    },
+    "Show Voice Bubble" : {
+      "comment" : "Title of the General setting that shows or hides the floating voice bubble."
     },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."

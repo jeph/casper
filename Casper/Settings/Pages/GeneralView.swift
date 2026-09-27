@@ -5,6 +5,7 @@ import SwiftUI
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
+  @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
 
   var body: some View {
     Form {
@@ -75,6 +76,14 @@ struct GeneralView: View {
             Text("The shortcut used to start dictation.")
           } icon: {
             Image(systemName: "keyboard")
+          }
+        }
+        Toggle(isOn: $showsVoiceBubble) {
+          Label {
+            Text("Show Voice Bubble")
+            Text("A bubble on screen that shows when Casper is listening. Drag it to move it.")
+          } icon: {
+            Image(systemName: "waveform.circle")
           }
         }
       }
