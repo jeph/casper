@@ -99,10 +99,11 @@ struct VoiceBubbleView: View {
       let progress = position - Double(newestBar)
       // Eases in and out of each height rather than moving at a constant speed.
       let glide = progress * progress * (3 - 2 * progress)
-      let levels = status.meter.levels(since: now - .seconds(2))
-      let loudest = levels.loudestForScaling
+      // The oldest bar used starts up to five bars back, and is scaled to the moments before it.
+      let oldestBarStart = now - .seconds(VoiceWaveform.barSeconds * 5)
+      let levels = status.meter.levels(since: oldestBarStart - VoiceWaveform.scalingWindow)
       func level(_ bar: Int) -> Double {
-        VoiceWaveform.level(ofBar: bar, start: recordingStart, levels: levels, loudest: loudest)
+        VoiceWaveform.level(ofBar: bar, start: recordingStart, levels: levels)
       }
       // The newest bar is still filling, so the ghost follows the full bars before it.
       return [2, 0, 1]

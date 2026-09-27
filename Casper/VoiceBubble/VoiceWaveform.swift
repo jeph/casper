@@ -41,12 +41,12 @@ struct VoiceWaveform: View {
     let position = (now - start).seconds / Self.barSeconds
     let newestBar = Int(position.rounded(.down))
     let barCount = Int(size.width / step) + 2
-    let levels = meter.levels(since: start + .seconds(Double(newestBar - barCount) * Self.barSeconds))
-    let loudest = levels.loudestForScaling
+    let oldestBarStart = start + .seconds(Double(newestBar - barCount) * Self.barSeconds)
+    let levels = meter.levels(since: oldestBarStart - Self.scalingWindow)
     return (0..<barCount)
       .map { age in
         let bar = newestBar - age
-        let scaled = Self.level(ofBar: bar, start: start, levels: levels, loudest: loudest)
+        let scaled = Self.level(ofBar: bar, start: start, levels: levels)
         let height = barWidth + (size.height - barWidth) * CGFloat(pow(scaled, 0.8))
         let centerX = size.width + step / 2 - (position - Double(bar)) * step
         return CGRect(
@@ -58,16 +58,22 @@ struct VoiceWaveform: View {
       }
   }
 
-  /// The loudest level in a bar's stretch of audio, relative to the loudest recent level, from 0 to 1.
-  static func level(
-    ofBar bar: Int,
-    start: ContinuousClock.Instant,
-    levels: [AudioLevelMeter.Level],
-    loudest: Float
-  ) -> Double {
+  /// How far back a bar looks for the loudness it's scaled to.
+  static let scalingWindow = Duration.seconds(2)
+  /// The quietest level that fills a bar's height, about quiet speech, so silence and room noise stay low.
+  private static let quietestFullHeight: Float = 0.02
+
+  /// The loudest level in a bar's stretch of audio, from 0 to 1, relative to the loudest audio in the moments up to
+  /// the bar's end, so speech fills the height whatever the microphone's gain.
+  ///
+  /// Each bar is scaled to its own moments rather than to what's on screen, so a bar keeps its height as it scrolls:
+  /// scaled to the bars on screen, every bar grew as a loud one scrolled away.
+  static func level(ofBar bar: Int, start: ContinuousClock.Instant, levels: [AudioLevelMeter.Level]) -> Double {
     guard bar >= 0 else { return 0 }
     let barStart = start + .seconds(Double(bar) * barSeconds)
-    return Double(min(levels.peak(from: barStart, to: barStart + .seconds(barSeconds)) / loudest, 1))
+    let barEnd = barStart + .seconds(barSeconds)
+    let loudest = max(levels.peak(from: barEnd - scalingWindow, to: barEnd), quietestFullHeight)
+    return Double(min(levels.peak(from: barStart, to: barEnd) / loudest, 1))
   }
 }
 
@@ -85,12 +91,6 @@ private struct WaveformBars: View {
 }
 
 extension [AudioLevelMeter.Level] {
-  /// The amplitude to show as full height: the loudest of these levels, but no less than quiet speech, so silence and
-  /// room noise stay low while speech fills the height whatever the microphone's gain.
-  var loudestForScaling: Float {
-    Swift.max(lazy.map(\.value).max() ?? 0, 0.02)
-  }
-
   /// The loudest level measured in the given time range, or 0 if none was.
   func peak(from start: ContinuousClock.Instant, to end: ContinuousClock.Instant) -> Float {
     var peak: Float = 0

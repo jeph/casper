@@ -15,8 +15,8 @@ final class AudioLevelMeter: Sendable {
   /// The length of audio each level measures, in seconds.
   static let sliceSeconds = 0.02
   static let sliceDuration = Duration.seconds(sliceSeconds)
-  /// How far back levels are kept, longer than the voice bubble shows.
-  private static let retention = Duration.seconds(3)
+  /// How far back levels are kept: longer than the voice bubble shows, plus the moments its oldest bar is scaled to.
+  private static let retention = Duration.seconds(5)
 
   private let levels = Mutex<[Level]>([])
 
