@@ -20,6 +20,9 @@ packages:
   SpeechSwift:
     url: https://github.com/soniqo/speech-swift
     exactVersion: 0.0.28
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio
+    exactVersion: 0.17.4
   MLXSwift:
     url: https://github.com/ml-explore/mlx-swift
     from: 0.31.6
@@ -40,9 +43,8 @@ targets:
       - package: SpeechSwift
         product: Qwen3ASR
       - package: SpeechSwift
-        product: ParakeetASR
-      - package: SpeechSwift
         product: AudioCommon
+      - package: FluidAudio
       - package: MLXSwift
         product: MLX
       - package: MLXSwiftLM

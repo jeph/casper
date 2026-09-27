@@ -1,6 +1,6 @@
 import AudioCommon
+import FluidAudio
 import Foundation
-import ParakeetASR
 import Qwen3ASR
 
 /// A speech recognition model Casper can download and run, in one size and precision.
@@ -33,7 +33,7 @@ struct SpeechModel: LoadableModel {
     var models: [SpeechModel] { SpeechModel.all.filter { $0.family.accelerator == self } }
   }
 
-  /// A model architecture, which speech-swift runs with code of its own.
+  /// A model architecture, which FluidAudio or speech-swift runs with code of its own.
   enum Family: Sendable {
     case parakeetTDT
     case qwen3ASR
@@ -78,9 +78,9 @@ struct SpeechModel: LoadableModel {
   let revision: String
   var isRecommended = false
 
-  /// The sample rate every model takes audio at.
+  /// The sample rate every model takes audio at, which Casper records at.
   ///
-  /// Each one resamples audio at any other rate.
+  /// FluidAudio's Parakeet only takes audio at this rate.
   static let sampleRate = 16_000.0
   static let activeStorageKey = "activeSpeechModel"
   @MainActor static let store = ModelStore<SpeechModel>()
@@ -89,35 +89,58 @@ struct SpeechModel: LoadableModel {
 
   var languages: LocalizedStringResource { family.languages }
 
-  /// The Hugging Face repository, from the account that publishes speech-swift's converted models.
-  var repository: String { "aufklarer/\(id)" }
+  /// The Hugging Face repository, from the account that publishes the converted models its library runs.
+  var repository: String {
+    switch family {
+    case .parakeetTDT: "FluidInference/\(id)"
+    case .qwen3ASR: "aufklarer/\(id)"
+    }
+  }
 
-  func load() async throws -> any Transcriber {
-    let model: any SpeechRecognitionModel & ModelMemoryManageable
+  /// The repository has several builds of the Parakeet encoder and joint network; this is the set Casper loads.
+  var files: [String]? {
     switch family {
     case .parakeetTDT:
-      model = try await ParakeetASRModel.fromPretrained(modelId: repository, cacheDir: directory, offlineMode: true)
+      [
+        ModelNames.ASR.preprocessorFile, Self.parakeetEncoderPrecision.encoderFileName, ModelNames.ASR.decoderFile,
+        ModelNames.ASR.jointV3File, ModelNames.ASR.vocabularyFile,
+      ]
+    case .qwen3ASR: nil
+    }
+  }
+
+  func load() async throws -> any Transcriber {
+    switch family {
+    case .parakeetTDT:
+      return try await ParakeetTranscriber(
+        models: AsrModels.loadLocal(from: directory, version: .v3, encoderPrecision: Self.parakeetEncoderPrecision)
+      )
     case .qwen3ASR:
       // speech-swift reads the model size and bit width from the Hugging Face ID. Offline mode only reads the folder.
-      model = try await Qwen3ASRModel.fromPretrained(modelId: repository, cacheDir: directory, offlineMode: true)
+      return SpeechSwiftTranscriber(
+        model: try await Qwen3ASRModel.fromPretrained(modelId: repository, cacheDir: directory, offlineMode: true)
+      )
     }
-    return SpeechSwiftTranscriber(model: model)
   }
 
   static func unload(_ transcriber: any Transcriber) async {
     await transcriber.unload()
   }
+
+  /// The 8-bit encoder, rather than FluidAudio's default 6-bit one, which garbles some words (FluidAudio issue #760).
+  private static let parakeetEncoderPrecision = ParakeetEncoderPrecision.int8V2
 }
 
 extension SpeechModel {
   static let all = [
     SpeechModel(
-      id: "Parakeet-TDT-v3-CoreML-INT8-30s",
+      id: "parakeet-tdt-0.6b-v3-coreml",
       family: .parakeetTDT,
       parameters: "0.6B",
+      // The encoder's weights, which are almost all of the model's.
       bits: 8,
-      downloadSize: 640_656_886,
-      revision: "8054d9f680cfa4c0012876ed71e854fb20dd563b",
+      downloadSize: 632_169_729,
+      revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe",
       isRecommended: true
     ),
     SpeechModel(
