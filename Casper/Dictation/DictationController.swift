@@ -33,7 +33,7 @@ final class DictationController {
   ///
   /// People tend to let go while still finishing the last word, and the microphone delivers audio slightly after it's
   /// spoken.
-  private static let recordingTail = Duration.milliseconds(300)
+  private static let recordingTail = Duration.milliseconds(150)
 
   init() {
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
