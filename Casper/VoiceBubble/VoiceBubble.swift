@@ -15,8 +15,6 @@ final class VoiceBubble {
 
   private let panel: VoiceBubblePanel
   private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
-  /// Set while Casper moves the panel itself, so the move isn't mistaken for a drag.
-  private var isPlacing = false
 
   init(status: DictationStatus) {
     panel = VoiceBubblePanel(size: layout.metrics.panelSize)
@@ -25,10 +23,8 @@ final class VoiceBubble {
     hostingView.sizingOptions = []
     panel.contentView = hostingView
     move(toCenter: Self.savedCenter)
+    panel.onDragEnd = { [weak self] in self?.dragEnded() }
     let center = NotificationCenter.default
-    center.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self] _ in
-      MainActor.assumeIsolated { self?.panelMoved() }
-    }
     center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) {
       [weak self] _ in
       MainActor.assumeIsolated { self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter) }
@@ -73,12 +69,12 @@ final class VoiceBubble {
 
   private var ghostCenter: NSPoint { NSPoint(x: panel.frame.midX, y: panel.frame.midY) }
 
-  /// Keeps the ghost on screen while it's dragged, and saves where the user puts it.
+  /// Settles the bubble on screen where the user dropped it, and saves that spot.
   ///
-  /// Only moves from a drag are saved. The system moves the panel too, such as when a display is disconnected, and so
-  /// does pulling the bubble on screen, and neither should replace where the user put it.
-  private func panelMoved() {
-    guard panel.isBeingDragged, !isPlacing else { return }
+  /// This waits for the drag to end, so the bubble follows the pointer freely, including across displays, and only
+  /// settles once dropped. Only drags are saved, so moves by the system, such as when a display is disconnected, don't
+  /// replace where the user put it.
+  private func dragEnded() {
     move(toCenter: ghostCenter)
     UserDefaults.standard.set(NSStringFromPoint(ghostCenter), forKey: Self.centerStorageKey)
   }
@@ -109,9 +105,7 @@ final class VoiceBubble {
       height: size.height
     )
     if frame != panel.frame {
-      isPlacing = true
       panel.setFrame(frame, display: true)
-      isPlacing = false
     }
   }
 
@@ -148,38 +142,35 @@ private final class VoiceBubblePanel: NSPanel {
   override var canBecomeKey: Bool { false }
   override var canBecomeMain: Bool { false }
 
-  /// Whether the bubble is being dragged: from a press until just after the button is released, even if it didn't move.
-  private(set) var isBeingDragged = false
-  private var dragEnd: Task<Void, Never>?
+  /// Called when a drag that moved the bubble ends.
+  var onDragEnd: (@MainActor () -> Void)?
+  /// Where the pointer is from the panel's origin, while a drag is in progress.
+  private var dragOffset: NSPoint?
+  private var dragStartOrigin = NSPoint.zero
 
-  /// Any press on the bubble drags it; the window server moves the panel, so Casper doesn't activate.
-  override func sendEvent(_ event: NSEvent) {
-    if event.type == .leftMouseDown {
-      isBeingDragged = true
-      performDrag(with: event)
-      endDragAfterRelease()
-    } else {
-      super.sendEvent(event)
-    }
-  }
-
-  /// Ends the drag a moment after the button is released.
+  /// Any press on the bubble drags it, without activating Casper.
   ///
-  /// The window server runs the drag and may not send the mouse-up, so the button is checked instead. The drag's last
-  /// move can arrive just after the release, so the drag ends a little later to still save it.
-  private func endDragAfterRelease() {
-    dragEnd?.cancel()
-    dragEnd = Task { [weak self] in
-      do {
-        while NSEvent.pressedMouseButtons & 1 != 0 {
-          try await Task.sleep(for: .milliseconds(50))
-        }
-        try await Task.sleep(for: .milliseconds(250))
-      } catch {
-        return
+  /// The panel moves itself rather than handing the drag to the window server with `performDrag(with:)`. A window the
+  /// window server drags stays on the display the drag started on until it's all the way across, so the bubble
+  /// disappeared as it crossed onto the next display.
+  override func sendEvent(_ event: NSEvent) {
+    switch event.type {
+    case .leftMouseDown:
+      let pointer = convertPoint(toScreen: event.locationInWindow)
+      dragOffset = NSPoint(x: pointer.x - frame.minX, y: pointer.y - frame.minY)
+      dragStartOrigin = frame.origin
+    case .leftMouseDragged:
+      guard let dragOffset else { return }
+      let pointer = convertPoint(toScreen: event.locationInWindow)
+      setFrameOrigin(NSPoint(x: pointer.x - dragOffset.x, y: pointer.y - dragOffset.y))
+    case .leftMouseUp:
+      guard dragOffset != nil else { return }
+      dragOffset = nil
+      if frame.origin != dragStartOrigin {
+        onDragEnd?()
       }
-      guard !Task.isCancelled else { return }
-      self?.isBeingDragged = false
+    default:
+      super.sendEvent(event)
     }
   }
 }
