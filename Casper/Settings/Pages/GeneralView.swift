@@ -6,6 +6,7 @@ struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
+  @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
 
   var body: some View {
     Form {
@@ -86,6 +87,29 @@ struct GeneralView: View {
             Image(systemName: "waveform.circle")
           }
         }
+        LabeledContent {
+          Slider(value: voiceBubbleSizeValue, in: sizeRange, step: 1) {
+            Text("Voice Bubble Size")
+          } minimumValueLabel: {
+            GhostLogo()
+              .frame(height: 9)
+              .foregroundStyle(.secondary)
+          } maximumValueLabel: {
+            GhostLogo()
+              .frame(height: 15)
+              .foregroundStyle(.secondary)
+          }
+          .labelsHidden()
+          .frame(width: 180)
+        } label: {
+          Label {
+            Text("Voice Bubble Size")
+            Text("How large the voice bubble is on screen.")
+          } icon: {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+          }
+        }
+        .disabled(!showsVoiceBubble)
       }
     }
     .formStyle(.grouped)
@@ -93,6 +117,18 @@ struct GeneralView: View {
     // The user may change Login Items in System Settings while this pane is open.
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
       launchAtLoginStatus = LaunchAtLogin.status
+    }
+  }
+
+  private var sizeRange: ClosedRange<Double> {
+    Double(VoiceBubbleMetrics.sizes.lowerBound)...Double(VoiceBubbleMetrics.sizes.upperBound)
+  }
+
+  private var voiceBubbleSizeValue: Binding<Double> {
+    Binding {
+      Double(voiceBubbleSize)
+    } set: { value in
+      voiceBubbleSize = Int(value.rounded())
     }
   }
 

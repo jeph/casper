@@ -8,9 +8,9 @@ struct VoiceWaveform: View {
   /// When the recording started, which the bars are counted from.
   let start: ContinuousClock.Instant
   let size: CGSize
+  /// The width of each bar, and of the gap after it.
+  let barWidth: CGFloat
 
-  private static let barWidth: CGFloat = 3
-  private static let barSpacing: CGFloat = 3
   /// The length of audio each bar shows, which sets how fast the bars scroll: slow enough to feel unhurried.
   static let barSeconds = 0.12
   /// How far the bars trail the audio, longer than the gap between chunks.
@@ -37,7 +37,7 @@ struct VoiceWaveform: View {
   }
 
   private func bars(at now: ContinuousClock.Instant) -> [CGRect] {
-    let step = Self.barWidth + Self.barSpacing
+    let step = barWidth * 2
     let position = (now - start).seconds / Self.barSeconds
     let newestBar = Int(position.rounded(.down))
     let barCount = Int(size.width / step) + 2
@@ -47,12 +47,12 @@ struct VoiceWaveform: View {
       .map { age in
         let bar = newestBar - age
         let scaled = Self.level(ofBar: bar, start: start, levels: levels, loudest: loudest)
-        let height = Self.barWidth + (size.height - Self.barWidth) * CGFloat(pow(scaled, 0.8))
+        let height = barWidth + (size.height - barWidth) * CGFloat(pow(scaled, 0.8))
         let centerX = size.width + step / 2 - (position - Double(bar)) * step
         return CGRect(
-          x: centerX - Self.barWidth / 2,
+          x: centerX - barWidth / 2,
           y: (size.height - height) / 2,
-          width: Self.barWidth,
+          width: barWidth,
           height: height
         )
       }

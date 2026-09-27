@@ -9,18 +9,20 @@ import SwiftUI
 final class VoiceBubble {
   /// The `UserDefaults` key for whether the voice bubble is shown, on unless turned off.
   static let visibleStorageKey = "showsVoiceBubble"
+  /// The `UserDefaults` key for the voice bubble's size, one of `VoiceBubbleMetrics.sizes`.
+  static let sizeStorageKey = "voiceBubbleSize"
   private static let centerStorageKey = "voiceBubbleCenter"
 
   private let panel: VoiceBubblePanel
-  private let placement = VoiceBubblePlacement()
+  private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
 
   init(status: DictationStatus) {
-    panel = VoiceBubblePanel(size: VoiceBubbleView.panelSize)
-    let hostingView = NSHostingView(rootView: VoiceBubbleView(status: status, placement: placement))
+    panel = VoiceBubblePanel(size: layout.metrics.panelSize)
+    let hostingView = NSHostingView(rootView: VoiceBubbleView(status: status, layout: layout))
     // The panel keeps its size as the bubble grows and shrinks inside it.
     hostingView.sizingOptions = []
     panel.contentView = hostingView
-    move(toCenter: UserDefaults.standard.string(forKey: Self.centerStorageKey).map(NSPointFromString))
+    move(toCenter: Self.savedCenter)
     let center = NotificationCenter.default
     center.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self] _ in
       MainActor.assumeIsolated { self?.panelMoved() }
@@ -30,9 +32,30 @@ final class VoiceBubble {
       MainActor.assumeIsolated { self?.move(toCenter: self?.ghostCenter) }
     }
     center.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
-      MainActor.assumeIsolated { self?.updateVisibility() }
+      MainActor.assumeIsolated {
+        self?.updateVisibility()
+        self?.updateSize()
+      }
     }
     updateVisibility()
+  }
+
+  private static var storedSize: Int {
+    UserDefaults.standard.object(forKey: sizeStorageKey) as? Int ?? VoiceBubbleMetrics.defaultSize
+  }
+
+  /// Where the user last put the ghost's center, before being pulled on screen.
+  private static var savedCenter: NSPoint? {
+    UserDefaults.standard.string(forKey: centerStorageKey).map(NSPointFromString)
+  }
+
+  /// Resizes the bubble when the setting changes, around the ghost's saved center rather than where it was pulled to
+  /// fit on screen, so changing the size back puts the bubble back where it was.
+  private func updateSize() {
+    let metrics = VoiceBubbleMetrics(size: Self.storedSize)
+    guard metrics != layout.metrics else { return }
+    layout.metrics = metrics
+    move(toCenter: Self.savedCenter ?? ghostCenter)
   }
 
   private func updateVisibility() {
@@ -59,19 +82,20 @@ final class VoiceBubble {
   private func move(toCenter requested: NSPoint?) {
     guard let screen = requested.flatMap(Self.nearestScreen) ?? NSScreen.main else { return }
     let visible = screen.visibleFrame
-    let radius = VoiceBubbleView.diameter / 2
+    let radius = layout.metrics.diameter / 2
     let center = requested ?? NSPoint(x: visible.midX, y: visible.minY + radius + 24)
     // Sized as when hovered, which grows the bubble, so it stays fully on screen under the pointer too.
-    let hoveredRadius = radius * VoiceBubbleView.hoverScale
+    let hoveredRadius = radius * VoiceBubbleMetrics.hoverScale
     let clamped = NSPoint(
       x: min(max(center.x, visible.minX + hoveredRadius), visible.maxX - hoveredRadius),
       y: min(max(center.y, visible.minY + hoveredRadius), visible.maxY - hoveredRadius)
     )
     // The grown bubble reaches right of the ghost, and hovering widens it from its left end; past the screen's edge,
     // it slides back by the difference.
-    let hoveredRightEdge = clamped.x - radius + (radius + VoiceBubbleView.reach) * VoiceBubbleView.hoverScale
-    placement.recordingShift = max(hoveredRightEdge - visible.maxX, 0)
-    let size = VoiceBubbleView.panelSize
+    let hoverScale = VoiceBubbleMetrics.hoverScale
+    let hoveredRightEdge = clamped.x - radius + (radius + layout.metrics.reach) * hoverScale
+    layout.recordingShift = max(hoveredRightEdge - visible.maxX, 0)
+    let size = layout.metrics.panelSize
     let frame = NSRect(
       x: clamped.x - size.width / 2,
       y: clamped.y - size.height / 2,

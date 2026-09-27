@@ -102,6 +102,9 @@
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
     },
+    "How large the voice bubble is on screen." : {
+      "comment" : "Description of the General setting for how large the floating voice bubble is."
+    },
     "How long the microphone stays on after your last dictation, to prevent recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always."
     },
@@ -197,6 +200,9 @@
     },
     "Use" : {
       "comment" : "Button on the Voice Models page that makes an installed speech model the one dictation uses."
+    },
+    "Voice Bubble Size" : {
+      "comment" : "Title of the General setting for how large the floating voice bubble is, set with a slider from small to large."
     },
     "Voice Models" : {
       "comment" : "Title of the settings page for downloading and choosing speech recognition models."

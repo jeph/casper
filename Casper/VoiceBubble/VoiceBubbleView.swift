@@ -7,55 +7,42 @@ import SwiftUI
 /// screen, the grown bubble slides left as it grows, so it stays on screen with the ghost at its leading end.
 struct VoiceBubbleView: View {
   let status: DictationStatus
-  let placement: VoiceBubblePlacement
+  let layout: VoiceBubbleLayout
   @State private var recordingStart = ContinuousClock.now
   @State private var isHovered = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-  static let diameter: CGFloat = 44
-  private static let ghostHeight: CGFloat = 22
-  private static let waveformWidth: CGFloat = 96
-  private static let waveformHeight: CGFloat = 22
-  private static let waveformInnerSpacing: CGFloat = 2
-  private static let waveformOuterPadding: CGFloat = 16
-  /// Room around the bubble for its shadow and for springing slightly past its size.
-  private static let margin: CGFloat = 16
-  /// How far the bubble reaches right of the ghost's center when it's grown.
-  static let reach = diameter / 2 + waveformInnerSpacing + waveformWidth + waveformOuterPadding
-  /// How much the bubble grows while the pointer is over it.
-  static let hoverScale: CGFloat = 1.08
-  static let panelSize = CGSize(width: (reach + margin) * 2, height: diameter + margin * 2)
-
   var body: some View {
+    let metrics = layout.metrics
     let isRecording = status.phase == .recording
     HStack(spacing: 0) {
       ghost
-        .frame(width: Self.diameter, height: Self.diameter)
+        .frame(width: metrics.diameter, height: metrics.diameter)
       if isRecording {
         waveform
-          .padding(.leading, Self.waveformInnerSpacing)
-          .padding(.trailing, Self.waveformOuterPadding)
+          .padding(.leading, metrics.waveformInnerSpacing)
+          .padding(.trailing, metrics.waveformOuterPadding)
       }
     }
-    .frame(height: Self.diameter)
+    .frame(height: metrics.diameter)
     // The waveform appears and fades while the bubble grows and shrinks; the mask keeps it inside the bubble's padding
     // throughout, so it never reaches the glass's edge.
     .mask {
       HStack(spacing: 0) {
         Rectangle()
-          .frame(width: Self.diameter)
+          .frame(width: metrics.diameter)
         Rectangle()
-          .padding(.trailing, Self.waveformOuterPadding)
+          .padding(.trailing, metrics.waveformOuterPadding)
       }
     }
     .modifier(BubbleBackground())
     // The circle grows from its center, and the grown bubble from its leading end so the ghost stays put.
-    .scaleEffect(isHovered ? Self.hoverScale : 1, anchor: isRecording ? .leading : .center)
+    .scaleEffect(isHovered ? VoiceBubbleMetrics.hoverScale : 1, anchor: isRecording ? .leading : .center)
     .onHover { isHovered = $0 }
     .animation(.spring(duration: 0.25, bounce: 0.35), value: isHovered)
-    .offset(x: isRecording ? -placement.recordingShift : 0)
-    .padding(.leading, Self.panelSize.width / 2 - Self.diameter / 2)
-    .frame(width: Self.panelSize.width, height: Self.panelSize.height, alignment: .leading)
+    .offset(x: isRecording ? -layout.recordingShift : 0)
+    .padding(.leading, metrics.panelSize.width / 2 - metrics.diameter / 2)
+    .frame(width: metrics.panelSize.width, height: metrics.panelSize.height, alignment: .leading)
     .animation(.spring(duration: 0.35, bounce: 0.2), value: isRecording)
     .onChange(of: isRecording) { _, isRecording in
       if isRecording {
@@ -73,7 +60,8 @@ struct VoiceBubbleView: View {
     VoiceWaveform(
       meter: status.meter,
       start: recordingStart,
-      size: CGSize(width: Self.waveformWidth, height: Self.waveformHeight)
+      size: layout.metrics.waveformSize,
+      barWidth: layout.metrics.barWidth
     )
     .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
   }
@@ -81,7 +69,7 @@ struct VoiceBubbleView: View {
   private var ghost: some View {
     TimelineView(.animation(paused: status.phase == .idle)) { timeline in
       GhostLogo(barLevels: barLevels(at: timeline.date), barFill: barFill)
-        .frame(height: Self.ghostHeight)
+        .frame(height: layout.metrics.ghostHeight)
         .opacity(status.phase == .transcribing && reduceMotion ? fadingOpacity(at: timeline.date) : 1)
     }
   }
@@ -149,11 +137,16 @@ struct VoiceBubbleView: View {
   }
 }
 
-/// Where the voice bubble sits on screen, which decides how far the grown bubble slides left to stay on screen.
+/// The voice bubble's size, and how far the grown bubble slides left to stay on screen where it sits.
 @MainActor
 @Observable
-final class VoiceBubblePlacement {
+final class VoiceBubbleLayout {
+  var metrics: VoiceBubbleMetrics
   var recordingShift: CGFloat = 0
+
+  init(metrics: VoiceBubbleMetrics) {
+    self.metrics = metrics
+  }
 }
 
 /// Liquid Glass on macOS 26 and later, and the closest material before it.
