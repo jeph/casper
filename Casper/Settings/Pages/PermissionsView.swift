@@ -45,8 +45,15 @@ struct PermissionsView: View {
     .navigationTitle(Text("Permissions"))
     // The user may change access in System Settings while this pane is open.
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-      microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-      isAccessibilityTrusted = AXIsProcessTrusted()
+      refreshStatus()
+    }
+    // macOS doesn't tell Casper when access is granted in System Settings, so check until everything is allowed,
+    // rather than waiting for the user to come back to Casper.
+    .task(id: isEverythingAllowed) {
+      guard !isEverythingAllowed else { return }
+      while (try? await Task.sleep(for: .milliseconds(500))) != nil {
+        refreshStatus()
+      }
     }
   }
 
@@ -56,6 +63,13 @@ struct PermissionsView: View {
     insertion: .opacity.combined(with: .offset(x: -20)),
     removal: .opacity.combined(with: .offset(x: 20))
   )
+
+  private var isEverythingAllowed: Bool { microphoneStatus == .authorized && isAccessibilityTrusted }
+
+  private func refreshStatus() {
+    microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+    isAccessibilityTrusted = AXIsProcessTrusted()
+  }
 
   @ViewBuilder
   private var microphoneControl: some View {
