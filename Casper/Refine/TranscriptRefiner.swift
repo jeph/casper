@@ -96,9 +96,15 @@ actor TranscriptRefiner {
   }
 
   private static func promptTokens(for transcript: String, tokenizer: any MLXLMCommon.Tokenizer) throws -> [Int] {
-    try tokenizer.applyChatTemplate(messages: [
-      ["role": "system", "content": RefinePrompt.system],
-      ["role": "user", "content": RefinePrompt.message(for: transcript)],
-    ])
+    try tokenizer.applyChatTemplate(
+      messages: [
+        ["role": "system", "content": RefinePrompt.system],
+        ["role": "user", "content": RefinePrompt.message(for: transcript)],
+      ],
+      tools: nil,
+      // Models that can reason before answering, such as Qwen3.5, would otherwise do so by default, which makes
+      // refining much slower. Templates without a thinking mode ignore it.
+      additionalContext: ["enable_thinking": false]
+    )
   }
 }
