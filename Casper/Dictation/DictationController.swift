@@ -6,7 +6,6 @@ import OSLog
 final class DictationController {
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Dictation")
 
-  private let model = SpeechModel.qwen3ASR17B
   private let speechModel: SpeechModelLoader
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
@@ -16,6 +15,8 @@ final class DictationController {
   private var latestTranscription: Task<Void, Never>?
   /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
+  /// The active speech model's ID, compared against the stored one when settings change.
+  private var activeModelID = SpeechModel.active?.id
 
   /// How long recording continues after the hotkey is released.
   ///
@@ -24,8 +25,8 @@ final class DictationController {
   private static let recordingTail = Duration.milliseconds(300)
 
   init() {
-    let recorder = AudioRecorder(sampleRate: model.sampleRate)
-    let speechModel = SpeechModelLoader(model: model)
+    let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
+    let speechModel = SpeechModelLoader()
     self.recorder = recorder
     self.speechModel = speechModel
     microphoneKeepAlive = KeepAliveSchedule(
@@ -54,6 +55,19 @@ final class DictationController {
       onPress: { [weak self] in self?.hotkeyPressed() },
       onRelease: { [weak self] in self?.hotkeyReleased() }
     )
+    NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
+      [weak self] _ in
+      MainActor.assumeIsolated { self?.activeModelMayHaveChanged() }
+    }
+  }
+
+  /// Unloads the previous model once nothing is using it, and loads the new one if its keep-alive setting says to.
+  private func activeModelMayHaveChanged() {
+    let id = SpeechModel.active?.id
+    guard id != activeModelID else { return }
+    activeModelID = id
+    speechModel.unloadIfInactive()
+    speechModelKeepAlive.apply()
   }
 
   private func hotkeyPressed() {
@@ -76,6 +90,10 @@ final class DictationController {
 
   private func startRecording() {
     guard !recorder.isRecording else { return }
+    guard SpeechModel.active != nil else {
+      Self.logger.error("No voice model is chosen, so there's nothing to transcribe with.")
+      return
+    }
     switch AVCaptureDevice.authorizationStatus(for: .audio) {
     case .authorized:
       break
@@ -100,7 +118,7 @@ final class DictationController {
   private func finishRecording() {
     guard recorder.isRecording else { return }
     let samples = recorder.stop()
-    microphoneKeepAlive.useEnded()
+    microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
       endSpeechModelUse()
       return
@@ -124,8 +142,8 @@ final class DictationController {
   private func transcribe(_ samples: [Float]) async throws -> String {
     defer { endSpeechModelUse() }
     let start = ContinuousClock.now
-    let text = try await speechModel.transcriber().value.transcribe(samples, sampleRate: model.sampleRate)
-    let seconds = Double(samples.count) / model.sampleRate
+    let text = try await speechModel.transcriber().value.transcribe(samples, sampleRate: SpeechModel.sampleRate)
+    let seconds = Double(samples.count) / SpeechModel.sampleRate
     Self.logger.info(
       "Transcribed \(seconds, format: .fixed(precision: 1)) s of audio in \(ContinuousClock.now - start, privacy: .public)"
     )
@@ -134,6 +152,6 @@ final class DictationController {
 
   private func endSpeechModelUse() {
     speechModel.endUse()
-    speechModelKeepAlive.useEnded()
+    speechModelKeepAlive.apply()
   }
 }

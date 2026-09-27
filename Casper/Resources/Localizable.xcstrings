@@ -1,8 +1,30 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ %@, %lld-bit" : {
+      "comment" : "A speech model's name, its size in parameters, such as 0.6B, and the precision of its weights in bits. For example, \"Qwen3-ASR 0.6B, 5-bit\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@, %3$lld-bit"
+          }
+        }
+      }
+    },
     "%@ (Not Connected)" : {
       "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
+    },
+    "%@ · %@" : {
+      "comment" : "Details of a speech model on the Voice Models page: the languages it transcribes, then its download size.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
     },
     "1 Minute" : {
       "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
@@ -13,6 +35,12 @@
     "15 Minutes" : {
       "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
+    "25 European languages" : {
+      "comment" : "The languages the Parakeet speech model transcribes, shown on the Voice Models page."
+    },
+    "30 languages and 22 Chinese dialects" : {
+      "comment" : "The languages the Qwen3-ASR speech models transcribe, shown on the Voice Models page."
+    },
     "5 Minutes" : {
       "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
@@ -21,6 +49,9 @@
     },
     "Accessibility" : {
       "comment" : "Row title in Settings > Permissions for the macOS Accessibility permission."
+    },
+    "Active" : {
+      "comment" : "Shown on the Voice Models page next to the speech model dictation uses."
     },
     "Allow Access" : {
       "comment" : "Button in Settings > Permissions that shows the macOS prompt for microphone or accessibility access."
@@ -33,6 +64,9 @@
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
+    },
+    "Cancel Download" : {
+      "comment" : "Button on the Voice Models page that stops a speech model download."
     },
     "Casper" : {
       "comment" : "App name, used as the menu bar icon's accessibility label.",
@@ -49,6 +83,12 @@
     },
     "Dictation Shortcut" : {
       "comment" : "Row title in Settings > General for the keyboard shortcut that starts dictation."
+    },
+    "Download" : {
+      "comment" : "Button on the Voice Models page that downloads a speech model."
+    },
+    "Download failed" : {
+      "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
     },
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
@@ -68,8 +108,14 @@
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
     },
+    "MLX" : {
+      "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
+    },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
+    },
+    "Neural Engine" : {
+      "comment" : "Heading on the Voice Models page for the models that run on the Neural Engine."
     },
     "Never" : {
       "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: the microphone turns off, or the speech model unloads, as soon as a dictation ends."
@@ -88,6 +134,9 @@
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
+    },
+    "Recommended" : {
+      "comment" : "Badge on the Voice Models page marking the speech models Casper suggests."
     },
     "Reset to Default" : {
       "comment" : "Tooltip and accessibility label for the button that restores the default dictation shortcut, Option-Space."
@@ -116,8 +165,17 @@
     "The shortcut used to start dictation." : {
       "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
     },
+    "Try Again" : {
+      "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."
+    },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
+    },
+    "Use" : {
+      "comment" : "Button on the Voice Models page that makes an installed speech model the one dictation uses."
+    },
+    "Voice Models" : {
+      "comment" : "Title of the settings page for downloading and choosing speech recognition models."
     }
   },
   "version" : "1.0"

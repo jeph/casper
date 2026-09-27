@@ -29,12 +29,11 @@ targets:
     platform: macOS
     sources:
       - Casper
-      - path: Models/Qwen3-ASR-1.7B-MLX-8bit
-        type: folder
-        buildPhase: resources
     dependencies:
       - package: SpeechSwift
         product: Qwen3ASR
+      - package: SpeechSwift
+        product: ParakeetASR
       - package: SpeechSwift
         product: AudioCommon
       - package: MLXSwift

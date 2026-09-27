@@ -51,11 +51,6 @@ final class KeepAliveSchedule {
     scheduledRelease = nil
   }
 
-  /// Applies the setting now that a dictation stopped using the resource, starting a timed setting's countdown.
-  func useEnded() {
-    apply()
-  }
-
   private func settingMayHaveChanged() {
     let stored = KeepAlive.stored(forKey: storageKey)
     guard stored != setting else { return }
@@ -65,8 +60,9 @@ final class KeepAliveSchedule {
 
   /// Prepares or releases the resource, or schedules its release, as the setting says.
   ///
-  /// A timed setting counts from when this runs.
-  private func apply() {
+  /// Call when a dictation stops using the resource, or when what the resource is changes, such as switching to another
+  /// speech model. A timed setting counts from when this runs.
+  func apply() {
     scheduledRelease?.cancel()
     scheduledRelease = nil
     guard !isInUse() else { return }
