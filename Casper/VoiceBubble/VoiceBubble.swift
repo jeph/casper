@@ -15,6 +15,8 @@ final class VoiceBubble {
 
   private let panel: VoiceBubblePanel
   private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
+  /// Set while Casper moves the panel itself, so the move isn't mistaken for a drag.
+  private var isPlacing = false
 
   init(status: DictationStatus) {
     panel = VoiceBubblePanel(size: layout.metrics.panelSize)
@@ -29,7 +31,10 @@ final class VoiceBubble {
     }
     center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) {
       [weak self] _ in
-      MainActor.assumeIsolated { self?.move(toCenter: self?.ghostCenter) }
+      MainActor.assumeIsolated {
+        self?.panel.isBeingDragged = false
+        self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter)
+      }
     }
     center.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
       MainActor.assumeIsolated {
@@ -44,7 +49,8 @@ final class VoiceBubble {
     UserDefaults.standard.object(forKey: sizeStorageKey) as? Int ?? VoiceBubbleMetrics.defaultSize
   }
 
-  /// Where the user last put the ghost's center, before being pulled on screen.
+  /// Where the user last dragged the ghost's center, which may be off screen now; the bubble is placed from here
+  /// whenever the screens or its size change, so it returns to that spot when it fits again.
   private static var savedCenter: NSPoint? {
     UserDefaults.standard.string(forKey: centerStorageKey).map(NSPointFromString)
   }
@@ -70,10 +76,17 @@ final class VoiceBubble {
 
   private var ghostCenter: NSPoint { NSPoint(x: panel.frame.midX, y: panel.frame.midY) }
 
-  /// Keeps the ghost on screen after a drag, and saves where it is.
+  /// Keeps the ghost on screen while it's dragged, and saves where the user puts it.
+  ///
+  /// Only moves from a drag are saved. The system moves the panel too, such as when a display is disconnected, and so
+  /// does pulling the bubble on screen, and neither should replace where the user put it.
   private func panelMoved() {
-    let center = ghostCenter
-    move(toCenter: center)
+    guard panel.isBeingDragged, !isPlacing else { return }
+    // The last move of a drag can arrive after the button is released, since the window server runs the drag.
+    if NSEvent.pressedMouseButtons & 1 == 0 {
+      panel.isBeingDragged = false
+    }
+    move(toCenter: ghostCenter)
     UserDefaults.standard.set(NSStringFromPoint(ghostCenter), forKey: Self.centerStorageKey)
   }
 
@@ -103,7 +116,9 @@ final class VoiceBubble {
       height: size.height
     )
     if frame != panel.frame {
+      isPlacing = true
       panel.setFrame(frame, display: true)
+      isPlacing = false
     }
   }
 
@@ -140,9 +155,13 @@ private final class VoiceBubblePanel: NSPanel {
   override var canBecomeKey: Bool { false }
   override var canBecomeMain: Bool { false }
 
+  /// Set when the bubble is pressed, which starts a drag, and cleared by its owner once a move shows it has ended.
+  var isBeingDragged = false
+
   /// Any press on the bubble drags it; the window server moves the panel, so Casper doesn't activate.
   override func sendEvent(_ event: NSEvent) {
     if event.type == .leftMouseDown {
+      isBeingDragged = true
       performDrag(with: event)
     } else {
       super.sendEvent(event)
