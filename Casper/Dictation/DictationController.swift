@@ -13,6 +13,14 @@ final class DictationController {
   private var hotkey: GlobalHotkey?
   /// The latest transcription, which the next one waits for so transcripts are typed in the order they were spoken.
   private var latestTranscription: Task<Void, Never>?
+  /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
+  private var pendingStop: Task<Void, Never>?
+
+  /// How long recording continues after the hotkey is released.
+  ///
+  /// People tend to let go while still finishing the last word, and the microphone delivers audio slightly after it's
+  /// spoken.
+  private static let recordingTail = Duration.milliseconds(300)
 
   init() {
     let model = model
@@ -23,9 +31,34 @@ final class DictationController {
       return transcriber
     }
     hotkey = GlobalHotkey(
-      onPress: { [weak self] in self?.startRecording() },
-      onRelease: { [weak self] in self?.finishRecording() }
+      onPress: { [weak self] in self?.hotkeyPressed() },
+      onRelease: { [weak self] in self?.hotkeyReleased() }
     )
+  }
+
+  private func hotkeyPressed() {
+    // Pressing again before the recording stops continues the same recording.
+    if let pendingStop {
+      pendingStop.cancel()
+      self.pendingStop = nil
+      return
+    }
+    startRecording()
+  }
+
+  private func hotkeyReleased() {
+    guard recorder.isRecording, pendingStop == nil else { return }
+    pendingStop = Task {
+      do {
+        try await Task.sleep(for: Self.recordingTail)
+      } catch {
+        return
+      }
+      // The sleep can finish just before a re-press cancels the task, in which case it doesn't throw.
+      guard !Task.isCancelled else { return }
+      pendingStop = nil
+      finishRecording()
+    }
   }
 
   private func startRecording() {
