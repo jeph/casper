@@ -65,6 +65,8 @@ enum TextInserter {
       } catch {
         return
       }
+      // The sleep can finish just before a newer paste cancels the task, in which case it doesn't throw.
+      guard !Task.isCancelled else { return }
       pendingRestore = nil
       // Leave the clipboard alone if something else was copied in the meantime.
       if pasteboard.changeCount == changeCount {
