@@ -8,7 +8,7 @@ final class DictationController {
 
   /// What dictation is doing, for the voice bubble.
   let status: DictationStatus
-  private let speechModel: SpeechModelLoader
+  private let speechModel: ModelLoader<SpeechModel>
   private let refineModel: RefineModelLoader
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
@@ -37,7 +37,7 @@ final class DictationController {
 
   init() {
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
-    let speechModel = SpeechModelLoader()
+    let speechModel = ModelLoader<SpeechModel>()
     let refineModel = RefineModelLoader()
     self.recorder = recorder
     self.speechModel = speechModel
@@ -215,7 +215,7 @@ final class DictationController {
   private func transcribe(_ samples: [Float]) async throws -> String {
     defer { endSpeechModelUse() }
     let start = ContinuousClock.now
-    let text = try await speechModel.transcriber().value.transcribe(samples, sampleRate: SpeechModel.sampleRate)
+    let text = try await speechModel.model().value.transcribe(samples, sampleRate: SpeechModel.sampleRate)
     let seconds = Double(samples.count) / SpeechModel.sampleRate
     Self.logger.info(
       "Transcribed \(seconds, format: .fixed(precision: 1)) s of audio in \(ContinuousClock.now - start, privacy: .public)"

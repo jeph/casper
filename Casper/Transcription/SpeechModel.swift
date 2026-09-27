@@ -4,7 +4,7 @@ import ParakeetASR
 import Qwen3ASR
 
 /// A speech recognition model Casper can download and run, in one size and precision.
-struct SpeechModel: Identifiable, Sendable {
+struct SpeechModel: LoadableModel {
   /// The processor a model runs on.
   enum Accelerator: CaseIterable, Identifiable, Sendable {
     case neuralEngine
@@ -70,54 +70,29 @@ struct SpeechModel: Identifiable, Sendable {
     }
   }
 
-  /// The model's Hugging Face repository name, which is also the name of the folder it's installed in.
   let id: String
   let family: Family
-  /// The number of parameters, such as "0.6B".
   let parameters: String
   let bits: Int
-  /// The total size of the model's files.
   let downloadSize: Int64
-  /// The Hugging Face commit to download, fixed so the files can't change.
   let revision: String
-  /// Whether the Voice Models page recommends the model, for its balance of speed and accuracy.
   var isRecommended = false
 
   /// The sample rate every model takes audio at.
   ///
   /// Each one resamples audio at any other rate.
   static let sampleRate = 16_000.0
-  /// The `UserDefaults` key for the ID of the model dictation uses.
   static let activeStorageKey = "activeSpeechModel"
-  static let installDirectory = URL.applicationSupportDirectory.appending(
-    path: "Casper/Models",
-    directoryHint: .isDirectory
-  )
+  @MainActor static let store = ModelStore<SpeechModel>()
 
-  /// The model dictation uses, or `nil` if none is chosen.
-  static var active: SpeechModel? {
-    UserDefaults.standard.string(forKey: activeStorageKey).flatMap { id in all.first { $0.id == id } }
-  }
+  var name: String { family.name }
 
-  /// The model's name, size and precision, such as "Qwen3-ASR 0.6B, 5-bit".
-  var title: LocalizedStringResource {
-    LocalizedStringResource(
-      "\(family.name) \(parameters), \(bits)-bit",
-      comment: """
-        A speech model's name, its size in parameters, such as 0.6B, and the precision of its weights in bits. For \
-        example, "Qwen3-ASR 0.6B, 5-bit".
-        """
-    )
-  }
+  var languages: LocalizedStringResource { family.languages }
 
   /// The Hugging Face repository, from the account that publishes speech-swift's converted models.
   var repository: String { "aufklarer/\(id)" }
 
-  var directory: URL { Self.installDirectory.appending(path: id, directoryHint: .isDirectory) }
-
-  var isInstalled: Bool { FileManager.default.fileExists(atPath: directory.path(percentEncoded: false)) }
-
-  func loadTranscriber() async throws -> any Transcriber {
+  func load() async throws -> any Transcriber {
     let model: any SpeechRecognitionModel & ModelMemoryManageable
     switch family {
     case .parakeetTDT:
@@ -127,6 +102,10 @@ struct SpeechModel: Identifiable, Sendable {
       model = try await Qwen3ASRModel.fromPretrained(modelId: repository, cacheDir: directory, offlineMode: true)
     }
     return SpeechSwiftTranscriber(model: model)
+  }
+
+  static func unload(_ transcriber: any Transcriber) async {
+    await transcriber.unload()
   }
 }
 

@@ -1,20 +1,31 @@
 import Foundation
 import OSLog
 
-/// Loads the active speech model when dictation needs it, and unloads it to free memory.
+nonisolated private let logger = Logger(subsystem: "io.jeph.Casper", category: "ModelLoader")
+
+/// A model Casper can load into memory once it's installed.
+protocol LoadableModel: DownloadableModel {
+  /// The model loaded into memory, ready to use.
+  associatedtype Loaded: Sendable
+
+  func load() async throws -> Loaded
+
+  /// Frees the memory a loaded model uses, after which it can't be used.
+  static func unload(_ loaded: Loaded) async
+}
+
+/// Loads the active model of one kind when dictation needs it, and unloads it to free memory.
 ///
-/// A model counts as in use from when a recording starts until its transcription finishes. When to unload it is up to
+/// A model counts as in use from when a recording starts until dictation is done with it. When to unload it is up to
 /// a `KeepAliveSchedule`. When the active model changes, the previous one unloads as soon as nothing is using it.
 @MainActor
-final class SpeechModelLoader {
+final class ModelLoader<Model: LoadableModel> {
   enum LoadError: Error {
     case noActiveModel
   }
 
-  typealias Loading = Task<any Transcriber, any Error>
-  private typealias Loaded = (model: SpeechModel, loading: Loading)
-
-  nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "SpeechModelLoader")
+  typealias Loading = Task<Model.Loaded, any Error>
+  private typealias Loaded = (model: Model, loading: Loading)
 
   /// The loaded model, or the load in progress; `nil` while unloaded.
   private var loaded: Loaded?
@@ -45,7 +56,7 @@ final class SpeechModelLoader {
   /// The active model, loading it if needed.
   ///
   /// Only valid between `beginUse()` and `endUse()`, which keep the model from unloading.
-  func transcriber() throws -> Loading {
+  func model() throws -> Loading {
     guard let loading = load() else { throw LoadError.noActiveModel }
     return loading
   }
@@ -53,22 +64,22 @@ final class SpeechModelLoader {
   /// Starts loading the active model, if it isn't loaded or loading already, and returns it.
   @discardableResult
   func load() -> Loading? {
-    guard let model = SpeechModel.active else { return nil }
+    guard let model = Model.active else { return nil }
     if let loaded, loaded.model.id == model.id {
       return loaded.loading
     }
     unload()
     let loading = Loading.detached(priority: .userInitiated) {
       let start = ContinuousClock.now
-      let transcriber = try await model.loadTranscriber()
-      Self.logger.info("Loaded \(model.id, privacy: .public) in \(ContinuousClock.now - start, privacy: .public)")
-      return transcriber
+      let instance = try await model.load()
+      logger.info("Loaded \(model.id, privacy: .public) in \(ContinuousClock.now - start, privacy: .public)")
+      return instance
     }
     loaded = (model, loading)
     // A load that fails is forgotten, so the next dictation tries again rather than reusing the failure.
     Task {
       guard case .failure(let error) = await loading.result else { return }
-      Self.logger.error("Couldn't load \(model.id, privacy: .public): \(error)")
+      logger.error("Couldn't load \(model.id, privacy: .public): \(error)")
       if loaded?.loading == loading {
         loaded = nil
       }
@@ -89,7 +100,7 @@ final class SpeechModelLoader {
 
   /// Unloads the loaded model if it's no longer the active one and nothing is using it.
   func unloadIfInactive() {
-    guard users == 0, let loaded, loaded.model.id != SpeechModel.active?.id else { return }
+    guard users == 0, let loaded, loaded.model.id != Model.active?.id else { return }
     unload()
   }
 
@@ -97,8 +108,8 @@ final class SpeechModelLoader {
   private static func unload(_ loaded: Loaded) {
     Task {
       // A load that failed has nothing to unload.
-      guard let transcriber = try? await loaded.loading.value else { return }
-      await transcriber.unload()
+      guard let instance = try? await loaded.loading.value else { return }
+      await Model.unload(instance)
       logger.info("Unloaded \(loaded.model.id, privacy: .public)")
     }
   }

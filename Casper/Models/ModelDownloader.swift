@@ -2,8 +2,8 @@ import CryptoKit
 import Foundation
 import Synchronization
 
-/// Downloads a speech model's files from Hugging Face, checking each against the checksum Hugging Face lists for it.
-enum SpeechModelDownloader {
+/// Downloads a model's files from Hugging Face, checking each against the checksum Hugging Face lists for it.
+enum ModelDownloader {
   enum DownloadError: Error {
     case badResponse(URL, statusCode: Int)
     case checksumMismatch(String)
@@ -14,7 +14,7 @@ enum SpeechModelDownloader {
   /// The files download into a separate folder that's moved into place once all of them are verified, so a model's
   /// directory only exists when it's complete.
   @concurrent
-  static func install(_ model: SpeechModel, progress: @escaping @Sendable (Double) -> Void) async throws {
+  static func install(_ model: some DownloadableModel, progress: @escaping @Sendable (Double) -> Void) async throws {
     let fileManager = FileManager.default
     let partial = model.directory.deletingLastPathComponent()
       .appending(
@@ -35,7 +35,7 @@ enum SpeechModelDownloader {
   }
 
   private static func download(
-    _ model: SpeechModel,
+    _ model: some DownloadableModel,
     to directory: URL,
     progress: @escaping @Sendable (Double) -> Void
   ) async throws {
@@ -70,7 +70,7 @@ enum SpeechModelDownloader {
     let lfs: LargeFile?
   }
 
-  private static func remoteFiles(of model: SpeechModel) async throws -> [RemoteFile] {
+  private static func remoteFiles(of model: some DownloadableModel) async throws -> [RemoteFile] {
     let url = URL(string: "https://huggingface.co/api/models/\(model.repository)/tree/\(model.revision)")?
       .appending(queryItems: [URLQueryItem(name: "recursive", value: "true")])
     guard let url else { throw URLError(.badURL) }
@@ -82,7 +82,7 @@ enum SpeechModelDownloader {
       }
   }
 
-  private static func url(of file: RemoteFile, in model: SpeechModel) throws -> URL {
+  private static func url(of file: RemoteFile, in model: some DownloadableModel) throws -> URL {
     guard
       let url = URL(string: "https://huggingface.co/\(model.repository)/resolve/\(model.revision)")?
         .appending(path: file.path, directoryHint: .notDirectory)
@@ -184,7 +184,7 @@ private final class Transfer: NSObject, URLSessionDownloadDelegate, Sendable {
     state.withLock { state in
       do {
         let url = downloadTask.originalRequest?.url ?? location
-        try SpeechModelDownloader.checkStatus(of: downloadTask.response, for: url)
+        try ModelDownloader.checkStatus(of: downloadTask.response, for: url)
         if let destination = state.destination {
           try FileManager.default.moveItem(at: location, to: destination)
         }
