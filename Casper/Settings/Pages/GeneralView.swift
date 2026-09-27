@@ -5,8 +5,6 @@ import SwiftUI
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
-  @AppStorage(KeepAlive.microphoneStorageKey) private var microphoneKeepAlive = KeepAlive.defaultValue
-  @AppStorage(KeepAlive.speechModelStorageKey) private var speechModelKeepAlive = KeepAlive.defaultValue
 
   var body: some View {
     Form {
@@ -19,11 +17,7 @@ struct GeneralView: View {
             Image(systemName: "mic")
           }
         }
-        Picker(selection: $microphoneKeepAlive) {
-          ForEach(KeepAlive.allCases) { option in
-            Text(option.title).tag(option)
-          }
-        } label: {
+        KeepAlivePicker(storageKey: KeepAlive.microphoneStorageKey) {
           Label {
             Text("Keep Microphone On")
             Text("How long the microphone stays on after your last dictation, to prevent recording delay.")
@@ -33,11 +27,7 @@ struct GeneralView: View {
         }
       }
       Section {
-        Picker(selection: $speechModelKeepAlive) {
-          ForEach(KeepAlive.allCases) { option in
-            Text(option.title).tag(option)
-          }
-        } label: {
+        KeepAlivePicker(storageKey: KeepAlive.speechModelStorageKey) {
           Label {
             Text("Speech Model Keep Alive")
             Text("How long the speech model stays in memory after your last dictation. Loading it again adds a delay.")
