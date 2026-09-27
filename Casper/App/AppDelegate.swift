@@ -8,9 +8,12 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
   private var dictation: DictationController?
+  private var voiceBubble: VoiceBubble?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    dictation = DictationController()
+    let dictation = DictationController()
+    self.dictation = dictation
+    voiceBubble = VoiceBubble(status: dictation.status)
     LaunchAtLogin.applyDefaultOnFirstLaunch()
     NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) {
       notification in

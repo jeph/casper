@@ -1,0 +1,98 @@
+import SwiftUI
+
+/// The recording's loudness as bars scrolling from the trailing edge, updated each frame from the audio level meter.
+///
+/// Audio arrives in chunks about a tenth of a second apart, so the bars trail it slightly to scroll evenly.
+struct VoiceWaveform: View {
+  let meter: AudioLevelMeter
+  /// When the recording started, which the bars are counted from.
+  let start: ContinuousClock.Instant
+  let size: CGSize
+
+  private static let barWidth: CGFloat = 3
+  private static let barSpacing: CGFloat = 3
+  /// The length of audio each bar shows, which sets how fast the bars scroll: slow enough to feel unhurried.
+  static let barSeconds = 0.12
+  /// How far the bars trail the audio, longer than the gap between chunks.
+  private static let delay = Duration.milliseconds(120)
+
+  var body: some View {
+    // The bars are passed in fresh each frame, because a canvas on glass only redraws when its inputs change.
+    TimelineView(.animation) { _ in
+      WaveformBars(bars: bars(at: ContinuousClock.now - Self.delay))
+    }
+    .frame(width: size.width, height: size.height)
+    .mask {
+      // Bars fade in at the trailing edge and out at the leading one, rather than being cut off.
+      LinearGradient(
+        stops: [
+          .init(color: .clear, location: 0), .init(color: .black, location: 0.25),
+          .init(color: .black, location: 0.92), .init(color: .clear, location: 1),
+        ],
+        startPoint: .leading,
+        endPoint: .trailing
+      )
+    }
+    .accessibilityHidden(true)
+  }
+
+  private func bars(at now: ContinuousClock.Instant) -> [CGRect] {
+    let step = Self.barWidth + Self.barSpacing
+    let position = (now - start).seconds / Self.barSeconds
+    let newestBar = Int(position.rounded(.down))
+    let barCount = Int(size.width / step) + 2
+    let levels = meter.levels(since: start + .seconds(Double(newestBar - barCount) * Self.barSeconds))
+    let loudest = levels.loudestForScaling
+    return (0..<barCount)
+      .map { age in
+        let bar = newestBar - age
+        let barStart = start + .seconds(Double(bar) * Self.barSeconds)
+        let level = bar < 0 ? 0 : levels.peak(from: barStart, to: barStart + .seconds(Self.barSeconds))
+        let scaled = Double(min(level / loudest, 1))
+        let height = Self.barWidth + (size.height - Self.barWidth) * CGFloat(pow(scaled, 0.8))
+        let centerX = size.width + step / 2 - (position - Double(bar)) * step
+        return CGRect(
+          x: centerX - Self.barWidth / 2,
+          y: (size.height - height) / 2,
+          width: Self.barWidth,
+          height: height
+        )
+      }
+  }
+}
+
+/// Rounded bars at the given positions, drawn with a canvas as the ghost is so glass shows them at full contrast.
+private struct WaveformBars: View {
+  let bars: [CGRect]
+
+  var body: some View {
+    Canvas { context, _ in
+      for bar in bars {
+        context.fill(Path(roundedRect: bar, cornerRadius: bar.width / 2), with: .foreground)
+      }
+    }
+  }
+}
+
+extension [AudioLevelMeter.Level] {
+  /// The amplitude to show as full height: the loudest of these levels, but no less than quiet speech, so silence and
+  /// room noise stay low while speech fills the height whatever the microphone's gain.
+  var loudestForScaling: Float {
+    Swift.max(lazy.map(\.value).max() ?? 0, 0.02)
+  }
+
+  /// The loudest level measured in the given time range, or 0 if none was.
+  func peak(from start: ContinuousClock.Instant, to end: ContinuousClock.Instant) -> Float {
+    var peak: Float = 0
+    for level in self where level.time >= start && level.time < end {
+      peak = Swift.max(peak, level.value)
+    }
+    return peak
+  }
+}
+
+extension Duration {
+  var seconds: Double {
+    Double(components.seconds) + Double(components.attoseconds) / 1e18
+  }
+}

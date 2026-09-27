@@ -69,7 +69,7 @@
       "comment" : "Button on the Voice Models page that stops a speech model download."
     },
     "Casper" : {
-      "comment" : "App name, used as the menu bar icon's accessibility label.",
+      "comment" : "App name, used as the accessibility label of the menu bar icon and the voice bubble.",
       "shouldTranslate" : false
     },
     "Casper is turned off in Login Items in System Settings." : {
@@ -117,6 +117,9 @@
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
     },
+    "Listening" : {
+      "comment" : "Accessibility value of the voice bubble while the dictation shortcut is held."
+    },
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
     },
@@ -143,6 +146,9 @@
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
+    },
+    "Ready" : {
+      "comment" : "Accessibility value of the voice bubble when Casper isn't dictating."
     },
     "Recommended" : {
       "comment" : "Badge on the Voice Models page marking the speech models Casper suggests."
@@ -173,6 +179,9 @@
     },
     "The shortcut used to start dictation." : {
       "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
+    },
+    "Transcribing" : {
+      "comment" : "Accessibility value of the voice bubble while a recording is being transcribed."
     },
     "Try Again" : {
       "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."
