@@ -69,13 +69,35 @@ actor TranscriptRefiner {
     // A cleaned-up transcript is rarely longer than the transcript, so a model still writing past twice its length has
     // started answering it or repeating itself.
     let transcriptLength = context.tokenizer.encode(text: transcript, addSpecialTokens: false).count
-    let parameters = GenerateParameters(maxTokens: max(64, 2 * transcriptLength), temperature: 0)
-    let stream = try generate(
-      input: LMInput(tokens: MLXArray(Array(unread))),
-      cache: continuesPrompt ? loaded.promptCache.map { $0.copy() } : nil,
-      parameters: parameters,
-      context: context
-    )
+    let maxTokens = max(64, 2 * transcriptLength)
+    let input = LMInput(tokens: MLXArray(Array(unread)))
+    let cache = continuesPrompt ? loaded.promptCache.map { $0.copy() } : context.model.newCache(parameters: nil)
+    let stream: AsyncStream<Generation>
+    // Guessing ahead needs a cache that can drop wrong guesses, which caches of models that mix in other layers than
+    // attention, like Qwen3.5's, can't, so those models write one token per pass.
+    if canTrimPromptCache(cache) {
+      let iterator = try PromptLookupTokenIterator(
+        input: input,
+        prompt: tokens,
+        model: context.model,
+        cache: cache,
+        sampler: ArgMaxSampler(),
+        maxTokens: maxTokens
+      )
+      (stream, _) = generateTask(
+        promptTokenCount: unread.count,
+        modelConfiguration: context.configuration,
+        tokenizer: context.tokenizer,
+        iterator: iterator
+      )
+    } else {
+      stream = try generate(
+        input: input,
+        cache: cache,
+        parameters: GenerateParameters(maxTokens: maxTokens, temperature: 0),
+        context: context
+      )
+    }
     var output = ""
     var stopReason: GenerateStopReason?
     for await generation in stream {
