@@ -5,16 +5,16 @@
       "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
     },
     "1 Minute" : {
-      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
     "10 Minutes" : {
-      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
     "15 Minutes" : {
-      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
     "5 Minutes" : {
-      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: how long the microphone stays on, or the speech model stays loaded, after a dictation."
     },
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
@@ -29,7 +29,7 @@
       "comment" : "Status in Settings > Permissions when the app has been granted a permission, such as microphone or accessibility access."
     },
     "Always" : {
-      "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper is running."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: the microphone stays on, or the speech model stays loaded, the whole time Casper runs."
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
@@ -56,6 +56,9 @@
     "How long the microphone stays on after your last dictation, to prevent recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always."
     },
+    "How long the speech model stays in memory after your last dictation. Loading it again adds a delay." : {
+      "comment" : "Description of the Speech Model Keep Alive setting, whose options are Never, a number of minutes, or Always."
+    },
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
     },
@@ -69,7 +72,7 @@
       "comment" : "Row title in Settings > Permissions."
     },
     "Never" : {
-      "comment" : "Option in the Keep Microphone On setting: the microphone turns off as soon as a dictation ends."
+      "comment" : "Option in the Keep Microphone On and Speech Model Keep Alive settings: the microphone turns off, or the speech model unloads, as soon as a dictation ends."
     },
     "Open Casper automatically when you log in to your Mac." : {
       "comment" : "Explanation under the Start at Login toggle in Settings > General."
@@ -94,6 +97,9 @@
     },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
+    },
+    "Speech Model Keep Alive" : {
+      "comment" : "Setting for how long the speech-to-text model stays loaded in memory after a dictation."
     },
     "Start at Login" : {
       "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."

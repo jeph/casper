@@ -5,4 +5,7 @@
 protocol Transcriber: Sendable {
   /// Transcribes mono audio, returning the text without surrounding whitespace.
   func transcribe(_ samples: [Float], sampleRate: Double) async throws -> String
+
+  /// Frees the memory the model uses. The transcriber can't be used afterward.
+  func unload() async
 }
