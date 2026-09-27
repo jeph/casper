@@ -80,9 +80,18 @@ struct VoiceBubbleView: View {
 
   private var ghost: some View {
     TimelineView(.animation(paused: status.phase == .idle)) { timeline in
-      GhostLogo(barLevels: barLevels(at: timeline.date), barFill: status.phase == .recording ? .accentColor : nil)
+      GhostLogo(barLevels: barLevels(at: timeline.date), barFill: barFill)
         .frame(height: Self.ghostHeight)
         .opacity(status.phase == .transcribing && reduceMotion ? fadingOpacity(at: timeline.date) : 1)
+    }
+  }
+
+  /// Red while recording, and blue while the model transcribes; the logo's own cut-out bars otherwise.
+  private var barFill: Color? {
+    switch status.phase {
+    case .idle: nil
+    case .recording: .red
+    case .transcribing: .blue
     }
   }
 
