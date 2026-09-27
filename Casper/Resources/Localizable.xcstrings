@@ -81,6 +81,12 @@
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
     },
+    "Delete" : {
+      "comment" : "Button on the Voice Models page that deletes a downloaded speech model, and the confirming button in the dialog that asks first."
+    },
+    "Delete %@?" : {
+      "comment" : "Title of the confirmation before deleting a downloaded speech model."
+    },
     "Dictation Shortcut" : {
       "comment" : "Row title in Settings > General for the keyboard shortcut that starts dictation."
     },
@@ -101,6 +107,9 @@
     },
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
+    },
+    "Its files are removed from this Mac. You can download it again later." : {
+      "comment" : "Message in the confirmation before deleting a downloaded speech model."
     },
     "Keep Microphone On" : {
       "comment" : "Setting that keeps the microphone on after a dictation."

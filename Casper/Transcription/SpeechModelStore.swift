@@ -58,6 +58,19 @@ final class SpeechModelStore {
     tasks[model.id]?.cancel()
   }
 
+  /// Deletes an installed model's files, unless it's the active model.
+  func delete(_ model: SpeechModel) {
+    guard installed.contains(model.id), SpeechModel.active?.id != model.id else { return }
+    do {
+      try FileManager.default.removeItem(at: model.directory)
+    } catch {
+      Self.logger.error("Couldn't delete \(model.id, privacy: .public): \(error)")
+      return
+    }
+    Self.logger.info("Deleted \(model.id, privacy: .public)")
+    installed.remove(model.id)
+  }
+
   private func updateProgress(of model: SpeechModel, to fraction: Double) {
     // Updates can arrive out of order, and after the download finished or was cancelled.
     guard case .downloading(let progress) = downloads[model.id], fraction > progress else { return }
