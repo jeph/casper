@@ -187,6 +187,8 @@ final class DictationController {
         }
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
+        // Later dictations wait for this one, so it still waits for the previous one to keep them in order.
+        await previous?.value
       }
     }
   }
