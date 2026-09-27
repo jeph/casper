@@ -20,16 +20,6 @@ struct GeneralView: View {
             Image(systemName: "mic")
           }
         }
-        KeepAlivePicker(storageKey: KeepAlive.microphoneStorageKey) {
-          Label {
-            Text("Keep Microphone On")
-            Text("How long the microphone stays on after your last dictation, to prevent recording delay.")
-          } icon: {
-            Image(systemName: "timer")
-          }
-        }
-      }
-      Section {
         Toggle(isOn: $refinesTranscripts) {
           Label {
             Text("Refine Transcripts")
@@ -38,38 +28,6 @@ struct GeneralView: View {
             Image(systemName: "wand.and.sparkles")
           }
         }
-        KeepAlivePicker(storageKey: KeepAlive.modelStorageKey) {
-          Label {
-            Text("Keep Model Alive")
-            Text(
-              "How long the speech and refine models stay in memory after your last dictation. Loading them again adds a delay."
-            )
-          } icon: {
-            Image(systemName: "memorychip")
-          }
-        }
-      }
-      Section {
-        Toggle(isOn: launchAtLogin) {
-          Label {
-            Text("Start at Login")
-            Text("Open Casper automatically when you log in to your Mac.")
-          } icon: {
-            Image(systemName: "power")
-          }
-        }
-        if launchAtLoginStatus == .requiresApproval {
-          LabeledContent {
-            Button("Open Login Items") {
-              SMAppService.openSystemSettingsLoginItems()
-            }
-          } label: {
-            Text("Casper is turned off in Login Items in System Settings.")
-              .foregroundStyle(.secondary)
-          }
-        }
-      }
-      Section {
         LabeledContent {
           HStack {
             if dictationHotkey != .dictationDefault {
@@ -90,6 +48,26 @@ struct GeneralView: View {
             Image(systemName: "keyboard")
           }
         }
+      }
+      Section {
+        KeepAlivePicker(storageKey: KeepAlive.microphoneStorageKey) {
+          Label {
+            Text("Keep Microphone On")
+            Text("How long the mic stays on after your last dictation. Mic reactivation adds a recording delay.")
+          } icon: {
+            Image(systemName: "timer")
+          }
+        }
+        KeepAlivePicker(storageKey: KeepAlive.modelStorageKey) {
+          Label {
+            Text("Keep Model Alive")
+            Text("How long a model stays in memory after your last dictation. Loading into memory adds a small delay.")
+          } icon: {
+            Image(systemName: "memorychip")
+          }
+        }
+      }
+      Section {
         Toggle(isOn: $showsVoiceBubble) {
           Label {
             Text("Show Voice Bubble")
@@ -121,6 +99,26 @@ struct GeneralView: View {
           }
         }
         .disabled(!showsVoiceBubble)
+      }
+      Section {
+        Toggle(isOn: launchAtLogin) {
+          Label {
+            Text("Start at Login")
+            Text("Open Casper automatically when you log in to your Mac.")
+          } icon: {
+            Image(systemName: "power")
+          }
+        }
+        if launchAtLoginStatus == .requiresApproval {
+          LabeledContent {
+            Button("Open Login Items") {
+              SMAppService.openSystemSettingsLoginItems()
+            }
+          } label: {
+            Text("Casper is turned off in Login Items in System Settings.")
+              .foregroundStyle(.secondary)
+          }
+        }
       }
     }
     .formStyle(.grouped)
