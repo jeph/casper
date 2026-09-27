@@ -17,6 +17,8 @@ final class AudioRecorder {
 
   /// The sample rate, in hertz, of the recorded samples.
   let sampleRate: Double
+  /// The loudness of the recording in progress.
+  let meter = AudioLevelMeter()
 
   /// The open microphone: its engine, the device it uses (`nil` for the system default), the capture its audio goes
   /// to, and the observer that rebuilds the engine when the audio configuration changes.
@@ -87,7 +89,7 @@ final class AudioRecorder {
       let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
     else { throw RecordingError.unsupportedFormat(inputFormat) }
     converter.downmix = true
-    let capture = Capture(converter: converter)
+    let capture = Capture(converter: converter, meter: meter)
     input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat, block: capture.tapBlock())
     return capture
   }
@@ -169,9 +171,11 @@ private final class Capture: Sendable {
   }
 
   private let state: Mutex<State>
+  private let meter: AudioLevelMeter
 
-  init(converter: sending AVAudioConverter) {
+  init(converter: sending AVAudioConverter, meter: AudioLevelMeter) {
     state = Mutex(State(converter: converter))
+    self.meter = meter
   }
 
   var isRecording: Bool {
@@ -185,6 +189,9 @@ private final class Capture: Sendable {
 
   /// Starts recording, after any samples already recorded on an engine this one replaced.
   func begin(continuing samples: [Float] = []) {
+    if samples.isEmpty {
+      meter.reset()
+    }
     state.withLock { state in
       // Clears the resampler's memory of audio from before this recording.
       state.converter.reset()
@@ -222,7 +229,9 @@ private final class Capture: Sendable {
         return buffer
       }
       guard error == nil, let channel = output.floatChannelData?[0] else { return }
-      state.samples?.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(output.frameLength)))
+      let converted = UnsafeBufferPointer(start: channel, count: Int(output.frameLength))
+      state.samples?.append(contentsOf: converted)
+      meter.measure(converted, sampleRate: outputFormat.sampleRate)
     }
   }
 }
