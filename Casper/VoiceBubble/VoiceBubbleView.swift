@@ -88,21 +88,30 @@ struct VoiceBubbleView: View {
 
   /// The ghost's bar heights for the current phase, or `nil` for the logo's own.
   ///
-  /// While recording, each bar follows the voice a moment apart, in step with the waveform's newest bar. While
-  /// transcribing, the bars rise and fall in turn.
+  /// While recording, each bar glides between the heights of the waveform's latest full bars, a bar apart from the
+  /// next, so they share the waveform's peaks and valleys at its calmer pace. While transcribing, the bars rise and
+  /// fall in turn.
   private func barLevels(at date: Date) -> [Double]? {
     switch status.phase {
     case .idle:
       return nil
     case .recording:
-      let now = ContinuousClock.now - .milliseconds(120)
-      let barDuration = Duration.seconds(VoiceWaveform.barSeconds)
+      let now = ContinuousClock.now - VoiceWaveform.delay
+      let position = (now - recordingStart).seconds / VoiceWaveform.barSeconds
+      let newestBar = Int(position.rounded(.down))
+      let progress = position - Double(newestBar)
+      // Eases in and out of each height rather than moving at a constant speed.
+      let glide = progress * progress * (3 - 2 * progress)
       let levels = status.meter.levels(since: now - .seconds(2))
       let loudest = levels.loudestForScaling
+      func level(_ bar: Int) -> Double {
+        VoiceWaveform.level(ofBar: bar, start: recordingStart, levels: levels, loudest: loudest)
+      }
+      // The newest bar is still filling, so the ghost follows the full bars before it.
       return [2, 0, 1]
         .map { slot in
-          let end = now - barDuration * slot
-          return Double(min(levels.peak(from: end - barDuration, to: end) / loudest, 1))
+          let bar = newestBar - 1 - slot
+          return level(bar - 1) + (level(bar) - level(bar - 1)) * glide
         }
     case .transcribing:
       guard !reduceMotion else { return nil }

@@ -14,7 +14,7 @@ struct VoiceWaveform: View {
   /// The length of audio each bar shows, which sets how fast the bars scroll: slow enough to feel unhurried.
   static let barSeconds = 0.12
   /// How far the bars trail the audio, longer than the gap between chunks.
-  private static let delay = Duration.milliseconds(120)
+  static let delay = Duration.milliseconds(120)
 
   var body: some View {
     // The bars are passed in fresh each frame, because a canvas on glass only redraws when its inputs change.
@@ -46,9 +46,7 @@ struct VoiceWaveform: View {
     return (0..<barCount)
       .map { age in
         let bar = newestBar - age
-        let barStart = start + .seconds(Double(bar) * Self.barSeconds)
-        let level = bar < 0 ? 0 : levels.peak(from: barStart, to: barStart + .seconds(Self.barSeconds))
-        let scaled = Double(min(level / loudest, 1))
+        let scaled = Self.level(ofBar: bar, start: start, levels: levels, loudest: loudest)
         let height = Self.barWidth + (size.height - Self.barWidth) * CGFloat(pow(scaled, 0.8))
         let centerX = size.width + step / 2 - (position - Double(bar)) * step
         return CGRect(
@@ -58,6 +56,18 @@ struct VoiceWaveform: View {
           height: height
         )
       }
+  }
+
+  /// The loudest level in a bar's stretch of audio, relative to the loudest recent level, from 0 to 1.
+  static func level(
+    ofBar bar: Int,
+    start: ContinuousClock.Instant,
+    levels: [AudioLevelMeter.Level],
+    loudest: Float
+  ) -> Double {
+    guard bar >= 0 else { return 0 }
+    let barStart = start + .seconds(Double(bar) * barSeconds)
+    return Double(min(levels.peak(from: barStart, to: barStart + .seconds(barSeconds)) / loudest, 1))
   }
 }
 
