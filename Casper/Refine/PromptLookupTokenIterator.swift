@@ -17,7 +17,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
   /// are more often wrong past their first tokens.
   private static let mostGuesses = 2
 
-  private let model: any LanguageModel
+  private let model: any MLXLMCommon.LanguageModel
   private let cache: [KVCache]
   private var state: LMOutput.State?
   private let sampler: LogitSampler
@@ -36,7 +36,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
   init(
     input: LMInput,
     prompt: [Int],
-    model: any LanguageModel,
+    model: any MLXLMCommon.LanguageModel,
     cache: [KVCache],
     sampler: LogitSampler,
     maxTokens: Int?

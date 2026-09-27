@@ -1,15 +1,13 @@
 import Foundation
 import MLX
-import MLXLLM
 import MLXLMCommon
 
-/// Cleans up transcripts with the language model bundled into Casper, following `RefinePrompt`.
+/// Cleans up transcripts with a language model, following `RefinePrompt`.
 ///
 /// Every prompt starts with the same system prompt, so the model reads it once as it loads, and each transcript
 /// continues from a copy of that state instead of reading the system prompt again.
 actor TranscriptRefiner {
   enum RefineError: Error {
-    case missingModel
     case unloaded
     /// The model reached its token limit, so its output would be cut off.
     case incomplete
@@ -25,7 +23,6 @@ actor TranscriptRefiner {
 
   /// The `UserDefaults` key for whether transcripts are refined, on unless turned off.
   static let enabledStorageKey = "refinesTranscripts"
-  private static let modelName = "Qwen3-4B-Instruct-2507-4bit"
 
   static var isEnabled: Bool {
     UserDefaults.standard.object(forKey: enabledStorageKey) as? Bool ?? true
@@ -33,7 +30,8 @@ actor TranscriptRefiner {
 
   private var loaded: Loaded?
 
-  private init(context: sending ModelContext) throws {
+  /// Reads the system prompt with a loaded model.
+  init(context: sending ModelContext) throws {
     let tokenizer = context.tokenizer
     // Prompts for two different transcripts share everything before the transcript.
     let first = try Self.promptTokens(for: "a", tokenizer: tokenizer)
@@ -49,13 +47,6 @@ actor TranscriptRefiner {
       eval(cache)
     }
     loaded = Loaded(context: context, promptTokens: tokens, promptCache: cache)
-  }
-
-  /// Loads the bundled model and reads the system prompt.
-  static func load() async throws -> TranscriptRefiner {
-    guard let url = Bundle.main.url(forResource: modelName, withExtension: nil) else { throw RefineError.missingModel }
-    let context = try await LLMModelFactory.shared.load(from: url, using: TransformersTokenizerLoader())
-    return try TranscriptRefiner(context: context)
   }
 
   /// Returns the cleaned-up transcript, which is empty if the transcript was only filler words.

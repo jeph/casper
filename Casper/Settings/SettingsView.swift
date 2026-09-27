@@ -20,6 +20,8 @@ struct SettingsView: View {
         GeneralView()
       case .voiceModels:
         VoiceModelsView()
+      case .languageModels:
+        LanguageModelsView()
       case .permissions:
         PermissionsView()
       case nil:
@@ -33,6 +35,7 @@ struct SettingsView: View {
 private enum SettingsPane: CaseIterable, Identifiable {
   case general
   case voiceModels
+  case languageModels
   case permissions
 
   var id: Self { self }
@@ -41,6 +44,7 @@ private enum SettingsPane: CaseIterable, Identifiable {
     switch self {
     case .general: "General"
     case .voiceModels: "Voice Models"
+    case .languageModels: "Language Models"
     case .permissions: "Permissions"
     }
   }
@@ -49,6 +53,7 @@ private enum SettingsPane: CaseIterable, Identifiable {
     switch self {
     case .general: "gearshape"
     case .voiceModels: "waveform"
+    case .languageModels: "text.bubble"
     case .permissions: "hand.raised"
     }
   }

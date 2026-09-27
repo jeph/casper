@@ -16,7 +16,7 @@ struct ModelRow<Model: DownloadableModel>: View {
         if model.isRecommended {
           Text(
             "Recommended",
-            comment: "Badge on the Voice Models page marking the models Casper suggests."
+            comment: "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
           )
           .font(.caption)
           .foregroundStyle(.tint)
@@ -28,7 +28,7 @@ struct ModelRow<Model: DownloadableModel>: View {
       Text(
         "\(Text(model.languages)) · \(Text(model.downloadSize, format: .byteCount(style: .file)))",
         comment:
-          "Details of a model on the Voice Models page: its languages, then its download size."
+          "Details of a model on the Voice Models and Language Models pages: its languages, then its download size."
       )
     }
     .confirmationDialog(

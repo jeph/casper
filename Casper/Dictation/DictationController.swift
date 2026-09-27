@@ -9,7 +9,7 @@ final class DictationController {
   /// What dictation is doing, for the voice bubble.
   let status: DictationStatus
   private let speechModel: ModelLoader<SpeechModel>
-  private let refineModel: RefineModelLoader
+  private let languageModel: ModelLoader<LanguageModel>
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
   private let modelKeepAlive: KeepAliveSchedule
@@ -22,8 +22,9 @@ final class DictationController {
   private var undelivered: [Int: String] = [:]
   /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
-  /// The active speech model's ID, compared against the stored one when settings change.
-  private var activeModelID = SpeechModel.active?.id
+  /// The active models' IDs, compared against the stored ones when settings change.
+  private var activeSpeechModelID = SpeechModel.active?.id
+  private var activeLanguageModelID = LanguageModel.active?.id
   /// The refine setting in effect, compared against the stored one when settings change.
   private var refinesTranscripts = TranscriptRefiner.isEnabled
   /// Whether the recording in progress will be refined, decided when it starts so its model loads while the user speaks.
@@ -38,10 +39,10 @@ final class DictationController {
   init() {
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     let speechModel = ModelLoader<SpeechModel>()
-    let refineModel = RefineModelLoader()
+    let languageModel = ModelLoader<LanguageModel>()
     self.recorder = recorder
     self.speechModel = speechModel
-    self.refineModel = refineModel
+    self.languageModel = languageModel
     status = DictationStatus(meter: recorder.meter)
     microphoneKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.microphoneStorageKey,
@@ -58,20 +59,20 @@ final class DictationController {
       },
       release: { recorder.close() }
     )
-    // The speech and refine models share one keep-alive setting, since each dictation needs both.
+    // The speech and language models share one keep-alive setting, since each dictation needs both.
     modelKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.modelStorageKey,
-      isInUse: { speechModel.isInUse || refineModel.isInUse },
-      isPrepared: { speechModel.isLoaded || refineModel.isLoaded },
+      isInUse: { speechModel.isInUse || languageModel.isInUse },
+      isPrepared: { speechModel.isLoaded || languageModel.isLoaded },
       prepare: {
         speechModel.load()
         if TranscriptRefiner.isEnabled {
-          refineModel.load()
+          languageModel.load()
         }
       },
       release: {
         speechModel.unload()
-        refineModel.unload()
+        languageModel.unload()
       }
     )
     hotkey = GlobalHotkey(
@@ -81,29 +82,33 @@ final class DictationController {
     NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
       [weak self] _ in
       MainActor.assumeIsolated {
-        self?.activeModelMayHaveChanged()
+        self?.activeModelsMayHaveChanged()
         self?.refineSettingMayHaveChanged()
       }
     }
   }
 
-  /// Unloads the previous model once nothing is using it, and loads the new one if its keep-alive setting says to.
-  private func activeModelMayHaveChanged() {
-    let id = SpeechModel.active?.id
-    guard id != activeModelID else { return }
-    activeModelID = id
+  /// Unloads previous models once nothing is using them, and loads new ones if the keep-alive setting says to.
+  private func activeModelsMayHaveChanged() {
+    let speechModelID = SpeechModel.active?.id
+    let languageModelID = LanguageModel.active?.id
+    guard speechModelID != activeSpeechModelID || languageModelID != activeLanguageModelID else { return }
+    activeSpeechModelID = speechModelID
+    activeLanguageModelID = languageModelID
     speechModel.unloadIfInactive()
+    languageModel.unloadIfInactive()
     modelKeepAlive.apply()
   }
 
-  /// Unloads the refine model once nothing is using it if refining was turned off, and loads it if it was turned on and
-  /// the keep-alive setting says to.
+  /// Unloads the language model once nothing is using it if refining was turned off, and loads it if it was turned on
+  /// and the keep-alive setting says to.
   private func refineSettingMayHaveChanged() {
     let enabled = TranscriptRefiner.isEnabled
     guard enabled != refinesTranscripts else { return }
     refinesTranscripts = enabled
-    if !enabled {
-      refineModel.unload()
+    // A dictation using the model unloads it when it's done.
+    if !enabled, !languageModel.isInUse {
+      languageModel.unload()
     }
     modelKeepAlive.apply()
   }
@@ -151,9 +156,9 @@ final class DictationController {
     }
     status.isRecording = true
     speechModel.beginUse()
-    refinesRecording = TranscriptRefiner.isEnabled
+    refinesRecording = TranscriptRefiner.isEnabled && LanguageModel.active != nil
     if refinesRecording {
-      refineModel.beginUse()
+      languageModel.beginUse()
     }
     modelKeepAlive.useStarted()
   }
@@ -165,7 +170,7 @@ final class DictationController {
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
       if refinesRecording {
-        endRefineModelUse()
+        endLanguageModelUse()
       }
       endSpeechModelUse()
       return
@@ -180,7 +185,7 @@ final class DictationController {
       defer {
         status.transcriptionsInProgress -= 1
         if refines {
-          endRefineModelUse()
+          endLanguageModelUse()
         }
       }
       var text = ""
@@ -228,7 +233,7 @@ final class DictationController {
     guard !transcript.isEmpty else { return transcript }
     let start = ContinuousClock.now
     do {
-      let text = try await refineModel.load().value.refine(transcript)
+      let text = try await languageModel.model().value.refine(transcript)
       Self.logger.info("Refined the transcript in \(ContinuousClock.now - start, privacy: .public)")
       return text
     } catch {
@@ -242,10 +247,10 @@ final class DictationController {
     modelKeepAlive.apply()
   }
 
-  private func endRefineModelUse() {
-    refineModel.endUse()
-    if !TranscriptRefiner.isEnabled {
-      refineModel.unload()
+  private func endLanguageModelUse() {
+    languageModel.endUse()
+    if !TranscriptRefiner.isEnabled, !languageModel.isInUse {
+      languageModel.unload()
     }
     modelKeepAlive.apply()
   }

@@ -36,9 +36,6 @@ targets:
     platform: macOS
     sources:
       - Casper
-      - path: Models/Qwen3-4B-Instruct-2507-4bit
-        type: folder
-        buildPhase: resources
     dependencies:
       - package: SpeechSwift
         product: Qwen3ASR

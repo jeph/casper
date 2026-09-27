@@ -16,7 +16,7 @@
       "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
     },
     "%@ · %@" : {
-      "comment" : "Details of a model on the Voice Models page: its languages, then its download size.",
+      "comment" : "Details of a model on the Voice Models and Language Models pages: its languages, then its download size.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32,8 +32,14 @@
     "10 Minutes" : {
       "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
     },
+    "119 languages and dialects" : {
+      "comment" : "The languages the Qwen3 language models understand, shown on the Language Models page."
+    },
     "15 Minutes" : {
       "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
+    },
+    "201 languages and dialects" : {
+      "comment" : "The languages the Qwen3.5 and Qwen3.8 language models understand, shown on the Language Models page."
     },
     "25 European languages" : {
       "comment" : "The languages the Parakeet speech model transcribes, shown on the Voice Models page."
@@ -126,6 +132,9 @@
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
     },
+    "Language Models" : {
+      "comment" : "Title of the settings page for downloading and choosing the language models that refine transcripts."
+    },
     "Listening" : {
       "comment" : "Accessibility value of the voice bubble while the dictation shortcut is held."
     },
@@ -160,7 +169,7 @@
       "comment" : "Accessibility value of the voice bubble when Casper isn't dictating."
     },
     "Recommended" : {
-      "comment" : "Badge on the Voice Models page marking the models Casper suggests."
+      "comment" : "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
     },
     "Refine Transcripts" : {
       "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
