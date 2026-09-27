@@ -17,9 +17,9 @@ actor TranscriptRefiner {
 
   private struct Loaded {
     let context: ModelContext
-    /// The prompt for an empty transcript, which every prompt shares up to where the transcript goes.
+    /// The start of the prompt, which every transcript's prompt shares.
     let promptTokens: [Int]
-    /// The model's state after reading `promptTokens`.
+    /// The model's state after reading `promptTokens`, copied for each transcript.
     let promptCache: [KVCache]
   }
 
@@ -34,10 +34,20 @@ actor TranscriptRefiner {
   private var loaded: Loaded?
 
   private init(context: sending ModelContext) throws {
-    let tokens = try Self.promptTokens(for: "", tokenizer: context.tokenizer)
+    let tokenizer = context.tokenizer
+    // Prompts for two different transcripts share everything before the transcript.
+    let first = try Self.promptTokens(for: "a", tokenizer: tokenizer)
+    let second = try Self.promptTokens(for: "b", tokenizer: tokenizer)
+    let shared = zip(first, second).prefix { $0 == $1 }.count
+    // A transcript's first characters can merge with the text before them into different tokens, but never with a
+    // special token, so the cached start ends at the last special token before the transcript.
+    let end = first[..<shared].lastIndex { Self.isSpecial($0, tokenizer: tokenizer) }.map { $0 + 1 } ?? 0
+    let tokens = Array(first[..<end])
     let cache = context.model.newCache(parameters: nil)
-    _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
-    eval(cache)
+    if !tokens.isEmpty {
+      _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
+      eval(cache)
+    }
     loaded = Loaded(context: context, promptTokens: tokens, promptCache: cache)
   }
 
@@ -53,25 +63,16 @@ actor TranscriptRefiner {
     guard let loaded else { throw RefineError.unloaded }
     let context = loaded.context
     let tokens = try Self.promptTokens(for: transcript, tokenizer: context.tokenizer)
-    // The tokens where the transcript starts can differ from the empty transcript's, so only the matching start of the
-    // cached prompt is kept. At least one token is left for the model to read, since reading produces the next token.
-    let matching = min(zip(loaded.promptTokens, tokens).prefix { $0 == $1 }.count, tokens.count - 1)
-    let cache = loaded.promptCache.map { $0.copy() }
-    let unread: ArraySlice<Int>
-    if matching == loaded.promptTokens.count || canTrimPromptCache(cache) {
-      trimPromptCache(cache, numTokens: loaded.promptTokens.count - matching)
-      unread = tokens[matching...]
-    } else {
-      unread = tokens[...]
-    }
-    let reusesCache = unread.count < tokens.count
+    // A chat template could render the start differently for some transcripts, and then the whole prompt is read.
+    let continuesPrompt = tokens.starts(with: loaded.promptTokens)
+    let unread = continuesPrompt ? tokens[loaded.promptTokens.count...] : tokens[...]
     // A cleaned-up transcript is rarely longer than the transcript, so a model still writing past twice its length has
     // started answering it or repeating itself.
     let transcriptLength = context.tokenizer.encode(text: transcript, addSpecialTokens: false).count
     let parameters = GenerateParameters(maxTokens: max(64, 2 * transcriptLength), temperature: 0)
     let stream = try generate(
       input: LMInput(tokens: MLXArray(Array(unread))),
-      cache: reusesCache ? cache : nil,
+      cache: continuesPrompt ? loaded.promptCache.map { $0.copy() } : nil,
       parameters: parameters,
       context: context
     )
@@ -106,5 +107,11 @@ actor TranscriptRefiner {
       // refining much slower. Templates without a thinking mode ignore it.
       additionalContext: ["enable_thinking": false]
     )
+  }
+
+  /// Whether a token is a special token, such as one that starts or ends a message, which decoding can leave out.
+  private static func isSpecial(_ token: Int, tokenizer: any MLXLMCommon.Tokenizer) -> Bool {
+    tokenizer.decode(tokenIds: [token], skipSpecialTokens: true).isEmpty
+      && !tokenizer.decode(tokenIds: [token], skipSpecialTokens: false).isEmpty
   }
 }
