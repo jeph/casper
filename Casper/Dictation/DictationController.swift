@@ -6,6 +6,8 @@ import OSLog
 final class DictationController {
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Dictation")
 
+  /// What dictation is doing, for the voice bubble.
+  let status: DictationStatus
   private let speechModel: SpeechModelLoader
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
@@ -29,6 +31,7 @@ final class DictationController {
     let speechModel = SpeechModelLoader()
     self.recorder = recorder
     self.speechModel = speechModel
+    status = DictationStatus(meter: recorder.meter)
     microphoneKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.microphoneStorageKey,
       isInUse: { recorder.isRecording },
@@ -111,6 +114,7 @@ final class DictationController {
       Self.logger.error("Couldn't start recording: \(error)")
       return
     }
+    status.isRecording = true
     speechModel.beginUse()
     speechModelKeepAlive.useStarted()
   }
@@ -118,13 +122,16 @@ final class DictationController {
   private func finishRecording() {
     guard recorder.isRecording else { return }
     let samples = recorder.stop()
+    status.isRecording = false
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
       endSpeechModelUse()
       return
     }
+    status.transcriptionsInProgress += 1
     let previous = latestTranscription
     latestTranscription = Task {
+      defer { status.transcriptionsInProgress -= 1 }
       do {
         let text = try await transcribe(samples)
         await previous?.value
