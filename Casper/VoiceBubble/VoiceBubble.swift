@@ -31,10 +31,7 @@ final class VoiceBubble {
     }
     center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) {
       [weak self] _ in
-      MainActor.assumeIsolated {
-        self?.panel.isBeingDragged = false
-        self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter)
-      }
+      MainActor.assumeIsolated { self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter) }
     }
     center.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
       MainActor.assumeIsolated {
@@ -82,10 +79,6 @@ final class VoiceBubble {
   /// does pulling the bubble on screen, and neither should replace where the user put it.
   private func panelMoved() {
     guard panel.isBeingDragged, !isPlacing else { return }
-    // The last move of a drag can arrive after the button is released, since the window server runs the drag.
-    if NSEvent.pressedMouseButtons & 1 == 0 {
-      panel.isBeingDragged = false
-    }
     move(toCenter: ghostCenter)
     UserDefaults.standard.set(NSStringFromPoint(ghostCenter), forKey: Self.centerStorageKey)
   }
@@ -155,16 +148,38 @@ private final class VoiceBubblePanel: NSPanel {
   override var canBecomeKey: Bool { false }
   override var canBecomeMain: Bool { false }
 
-  /// Set when the bubble is pressed, which starts a drag, and cleared by its owner once a move shows it has ended.
-  var isBeingDragged = false
+  /// Whether the bubble is being dragged: from a press until just after the button is released, even if it didn't move.
+  private(set) var isBeingDragged = false
+  private var dragEnd: Task<Void, Never>?
 
   /// Any press on the bubble drags it; the window server moves the panel, so Casper doesn't activate.
   override func sendEvent(_ event: NSEvent) {
     if event.type == .leftMouseDown {
       isBeingDragged = true
       performDrag(with: event)
+      endDragAfterRelease()
     } else {
       super.sendEvent(event)
+    }
+  }
+
+  /// Ends the drag a moment after the button is released.
+  ///
+  /// The window server runs the drag and may not send the mouse-up, so the button is checked instead. The drag's last
+  /// move can arrive just after the release, so the drag ends a little later to still save it.
+  private func endDragAfterRelease() {
+    dragEnd?.cancel()
+    dragEnd = Task { [weak self] in
+      do {
+        while NSEvent.pressedMouseButtons & 1 != 0 {
+          try await Task.sleep(for: .milliseconds(50))
+        }
+        try await Task.sleep(for: .milliseconds(250))
+      } catch {
+        return
+      }
+      guard !Task.isCancelled else { return }
+      self?.isBeingDragged = false
     }
   }
 }
