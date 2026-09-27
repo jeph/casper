@@ -14,8 +14,12 @@ final class DictationController {
   private let microphoneKeepAlive: KeepAliveSchedule
   private let speechModelKeepAlive: KeepAliveSchedule
   private var hotkey: GlobalHotkey?
-  /// The latest transcription, which the next one waits for so transcripts are typed in the order they were spoken.
-  private var latestTranscription: Task<Void, Never>?
+  /// The number the next finished recording gets, counting up in the order recordings were made.
+  private var nextDictation = 0
+  /// The number of the earliest dictation whose text hasn't been typed yet.
+  private var nextDelivery = 0
+  /// Text of dictations that finished before an earlier one, waiting to be typed in order, by dictation number.
+  private var undelivered: [Int: String] = [:]
   /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
   /// The active speech model's ID, compared against the stored one when settings change.
@@ -167,29 +171,43 @@ final class DictationController {
       return
     }
     status.transcriptionsInProgress += 1
-    let previous = latestTranscription
+    let dictation = nextDictation
+    nextDictation += 1
     let refines = refinesRecording
-    latestTranscription = Task {
+    // Each dictation is transcribed and refined as soon as it can be, alongside earlier ones still in progress. Only
+    // typing waits for them.
+    Task {
       defer {
         status.transcriptionsInProgress -= 1
         if refines {
           endRefineModelUse()
         }
       }
+      var text = ""
       do {
         let transcript = try await transcribe(samples)
-        // Refining waits for the previous dictation too, so only one transcript uses the refine model at a time.
-        await previous?.value
-        let text = refines ? await refine(transcript) : transcript
-        // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
-        if let last = text.last {
-          TextInserter.insert(last.isWhitespace ? text : text + " ")
-        }
+        text = refines ? await refine(transcript) : transcript
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
-        // Later dictations wait for this one, so it still waits for the previous one to keep them in order.
-        await previous?.value
       }
+      deliver(text, of: dictation)
+    }
+  }
+
+  /// Types a dictation's text once every earlier dictation's has been typed, along with later ones already finished.
+  ///
+  /// Finished dictations are typed in one paste because each paste replaces the clipboard, possibly before the app
+  /// has read the previous one.
+  private func deliver(_ text: String, of dictation: Int) {
+    // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
+    undelivered[dictation] = text.last.map { $0.isWhitespace ? text : text + " " } ?? ""
+    var ready = ""
+    while let next = undelivered.removeValue(forKey: nextDelivery) {
+      ready += next
+      nextDelivery += 1
+    }
+    if !ready.isEmpty {
+      TextInserter.insert(ready)
     }
   }
 
