@@ -108,8 +108,8 @@
     "How long the microphone stays on after your last dictation, to prevent recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always."
     },
-    "How long the speech model stays in memory after your last dictation. Loading it again adds a delay." : {
-      "comment" : "Description of the Speech Model Keep Alive setting, whose options are Never, a number of minutes, or Always."
+    "How long the speech and refine models stay in memory after your last dictation. Loading them again adds a delay." : {
+      "comment" : "Description of the Speech Model Keep Alive setting, whose options are Never, a number of minutes, or Always. The refine model is the language model that cleans up transcripts."
     },
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
@@ -158,6 +158,12 @@
     },
     "Recommended" : {
       "comment" : "Badge on the Voice Models page marking the speech models Casper suggests."
+    },
+    "Refine Transcripts" : {
+      "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
+    },
+    "Remove filler words and fix grammar and punctuation with a language model that runs on this Mac." : {
+      "comment" : "Description of the Refine Transcripts setting."
     },
     "Reset to Default" : {
       "comment" : "Tooltip and accessibility label for the button that restores the default dictation shortcut, Option-Space."

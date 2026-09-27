@@ -1,7 +1,7 @@
 import AVFoundation
 import OSLog
 
-/// Push-to-talk dictation: records while the dictation hotkey is held, then types the transcript at the cursor.
+/// Push-to-talk dictation: records while the dictation hotkey is held, then types the refined transcript at the cursor.
 @MainActor
 final class DictationController {
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Dictation")
@@ -9,6 +9,7 @@ final class DictationController {
   /// What dictation is doing, for the voice bubble.
   let status: DictationStatus
   private let speechModel: SpeechModelLoader
+  private let refineModel: RefineModelLoader
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
   private let speechModelKeepAlive: KeepAliveSchedule
@@ -19,6 +20,10 @@ final class DictationController {
   private var pendingStop: Task<Void, Never>?
   /// The active speech model's ID, compared against the stored one when settings change.
   private var activeModelID = SpeechModel.active?.id
+  /// The refine setting in effect, compared against the stored one when settings change.
+  private var refinesTranscripts = TranscriptRefiner.isEnabled
+  /// Whether the recording in progress will be refined, decided when it starts so its model loads while the user speaks.
+  private var refinesRecording = false
 
   /// How long recording continues after the hotkey is released.
   ///
@@ -29,8 +34,10 @@ final class DictationController {
   init() {
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     let speechModel = SpeechModelLoader()
+    let refineModel = RefineModelLoader()
     self.recorder = recorder
     self.speechModel = speechModel
+    self.refineModel = refineModel
     status = DictationStatus(meter: recorder.meter)
     microphoneKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.microphoneStorageKey,
@@ -47,12 +54,21 @@ final class DictationController {
       },
       release: { recorder.close() }
     )
+    // The refine model is kept alive with the speech model, since each dictation needs both.
     speechModelKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.speechModelStorageKey,
-      isInUse: { speechModel.isInUse },
-      isPrepared: { speechModel.isLoaded },
-      prepare: { speechModel.load() },
-      release: { speechModel.unload() }
+      isInUse: { speechModel.isInUse || refineModel.isInUse },
+      isPrepared: { speechModel.isLoaded || refineModel.isLoaded },
+      prepare: {
+        speechModel.load()
+        if TranscriptRefiner.isEnabled {
+          refineModel.load()
+        }
+      },
+      release: {
+        speechModel.unload()
+        refineModel.unload()
+      }
     )
     hotkey = GlobalHotkey(
       onPress: { [weak self] in self?.hotkeyPressed() },
@@ -60,7 +76,10 @@ final class DictationController {
     )
     NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
       [weak self] _ in
-      MainActor.assumeIsolated { self?.activeModelMayHaveChanged() }
+      MainActor.assumeIsolated {
+        self?.activeModelMayHaveChanged()
+        self?.refineSettingMayHaveChanged()
+      }
     }
   }
 
@@ -70,6 +89,18 @@ final class DictationController {
     guard id != activeModelID else { return }
     activeModelID = id
     speechModel.unloadIfInactive()
+    speechModelKeepAlive.apply()
+  }
+
+  /// Unloads the refine model once nothing is using it if refining was turned off, and loads it if it was turned on and
+  /// the keep-alive setting says to.
+  private func refineSettingMayHaveChanged() {
+    let enabled = TranscriptRefiner.isEnabled
+    guard enabled != refinesTranscripts else { return }
+    refinesTranscripts = enabled
+    if !enabled {
+      refineModel.unload()
+    }
     speechModelKeepAlive.apply()
   }
 
@@ -116,6 +147,10 @@ final class DictationController {
     }
     status.isRecording = true
     speechModel.beginUse()
+    refinesRecording = TranscriptRefiner.isEnabled
+    if refinesRecording {
+      refineModel.beginUse()
+    }
     speechModelKeepAlive.useStarted()
   }
 
@@ -125,16 +160,27 @@ final class DictationController {
     status.isRecording = false
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
+      if refinesRecording {
+        endRefineModelUse()
+      }
       endSpeechModelUse()
       return
     }
     status.transcriptionsInProgress += 1
     let previous = latestTranscription
+    let refines = refinesRecording
     latestTranscription = Task {
-      defer { status.transcriptionsInProgress -= 1 }
+      defer {
+        status.transcriptionsInProgress -= 1
+        if refines {
+          endRefineModelUse()
+        }
+      }
       do {
-        let text = try await transcribe(samples)
+        let transcript = try await transcribe(samples)
+        // Refining waits for the previous dictation too, so only one transcript uses the refine model at a time.
         await previous?.value
+        let text = refines ? await refine(transcript) : transcript
         // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
         if let last = text.last {
           TextInserter.insert(last.isWhitespace ? text : text + " ")
@@ -157,8 +203,30 @@ final class DictationController {
     return text
   }
 
+  /// Refines a transcript, or returns it unchanged if refining fails.
+  private func refine(_ transcript: String) async -> String {
+    guard !transcript.isEmpty else { return transcript }
+    let start = ContinuousClock.now
+    do {
+      let text = try await refineModel.load().value.refine(transcript)
+      Self.logger.info("Refined the transcript in \(ContinuousClock.now - start, privacy: .public)")
+      return text
+    } catch {
+      Self.logger.error("Couldn't refine, so the transcript is typed as it is: \(error)")
+      return transcript
+    }
+  }
+
   private func endSpeechModelUse() {
     speechModel.endUse()
+    speechModelKeepAlive.apply()
+  }
+
+  private func endRefineModelUse() {
+    refineModel.endUse()
+    if !TranscriptRefiner.isEnabled {
+      refineModel.unload()
+    }
     speechModelKeepAlive.apply()
   }
 }

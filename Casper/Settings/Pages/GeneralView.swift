@@ -7,6 +7,7 @@ struct GeneralView: View {
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
+  @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
 
   var body: some View {
     Form {
@@ -29,10 +30,20 @@ struct GeneralView: View {
         }
       }
       Section {
+        Toggle(isOn: $refinesTranscripts) {
+          Label {
+            Text("Refine Transcripts")
+            Text("Remove filler words and fix grammar and punctuation with a language model that runs on this Mac.")
+          } icon: {
+            Image(systemName: "wand.and.sparkles")
+          }
+        }
         KeepAlivePicker(storageKey: KeepAlive.speechModelStorageKey) {
           Label {
             Text("Speech Model Keep Alive")
-            Text("How long the speech model stays in memory after your last dictation. Loading it again adds a delay.")
+            Text(
+              "How long the speech and refine models stay in memory after your last dictation. Loading them again adds a delay."
+            )
           } icon: {
             Image(systemName: "memorychip")
           }
