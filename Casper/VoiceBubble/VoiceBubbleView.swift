@@ -38,6 +38,8 @@ struct VoiceBubbleView: View {
       }
     }
     .frame(height: Self.diameter)
+    // The waveform fades out as the bubble shrinks back to a circle; clipping keeps it from showing past the glass.
+    .clipShape(.capsule)
     .modifier(BubbleBackground())
     // The circle grows from its center, and the grown bubble from its leading end so the ghost stays put.
     .scaleEffect(isHovered ? Self.hoverScale : 1, anchor: isRecording ? .leading : .center)
