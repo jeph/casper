@@ -5,14 +5,9 @@ import SwiftUI
 /// The choice is stored by UID, with an empty or missing UID meaning the system default. A chosen device that is
 /// unplugged stays selected and is listed as not connected, so it's used again once it's back.
 struct InputDevicePicker<Label: View>: View {
-  /// The `UserDefaults` key for the chosen device's UID; empty or missing means the system default.
-  static var uidStorageKey: String { "inputDeviceUID" }
-  /// The `UserDefaults` key for the chosen device's name, shown while the device is unplugged.
-  static var nameStorageKey: String { "inputDeviceName" }
-
   @ViewBuilder let label: Label
-  @AppStorage(Self.uidStorageKey) private var selectedUID = ""
-  @AppStorage(Self.nameStorageKey) private var selectedName = ""
+  @AppStorage(AudioInputDevices.uidStorageKey) private var selectedUID = ""
+  @AppStorage(AudioInputDevices.nameStorageKey) private var selectedName = ""
   private let inputDevices = AudioInputDevices.shared
 
   var body: some View {

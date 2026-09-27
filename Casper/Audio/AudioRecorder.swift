@@ -1,7 +1,7 @@
 import AVFoundation
 import AudioToolbox
+import Foundation
 import OSLog
-import SwiftUI
 import Synchronization
 
 /// Records from the input device chosen in Settings as mono samples at a speech model's sample rate.
@@ -45,7 +45,7 @@ final class AudioRecorder {
     guard session == nil else { return }
     let engine = AVAudioEngine()
     let input = engine.inputNode
-    let deviceID = Self.chosenDeviceID()
+    let deviceID = AudioInputDevices.chosenDeviceID()
     // The device has to be chosen before the input's format is read, because the format comes from the device.
     if var deviceID, let audioUnit = input.audioUnit {
       AudioUnitSetProperty(
@@ -140,7 +140,7 @@ final class AudioRecorder {
   }
 
   private func reopenIfDeviceChanged() {
-    guard let session, session.deviceID != Self.chosenDeviceID() else { return }
+    guard let session, session.deviceID != AudioInputDevices.chosenDeviceID() else { return }
     reopen()
   }
 
@@ -157,13 +157,6 @@ final class AudioRecorder {
       Self.logger.error("Couldn't turn the microphone back on after an audio device change: \(error)")
       interruptedRecording = recorded
     }
-  }
-
-  /// The chosen input device, or `nil` for the system default, which is also used while the chosen one is unplugged.
-  private static func chosenDeviceID() -> AudioObjectID? {
-    guard let uid = UserDefaults.standard.string(forKey: InputDevicePicker<EmptyView>.uidStorageKey), !uid.isEmpty
-    else { return nil }
-    return AudioInputDevices.deviceID(forUID: uid)
   }
 }
 

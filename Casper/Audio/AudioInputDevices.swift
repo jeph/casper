@@ -22,6 +22,10 @@ final class AudioInputDevices {
   private(set) var systemDefault: AudioInputDevice?
 
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "AudioInputDevices")
+  /// The `UserDefaults` key for the chosen device's UID; empty or missing means the system default.
+  nonisolated static let uidStorageKey = "inputDeviceUID"
+  /// The `UserDefaults` key for the chosen device's name, shown while the device is unplugged.
+  nonisolated static let nameStorageKey = "inputDeviceName"
 
   private init() {
     refresh()
@@ -66,6 +70,12 @@ final class AudioInputDevices {
     }
     guard status == noErr, id != kAudioObjectUnknown else { return nil }
     return id
+  }
+
+  /// The chosen input device, or `nil` for the system default, which is also used while the chosen one is unplugged.
+  static func chosenDeviceID() -> AudioObjectID? {
+    guard let uid = UserDefaults.standard.string(forKey: uidStorageKey), !uid.isEmpty else { return nil }
+    return deviceID(forUID: uid)
   }
 
   private static func device(_ id: AudioObjectID) -> AudioInputDevice? {
