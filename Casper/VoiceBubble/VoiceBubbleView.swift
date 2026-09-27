@@ -22,6 +22,8 @@ struct VoiceBubbleView: View {
   private static let margin: CGFloat = 16
   /// How far the bubble reaches right of the ghost's center when it's grown.
   static let reach = diameter / 2 + waveformInnerSpacing + waveformWidth + waveformOuterPadding
+  /// How much the bubble grows while the pointer is over it.
+  static let hoverScale: CGFloat = 1.08
   static let panelSize = CGSize(width: (reach + margin) * 2, height: diameter + margin * 2)
 
   var body: some View {
@@ -38,7 +40,7 @@ struct VoiceBubbleView: View {
     .frame(height: Self.diameter)
     .modifier(BubbleBackground())
     // The circle grows from its center, and the grown bubble from its leading end so the ghost stays put.
-    .scaleEffect(isHovered ? 1.08 : 1, anchor: isRecording ? .leading : .center)
+    .scaleEffect(isHovered ? Self.hoverScale : 1, anchor: isRecording ? .leading : .center)
     .onHover { isHovered = $0 }
     .animation(.spring(duration: 0.25, bounce: 0.35), value: isHovered)
     .offset(x: isRecording ? -placement.recordingShift : 0)

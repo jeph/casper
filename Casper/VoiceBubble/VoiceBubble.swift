@@ -61,12 +61,16 @@ final class VoiceBubble {
     let visible = screen.visibleFrame
     let radius = VoiceBubbleView.diameter / 2
     let center = requested ?? NSPoint(x: visible.midX, y: visible.minY + radius + 24)
+    // Sized as when hovered, which grows the bubble, so it stays fully on screen under the pointer too.
+    let hoveredRadius = radius * VoiceBubbleView.hoverScale
     let clamped = NSPoint(
-      x: min(max(center.x, visible.minX + radius), visible.maxX - radius),
-      y: min(max(center.y, visible.minY + radius), visible.maxY - radius)
+      x: min(max(center.x, visible.minX + hoveredRadius), visible.maxX - hoveredRadius),
+      y: min(max(center.y, visible.minY + hoveredRadius), visible.maxY - hoveredRadius)
     )
-    // The grown bubble reaches right of the ghost; past the screen's edge, it slides back by the difference.
-    placement.recordingShift = max(clamped.x + VoiceBubbleView.reach - visible.maxX, 0)
+    // The grown bubble reaches right of the ghost, and hovering widens it from its left end; past the screen's edge,
+    // it slides back by the difference.
+    let hoveredRightEdge = clamped.x - radius + (radius + VoiceBubbleView.reach) * VoiceBubbleView.hoverScale
+    placement.recordingShift = max(hoveredRightEdge - visible.maxX, 0)
     let size = VoiceBubbleView.panelSize
     let frame = NSRect(
       x: clamped.x - size.width / 2,
