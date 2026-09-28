@@ -14,6 +14,5 @@ struct VoiceModelsView: View {
       }
     }
     .formStyle(.grouped)
-    .navigationTitle(Text("Voice Models"))
   }
 }

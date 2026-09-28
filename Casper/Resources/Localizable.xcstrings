@@ -127,7 +127,7 @@
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
     },
     "General" : {
-      "comment" : "Settings sidebar item and page title for general app settings."
+      "comment" : "Settings tab and window title for general app settings."
     },
     "Hold %@ to dictate" : {
       "comment" : "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
@@ -169,7 +169,7 @@
       "comment" : "Row title in Settings > Permissions."
     },
     "Needs attention" : {
-      "comment" : "Accessibility label of the warning next to a Settings sidebar page that fixes something."
+      "comment" : "Accessibility description of the warning on a Settings tab whose page fixes something."
     },
     "Neural Engine" : {
       "comment" : "Heading on the Voice Models page for the models that run on the Neural Engine."
@@ -187,7 +187,7 @@
       "comment" : "Button in Settings > Permissions that opens the macOS microphone privacy settings after access was denied."
     },
     "Permissions" : {
-      "comment" : "Settings sidebar item and page title for system permissions."
+      "comment" : "Settings tab and window title for system permissions."
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."

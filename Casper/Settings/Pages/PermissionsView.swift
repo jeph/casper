@@ -41,7 +41,6 @@ struct PermissionsView: View {
       }
     }
     .formStyle(.grouped)
-    .navigationTitle(Text("Permissions"))
   }
 
   /// Slides a control in from the left and out to the right while fading it, the way the Voice Models page's

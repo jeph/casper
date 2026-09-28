@@ -14,6 +14,5 @@ struct LanguageModelsView: View {
       }
     }
     .formStyle(.grouped)
-    .navigationTitle(Text("Language Models"))
   }
 }
