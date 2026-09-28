@@ -78,7 +78,7 @@ struct SpeechModel: LoadableModel {
   let bits: Int
   let downloadSize: Int64
   let revision: String
-  var isRecommended = false
+  let isRecommended: Bool
 
   /// The sample rate every model takes audio at, which Casper records at.
   ///
@@ -157,7 +157,8 @@ extension SpeechModel {
       // The encoder's weights, which are almost all of the model's.
       bits: 8,
       downloadSize: 632_169_729,
-      revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe"
+      revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe",
+      isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-5bit",
@@ -174,7 +175,8 @@ extension SpeechModel {
       parameters: "0.6B",
       bits: 8,
       downloadSize: 1_010_771_234,
-      revision: "0bfa1071b35e137d32e5beba0ee42e2ca917b878"
+      revision: "0bfa1071b35e137d32e5beba0ee42e2ca917b878",
+      isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-5bit",
@@ -182,7 +184,8 @@ extension SpeechModel {
       parameters: "1.7B",
       bits: 5,
       downloadSize: 2_444_929_813,
-      revision: "1645ca9ce8767dac9a4a047e9de835950c42596e"
+      revision: "1645ca9ce8767dac9a4a047e9de835950c42596e",
+      isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-8bit",
@@ -190,7 +193,8 @@ extension SpeechModel {
       parameters: "1.7B",
       bits: 8,
       downloadSize: 2_467_854_870,
-      revision: "e5450a26d1fd417c45fc9c405651ddc3180a27a6"
+      revision: "e5450a26d1fd417c45fc9c405651ddc3180a27a6",
+      isRecommended: false
     ),
   ]
 }

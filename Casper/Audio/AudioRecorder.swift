@@ -1,5 +1,4 @@
 import AVFoundation
-import AudioToolbox
 import Foundation
 import OSLog
 import Synchronization
@@ -49,15 +48,9 @@ final class AudioRecorder {
     let input = engine.inputNode
     let deviceID = AudioInputDevices.chosenDeviceID()
     // The device has to be chosen before the input's format is read, because the format comes from the device.
-    if var deviceID, let audioUnit = input.audioUnit {
-      AudioUnitSetProperty(
-        audioUnit,
-        kAudioOutputUnitProperty_CurrentDevice,
-        kAudioUnitScope_Global,
-        0,
-        &deviceID,
-        UInt32(MemoryLayout<AudioObjectID>.size)
-      )
+    if let deviceID {
+      // A device that can't be chosen leaves the system default in use.
+      try? input.auAudioUnit.setDeviceID(deviceID)
     }
     let capture = try installCapture(on: engine)
     engine.prepare()
@@ -215,23 +208,35 @@ private final class Capture: Sendable {
       let ratio = outputFormat.sampleRate / buffer.format.sampleRate
       let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up)) + 1
       guard let output = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else { return }
-      // Each call hands the converter exactly one buffer. `.noDataNow` keeps the resampler's state for the next
-      // buffer, where `.endOfStream` would reset it.
-      nonisolated(unsafe) var isConsumed = false
-      var error: NSError?
-      state.converter.convert(to: output, error: &error) { _, status in
-        if isConsumed {
-          status.pointee = .noDataNow
-          return nil
-        }
-        isConsumed = true
-        status.pointee = .haveData
-        return buffer
+      guard Self.convert(buffer, with: state.converter, into: output),
+        let channel = output.floatChannelData?[0]
+      else { return }
+      let recordedCount = state.samples?.count ?? 0
+      state.samples?.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(output.frameLength)))
+      if let samples = state.samples {
+        meter.measure(samples[recordedCount...], sampleRate: outputFormat.sampleRate)
       }
-      guard error == nil, let channel = output.floatChannelData?[0] else { return }
-      let converted = UnsafeBufferPointer(start: channel, count: Int(output.frameLength))
-      state.samples?.append(contentsOf: converted)
-      meter.measure(converted, sampleRate: outputFormat.sampleRate)
     }
+  }
+
+  /// Hands the converter exactly one buffer, returning whether it converted without an error.
+  ///
+  /// `.noDataNow` keeps the resampler's state for the next buffer, where `.endOfStream` would reset it.
+  private static func convert(
+    _ buffer: AVAudioPCMBuffer,
+    with converter: AVAudioConverter,
+    into output: AVAudioPCMBuffer
+  ) -> Bool {
+    var isConsumed = false
+    let status = converter.convert(to: output, error: nil) { _, status in
+      if isConsumed {
+        status.pointee = .noDataNow
+        return nil
+      }
+      isConsumed = true
+      status.pointee = .haveData
+      return buffer
+    }
+    return status != .error
   }
 }

@@ -89,12 +89,11 @@ actor TranscriptRefiner {
         context: context
       )
     }
-    var output = ""
-    var stopReason: GenerateStopReason?
-    for await generation in stream {
+    let initial = (output: "", stopReason: GenerateStopReason?.none)
+    let (output, stopReason) = await stream.reduce(into: initial) { result, generation in
       switch generation {
-      case .chunk(let text): output += text
-      case .info(let info): stopReason = info.stopReason
+      case .chunk(let text): result.output += text
+      case .info(let info): result.stopReason = info.stopReason
       case .toolCall: break
       }
     }

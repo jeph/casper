@@ -26,22 +26,20 @@ final class AudioLevelMeter: Sendable {
   }
 
   /// Measures samples that just arrived, as slices that end now.
-  func measure(_ samples: UnsafeBufferPointer<Float>, sampleRate: Double) {
-    guard let base = samples.baseAddress, !samples.isEmpty else { return }
+  func measure(_ samples: ArraySlice<Float>, sampleRate: Double) {
+    guard !samples.isEmpty else { return }
     let sliceLength = max(1, Int(sampleRate * Self.sliceSeconds))
     let sliceCount = max(1, samples.count / sliceLength)
     let now = ContinuousClock.now
-    var measured: [Level] = []
-    measured.reserveCapacity(sliceCount)
-    for slice in 0..<sliceCount {
-      let start = slice * sliceLength
-      let length = slice == sliceCount - 1 ? samples.count - start : sliceLength
-      var rms: Float = 0
-      vDSP_rmsqv(base + start, 1, &rms, vDSP_Length(length))
-      measured.append(
-        Level(time: now - Self.sliceDuration * (sliceCount - 1 - slice), value: min(rms, 1))
-      )
-    }
+    let measured = (0..<sliceCount)
+      .map { slice in
+        let start = samples.startIndex + slice * sliceLength
+        let end = slice == sliceCount - 1 ? samples.endIndex : start + sliceLength
+        return Level(
+          time: now - Self.sliceDuration * (sliceCount - 1 - slice),
+          value: min(vDSP.rootMeanSquare(samples[start..<end]), 1)
+        )
+      }
     levels.withLock { levels in
       levels.append(contentsOf: measured)
       let oldest = now - Self.retention

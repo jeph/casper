@@ -6,11 +6,17 @@ import SwiftUI
 /// The bars can be given heights of their own, so they can move with the voice, and the cut-out filled with a color.
 struct GhostLogo: View {
   /// Each bar's height, from 0 for a dot to 1 for as tall as it can be; `nil` draws the bars as in the logo.
-  var barLevels: [Double]?
+  let barLevels: [Double]?
   /// Whether an exclamation mark is cut out instead of the bars.
-  var showsExclamationMark = false
+  let showsExclamationMark: Bool
   /// The color filling the cut-out, or `nil` to leave it see-through.
-  var cutoutFill: Color?
+  let cutoutFill: Color?
+
+  init(barLevels: [Double]? = nil, showsExclamationMark: Bool = false, cutoutFill: Color? = nil) {
+    self.barLevels = barLevels
+    self.showsExclamationMark = showsExclamationMark
+    self.cutoutFill = cutoutFill
+  }
 
   /// The ghost's bounds in the SVG's coordinates.
   private static let bounds = CGRect(x: 76, y: 67, width: 104, height: 114)
@@ -45,23 +51,23 @@ struct GhostLogo: View {
   }
 
   private var barPaths: Path {
-    var path = Path()
-    for (index, bar) in Self.bars.enumerated() {
-      let height =
-        barLevels.map { levels in
-          Self.barWidth + (bar.maxHeight - Self.barWidth) * min(max(levels[index], 0), 1)
-        } ?? bar.logoHeight
-      path.addRoundedRect(
-        in: CGRect(
-          x: bar.centerX - Self.barWidth / 2,
-          y: Self.barCenterY - height / 2,
-          width: Self.barWidth,
-          height: height
-        ),
-        cornerSize: CGSize(width: Self.barWidth / 2, height: Self.barWidth / 2)
-      )
+    Path { path in
+      for (index, bar) in Self.bars.enumerated() {
+        let height =
+          barLevels.map { levels in
+            Self.barWidth + (bar.maxHeight - Self.barWidth) * min(max(levels[index], 0), 1)
+          } ?? bar.logoHeight
+        path.addRoundedRect(
+          in: CGRect(
+            x: bar.centerX - Self.barWidth / 2,
+            y: Self.barCenterY - height / 2,
+            width: Self.barWidth,
+            height: height
+          ),
+          cornerSize: CGSize(width: Self.barWidth / 2, height: Self.barWidth / 2)
+        )
+      }
     }
-    return path
   }
 
   /// A stroke as wide as a bar above a dot, centered where the bars are.
