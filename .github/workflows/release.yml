@@ -197,19 +197,31 @@ jobs:
           name: signed
           path: dist
 
+      # A re-run keeps its run number, so it may find this version already published. The published files stay
+      # as they are, the cask hashes the DMG users actually download, and only the newest version becomes latest
+      # or updates the tap, so retrying an old run can't downgrade anyone.
       - name: Publish release
+        id: publish
         run: |
-          cd dist
-          sha256sum ./* > SHA256SUMS
+          newest=$(gh release list --limit 1000 --json tagName \
+            --jq '[.[].tagName | capture("^v0\\.0\\.(?<n>[0-9]+)$").n | tonumber] | max // 0')
+          is_newest=$([ "$BUILD_NUMBER" -ge "$newest" ] && echo true || echo false)
+
           if ! gh release view "v$VERSION" >/dev/null 2>&1; then
-            gh release create "v$VERSION" ./* \
+            (cd dist && sha256sum ./* > SHA256SUMS)
+            gh release create "v$VERSION" dist/* \
               --target "$GITHUB_SHA" \
               --title "Casper $VERSION" \
               --generate-notes \
-              --latest
+              --latest="$is_newest"
           fi
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+          gh release download "v$VERSION" --pattern "Casper-$VERSION.dmg" --dir "$RUNNER_TEMP/published" --clobber
+          echo "dmg-sha256=$(sha256sum "$RUNNER_TEMP/published/Casper-$VERSION.dmg" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          echo "is-newest=$is_newest" >> "$GITHUB_OUTPUT"
+
+      - if: steps.publish.outputs.is-newest == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # The deploy key must persist to push the cask; tap/ is never uploaded as an artifact.
         with: # zizmor: ignore[artipacked]
           repository: jeph/homebrew-tap
@@ -217,13 +229,16 @@ jobs:
           path: tap
 
       - name: Update tap
+        if: steps.publish.outputs.is-newest == 'true'
+        env:
+          DMG_SHA256: ${{ steps.publish.outputs.dmg-sha256 }}
         run: |
-          dmg_sha=$(sha256sum "dist/Casper-$VERSION.dmg" | cut -d ' ' -f 1)
+          : "${DMG_SHA256:?missing DMG checksum}"
           mkdir -p tap/Casks
           cat > tap/Casks/casper.rb <<EOF
           cask "casper" do
             version "$VERSION"
-            sha256 "$dmg_sha"
+            sha256 "$DMG_SHA256"
 
             url "https://github.com/$GITHUB_REPOSITORY/releases/download/v#{version}/Casper-#{version}.dmg"
             name "Casper"
