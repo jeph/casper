@@ -269,5 +269,11 @@ jobs:
           git -C tap add Casks/casper.rb
           if ! git -C tap diff --cached --quiet; then
             git -C tap commit -m "casper $VERSION"
-            git -C tap push
+            # venmo-cli's release pushes to the same tap. Rebase onto its commits and retry; never force-push.
+            for attempt in 1 2 3 4 5; do
+              git -C tap push && break
+              [ "$attempt" -lt 5 ] || exit 1
+              sleep $((attempt * 5))
+              git -C tap pull --rebase
+            done
           fi
