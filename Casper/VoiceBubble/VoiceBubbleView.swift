@@ -81,9 +81,14 @@ struct VoiceBubbleView: View {
       isWarningPinned = false
     }
     .onChange(of: layout.clicks) {
-      guard let warning = readiness.warning else { return }
-      settingsNavigation.pane = warning.pane
-      NSApp.openWindowInFront { openSettings() }
+      if let warning = readiness.warning {
+        settingsNavigation.pane = warning.pane
+        NSApp.openWindowInFront { openSettings() }
+      } else if status.phase == .idle {
+        // Dictated text is pasted into whichever app is frontmost when it's ready, so Casper stays in the background
+        // until nothing is waiting to be typed.
+        NSApp.bringForward()
+      }
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(

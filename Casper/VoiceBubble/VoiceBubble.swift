@@ -169,7 +169,8 @@ private final class VoiceBubblePanel: NSPanel {
   var onClick: (@MainActor () -> Void)?
   /// Where the pointer is from the panel's origin, while a drag is in progress.
   private var dragOffset: NSPoint?
-  private var dragStartOrigin = NSPoint.zero
+  /// Whether the bubble moved during the press in progress, even if it ended up back where it started.
+  private var didMove = false
 
   /// Any press on the bubble drags it, without activating Casper.
   ///
@@ -181,15 +182,19 @@ private final class VoiceBubblePanel: NSPanel {
     case .leftMouseDown:
       let pointer = convertPoint(toScreen: event.locationInWindow)
       dragOffset = NSPoint(x: pointer.x - frame.minX, y: pointer.y - frame.minY)
-      dragStartOrigin = frame.origin
+      didMove = false
     case .leftMouseDragged:
       guard let dragOffset else { return }
       let pointer = convertPoint(toScreen: event.locationInWindow)
-      setFrameOrigin(NSPoint(x: pointer.x - dragOffset.x, y: pointer.y - dragOffset.y))
+      let origin = NSPoint(x: pointer.x - dragOffset.x, y: pointer.y - dragOffset.y)
+      if origin != frame.origin {
+        didMove = true
+        setFrameOrigin(origin)
+      }
     case .leftMouseUp:
       guard dragOffset != nil else { return }
       dragOffset = nil
-      if frame.origin != dragStartOrigin {
+      if didMove {
         onDragEnd?()
       } else {
         onClick?()
