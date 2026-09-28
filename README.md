@@ -28,4 +28,4 @@ All user-facing text lives in String Catalogs: `Casper/Localizable.xcstrings` fo
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Licenses and notices for the third-party code compiled into Casper are in [`Casper/Resources/Acknowledgements.txt`](Casper/Resources/Acknowledgements.txt), which ships inside the app.
