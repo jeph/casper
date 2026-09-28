@@ -21,6 +21,8 @@ struct VoiceBubbleView: View {
   @State private var isHovered = false
   /// Whether the warning callout stays up after a hotkey press, without the bubble being hovered.
   @State private var isWarningPinned = false
+  /// How far the bubble has faded to its dictating colors, from 0 for not at all to 1 for fully.
+  @State private var dictationColorAmount = 0.0
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.openSettings) private var openSettings
 
@@ -33,6 +35,10 @@ struct VoiceBubbleView: View {
   /// How long the warning callout stays up after a hotkey press.
   private static let warningDuration = Duration.seconds(4)
   private static let calloutGap: CGFloat = 8
+  /// How long the bubble takes to grow and slide when recording starts and stops.
+  private static let resizeDuration = 0.35
+  /// How the bubble fades to and from its dictating colors, finishing shortly before it settles when it grows.
+  private static let dictationColorFade = Animation.easeInOut(duration: resizeDuration - 0.05)
 
   var body: some View {
     let metrics = layout.metrics
@@ -57,7 +63,14 @@ struct VoiceBubbleView: View {
           .padding(.trailing, metrics.waveformOuterPadding)
       }
     }
-    .modifier(GlassBackground(shape: Capsule(), isInteractive: true))
+    .modifier(
+      GlassBackground(
+        shape: Capsule(),
+        isInteractive: true,
+        tint: .accentColor,
+        tintAmount: dictationColorAmount
+      )
+    )
     // The circle grows from its center, and the grown bubble from its leading end so the ghost stays put.
     .scaleEffect(isHovered ? VoiceBubbleMetrics.hoverScale : 1, anchor: isRecording ? .leading : .center)
     .onHover { isHovered = $0 }
@@ -67,10 +80,15 @@ struct VoiceBubbleView: View {
     .offset(x: isRecording ? -layout.recordingShift : 0)
     .padding(.leading, metrics.panelSize.width / 2 - metrics.diameter / 2)
     .frame(width: metrics.panelSize.width, height: metrics.panelSize.height, alignment: .leading)
-    .animation(.spring(duration: 0.35, bounce: 0.2), value: isRecording)
+    .animation(.spring(duration: Self.resizeDuration, bounce: 0.2), value: isRecording)
     .onChange(of: isRecording) { _, isRecording in
       if isRecording {
         recordingStart = .now
+      }
+    }
+    .onChange(of: isDictating, initial: true) { _, isDictating in
+      withAnimation(Self.dictationColorFade) {
+        dictationColorAmount = isDictating ? 1 : 0
       }
     }
     .task(id: status.pressesWhileNotReady) {
@@ -104,25 +122,30 @@ struct VoiceBubbleView: View {
       size: layout.metrics.waveformSize,
       barWidth: layout.metrics.barWidth
     )
+    // On the bubble in the accent color, the waveform is white like the ghost.
+    .foregroundStyle(.white)
     .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
   }
 
   private var ghost: some View {
-    TimelineView(.animation(paused: status.phase == .idle)) { timeline in
-      GhostLogo(barLevels: barLevels(at: timeline.date), showsExclamationMark: showsWarning, cutoutFill: cutoutFill)
-        .frame(height: layout.metrics.ghostHeight)
-        .opacity(status.phase == .transcribing && reduceMotion ? fadingOpacity(at: timeline.date) : 1)
+    TimelineView(.animation(paused: !isDictating)) { timeline in
+      GhostLogo(
+        barLevels: barLevels(at: timeline.date),
+        showsExclamationMark: showsWarning,
+        fill: .white,
+        fillAmount: dictationColorAmount
+      )
+      .frame(height: layout.metrics.ghostHeight)
+      .opacity(status.phase == .transcribing && reduceMotion ? fadingOpacity(at: timeline.date) : 1)
     }
   }
 
   /// Whether the ghost shows an exclamation mark, while something is missing and it isn't showing dictation.
-  private var showsWarning: Bool { !readiness.isReady && status.phase == .idle }
+  private var showsWarning: Bool { !readiness.isReady && !isDictating }
 
-  /// The system accent color from the moment recording starts until the last transcript is typed, so it never changes
-  /// between recording and transcribing; otherwise the cut-out is left see-through, like the logo's bars.
-  private var cutoutFill: Color? {
-    status.phase == .idle ? nil : .accentColor
-  }
+  /// Whether dictation is underway, from the moment recording starts until the last transcript is typed, during which
+  /// the bubble stays in the accent color so it never changes between recording and transcribing.
+  private var isDictating: Bool { status.phase != .idle }
 
   private var callout: Callout? {
     if let warning = readiness.warning, isHovered || isWarningPinned {
@@ -265,17 +288,28 @@ final class VoiceBubbleLayout {
   }
 }
 
-/// Liquid Glass on macOS 26 and later, and the closest material before it.
-private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier {
+/// Liquid Glass on macOS 26 and later, and the closest material before it, tinted with a color that fades in and out.
+private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Animatable {
   let shape: GlassShape
   /// Whether the glass responds to the pointer the way system controls do.
   let isInteractive: Bool
+  var tint = Color.clear
+  /// How far the tint has faded in, from 0 for not at all to 1 for fully.
+  var tintAmount = 0.0
+
+  nonisolated var animatableData: Double {
+    get { tintAmount }
+    set { tintAmount = newValue }
+  }
 
   func body(content: Content) -> some View {
+    // The tint is a fill beneath the content rather than the glass's own tint, which glass leaves out in a window
+    // that isn't active, as the bubble's panel never is.
+    let tinted = content.background(tint.opacity(tintAmount), in: shape)
     if #available(macOS 26, *) {
-      content.glassEffect(.regular.interactive(isInteractive), in: shape)
+      tinted.glassEffect(.regular.interactive(isInteractive), in: shape)
     } else {
-      content
+      tinted
         .background(.regularMaterial, in: shape)
         .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.2), radius: 6, y: 2)

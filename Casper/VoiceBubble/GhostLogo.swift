@@ -3,19 +3,29 @@ import SwiftUI
 /// The Casper ghost, drawn from `Design/Casper-Ghost.svg` in the foreground style, with its three bars cut out, or an
 /// exclamation mark instead when something needs the user's attention.
 ///
-/// The bars can be given heights of their own, so they can move with the voice, and the cut-out filled with a color.
-struct GhostLogo: View {
+/// The bars can be given heights of their own, so they can move with the voice, and the ghost can fade to a color of
+/// its own from the foreground style.
+struct GhostLogo: View, Animatable {
   /// Each bar's height, from 0 for a dot to 1 for as tall as it can be; `nil` draws the bars as in the logo.
   let barLevels: [Double]?
   /// Whether an exclamation mark is cut out instead of the bars.
   let showsExclamationMark: Bool
-  /// The color filling the cut-out, or `nil` to leave it see-through.
-  let cutoutFill: Color?
+  /// The color the ghost fades to from the foreground style.
+  let fill: Color
+  /// How far the ghost has faded to its fill, from 0 for not at all to 1 for fully, animated so it fades rather than
+  /// switches.
+  var fillAmount: Double
 
-  init(barLevels: [Double]? = nil, showsExclamationMark: Bool = false, cutoutFill: Color? = nil) {
+  init(barLevels: [Double]? = nil, showsExclamationMark: Bool = false, fill: Color = .clear, fillAmount: Double = 0) {
     self.barLevels = barLevels
     self.showsExclamationMark = showsExclamationMark
-    self.cutoutFill = cutoutFill
+    self.fill = fill
+    self.fillAmount = fillAmount
+  }
+
+  nonisolated var animatableData: Double {
+    get { fillAmount }
+    set { fillAmount = newValue }
   }
 
   /// The ghost's bounds in the SVG's coordinates.
@@ -39,11 +49,9 @@ struct GhostLogo: View {
       let cutout = showsExclamationMark ? Self.exclamationMark : barPaths
       context.drawLayer { layer in
         layer.fill(Self.body, with: .foreground)
+        layer.fill(Self.body, with: .color(fill.opacity(fillAmount)))
         layer.blendMode = .destinationOut
         layer.fill(cutout, with: .color(.black))
-      }
-      if let cutoutFill {
-        context.fill(cutout, with: .color(cutoutFill))
       }
     }
     .aspectRatio(Self.bounds.width / Self.bounds.height, contentMode: .fit)
