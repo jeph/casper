@@ -6,7 +6,9 @@ Several agents work on this repository at once, so make every change in its own 
 
 Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree.
 
-Never push to `main`, since every push there publishes a release (see Releases). Push finished work directly to `dev` instead; that's always allowed, and this project doesn't use pull requests. From a worktree, rebase the branch onto `origin/dev` and run `git push origin HEAD:dev`.
+Never push to `main`, since every push there publishes a release (see Releases). Push finished work directly to `dev` instead; that's always allowed, and this project doesn't use pull requests. From a worktree, rebase the branch onto `origin/dev` and run `git push origin HEAD:dev`. Worktree branches stay local: never push them to the repository under their own names.
+
+Once the push has landed, remove the worktree and its branch so they don't pile up on this machine. Confirm the work is on `dev` with `git fetch origin && git merge-base --is-ancestor HEAD origin/dev`, then from the main checkout run `git worktree remove ../casper-<branch>` and `git branch -D <branch>`.
 
 ## Third-party licenses
 
