@@ -50,6 +50,10 @@ jobs:
           unzip -q "$archive" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
 
+      # MLX compiles Metal shaders, and Xcode downloads the Metal compiler separately from Apple.
+      - name: Install Metal Toolchain
+        run: xcodebuild -downloadComponent MetalToolchain
+
       - name: Lint
         run: make lint
 
