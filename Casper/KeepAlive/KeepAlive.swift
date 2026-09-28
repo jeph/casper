@@ -16,7 +16,7 @@ enum KeepAlive: String, CaseIterable, Identifiable {
   static let microphoneStorageKey = "microphoneKeepAlive"
   /// The `UserDefaults` key for how long the speech and language models stay loaded.
   static let modelStorageKey = "modelKeepAlive"
-  static let defaultValue = KeepAlive.oneMinute
+  static let defaultValue = KeepAlive.fiveMinutes
 
   /// The setting stored under `key`, or the default if none is stored.
   static func stored(forKey key: String) -> KeepAlive {
