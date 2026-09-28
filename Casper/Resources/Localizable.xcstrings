@@ -132,8 +132,8 @@
     "Hold %@ to dictate" : {
       "comment" : "Voice bubble hover text in hold mode. The argument is the dictation shortcut, such as ⌥Space."
     },
-    "Hold the shortcut while you speak, or press it once to start and again to stop." : {
-      "comment" : "Explanation under the Shortcut Mode row in Settings > General."
+    "Hold the shortcut to dictate." : {
+      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Hold to Talk is chosen."
     },
     "Hold to Talk" : {
       "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
@@ -200,6 +200,9 @@
     },
     "Press to Toggle" : {
       "comment" : "Option in the Shortcut Mode setting: pressing the shortcut starts dictation and pressing it again stops it."
+    },
+    "Press to start recording, press again to stop." : {
+      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Press to Toggle is chosen."
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."

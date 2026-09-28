@@ -56,7 +56,7 @@ struct GeneralView: View {
         } label: {
           Label {
             Text("Shortcut Mode")
-            Text("Hold the shortcut while you speak, or press it once to start and again to stop.")
+            Text(dictationMode.explanation)
           } icon: {
             Image(systemName: "hand.tap")
           }

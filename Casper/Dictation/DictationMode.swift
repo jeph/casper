@@ -58,4 +58,12 @@ enum DictationMode: String, CaseIterable, Identifiable {
     case .toggle: "Press to Toggle"
     }
   }
+
+  /// How to dictate in this mode, shown under the Shortcut Mode setting.
+  var explanation: LocalizedStringResource {
+    switch self {
+    case .hold: "Hold the shortcut to dictate."
+    case .toggle: "Press to start recording, press again to stop."
+    }
+  }
 }
