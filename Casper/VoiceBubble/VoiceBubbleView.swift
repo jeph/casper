@@ -293,7 +293,8 @@ private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Anima
   let shape: GlassShape
   /// Whether the glass responds to the pointer the way system controls do.
   let isInteractive: Bool
-  var tint = Color.clear
+  /// The color the glass fades to, or `nil` for glass that's never tinted.
+  var tint: Color?
   /// How far the tint has faded in, from 0 for not at all to 1 for fully.
   var tintAmount = 0.0
 
@@ -303,16 +304,25 @@ private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Anima
   }
 
   func body(content: Content) -> some View {
-    // The tint is a fill beneath the content rather than the glass's own tint, which glass leaves out in a window
-    // that isn't active, as the bubble's panel never is.
-    let tinted = content.background(tint.opacity(tintAmount), in: shape)
     if #available(macOS 26, *) {
-      tinted.glassEffect(.regular.interactive(isInteractive), in: shape)
+      content.glassEffect(glass, in: shape)
     } else {
-      tinted
+      content
+        .background(tint?.opacity(tintAmount) ?? .clear, in: shape)
         .background(.regularMaterial, in: shape)
         .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
     }
+  }
+
+  /// How strong the glass's tint is when fully faded in, short of solid so the tinted bubble still reads as glass.
+  private static var fullTint: Double { 0.5 }
+
+  /// Regular glass, or clear glass when it's tinted: regular glass leaves its tint out in a window that isn't active,
+  /// as the bubble's panel never is, while clear glass keeps it.
+  @available(macOS 26, *)
+  private var glass: Glass {
+    guard let tint else { return .regular.interactive(isInteractive) }
+    return .clear.tint(tint.opacity(tintAmount * Self.fullTint)).interactive(isInteractive)
   }
 }
