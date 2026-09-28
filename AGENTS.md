@@ -4,7 +4,7 @@
 
 Several agents work on this repository at once, so make every change in its own git worktree instead of in the main checkout at `~/Developer/casper`. Create the worktree next to the main checkout on a new branch from `dev`, for example `git worktree add ../casper-<branch> -b <branch> dev`, and leave the main checkout on `dev`.
 
-Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree.
+Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree. The exception covers documentation only: changes to the build system or release pipeline, such as the `Makefile`, `project.yml`, `Package.resolved`, build scripts, or `.github/workflows/`, go in a worktree like any code change, even though they aren't application logic.
 
 Development is trunk-based: `dev` is the trunk, and work reaches it in small, frequent pushes. There's one installed copy of Casper on this machine, `/Applications/Casper.app`, and any agent may replace it with a build from its worktree to test changes. Always pull `dev` into the worktree before building, with `git fetch origin && git rebase origin/dev`. Resolve any conflicts, and if changes other agents landed on `dev` break yours or don't work with them, fix that in your branch before you build. That way every build tested on this machine is the current `dev` plus your work, so changes on `dev` get integrated and tested together as they land.
 
