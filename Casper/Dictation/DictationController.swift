@@ -13,6 +13,7 @@ final class DictationController {
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
   private let modelKeepAlive: KeepAliveSchedule
+  private let readiness: DictationReadiness
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
   private var nextDictation = 0
@@ -36,7 +37,9 @@ final class DictationController {
   /// spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
-  init() {
+  init(readiness: DictationReadiness) {
+    self.readiness = readiness
+    let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     let speechModel = ModelLoader<SpeechModel>()
     let languageModel = ModelLoader<LanguageModel>()
@@ -50,7 +53,7 @@ final class DictationController {
       isPrepared: { recorder.isOpen },
       prepare: {
         // Asking for access is left to the first dictation, rather than prompting as Casper launches.
-        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else { return }
+        guard permissions.isMicrophoneAllowed else { return }
         do {
           try recorder.open()
         } catch {
@@ -120,6 +123,19 @@ final class DictationController {
       self.pendingStop = nil
       return
     }
+    // Access may have been turned off in System Settings since it was last checked.
+    readiness.permissions.refresh()
+    guard readiness.isReady else {
+      // The voice bubble explains what's missing instead of listening.
+      status.pressesWhileNotReady += 1
+      if readiness.permissions.microphone == .notDetermined {
+        Task {
+          await AVCaptureDevice.requestAccess(for: .audio)
+          readiness.permissions.refresh()
+        }
+      }
+      return
+    }
     startRecording()
   }
 
@@ -133,20 +149,6 @@ final class DictationController {
 
   private func startRecording() {
     guard !recorder.isRecording else { return }
-    guard SpeechModel.active != nil else {
-      Self.logger.error("No voice model is chosen, so there's nothing to transcribe with.")
-      return
-    }
-    switch AVCaptureDevice.authorizationStatus(for: .audio) {
-    case .authorized:
-      break
-    case .notDetermined:
-      Task { await AVCaptureDevice.requestAccess(for: .audio) }
-      return
-    default:
-      Self.logger.error("Microphone access is off.")
-      return
-    }
     microphoneKeepAlive.useStarted()
     do {
       try recorder.start()

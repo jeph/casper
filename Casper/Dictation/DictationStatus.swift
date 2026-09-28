@@ -16,6 +16,8 @@ final class DictationStatus {
   let meter: AudioLevelMeter
   var isRecording = false
   var transcriptionsInProgress = 0
+  /// Counts dictation hotkey presses made while something dictation needs is missing, so the voice bubble can explain.
+  var pressesWhileNotReady = 0
 
   init(meter: AudioLevelMeter) {
     self.meter = meter

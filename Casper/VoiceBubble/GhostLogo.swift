@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// The Casper ghost, drawn from `Design/Casper-Ghost.svg` in the foreground style, with its three bars cut out.
+/// The Casper ghost, drawn from `Design/Casper-Ghost.svg` in the foreground style, with its three bars cut out, or an
+/// exclamation mark instead when something needs the user's attention.
 ///
-/// The bars can be given heights of their own, so they can move with the voice, and filled with a color.
+/// The bars can be given heights of their own, so they can move with the voice, and the cut-out filled with a color.
 struct GhostLogo: View {
   /// Each bar's height, from 0 for a dot to 1 for as tall as it can be; `nil` draws the bars as in the logo.
   var barLevels: [Double]?
-  /// The color filling the bars, or `nil` to leave them cut out.
-  var barFill: Color?
+  /// Whether an exclamation mark is cut out instead of the bars.
+  var showsExclamationMark = false
+  /// The color filling the cut-out, or `nil` to leave it see-through.
+  var cutoutFill: Color?
 
   /// The ghost's bounds in the SVG's coordinates.
   private static let bounds = CGRect(x: 76, y: 67, width: 104, height: 114)
@@ -27,14 +30,14 @@ struct GhostLogo: View {
       )
       context.scaleBy(x: scale, y: scale)
       context.translateBy(x: -Self.bounds.minX, y: -Self.bounds.minY)
-      let bars = barPaths
+      let cutout = showsExclamationMark ? Self.exclamationMark : barPaths
       context.drawLayer { layer in
         layer.fill(Self.body, with: .foreground)
         layer.blendMode = .destinationOut
-        layer.fill(bars, with: .color(.black))
+        layer.fill(cutout, with: .color(.black))
       }
-      if let barFill {
-        context.fill(bars, with: .color(barFill))
+      if let cutoutFill {
+        context.fill(cutout, with: .color(cutoutFill))
       }
     }
     .aspectRatio(Self.bounds.width / Self.bounds.height, contentMode: .fit)
@@ -59,6 +62,14 @@ struct GhostLogo: View {
       )
     }
     return path
+  }
+
+  /// A stroke as wide as a bar above a dot, centered where the bars are.
+  private static let exclamationMark = Path { path in
+    let left = 128 - barWidth / 2
+    let corner = CGSize(width: barWidth / 2, height: barWidth / 2)
+    path.addRoundedRect(in: CGRect(x: left, y: 92, width: barWidth, height: 44), cornerSize: corner)
+    path.addEllipse(in: CGRect(x: left, y: 146, width: barWidth, height: barWidth))
   }
 
   private static let body = Path { path in

@@ -7,13 +7,15 @@ import AppKit
 /// `NSApplication.openWindowInFront(_:)` shows the icon, and closing the last one hides it again.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+  let readiness = DictationReadiness()
+  let settingsNavigation = SettingsNavigation()
   private var dictation: DictationController?
   private var voiceBubble: VoiceBubble?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    let dictation = DictationController()
+    let dictation = DictationController(readiness: readiness)
     self.dictation = dictation
-    voiceBubble = VoiceBubble(status: dictation.status)
+    voiceBubble = VoiceBubble(status: dictation.status, readiness: readiness, settingsNavigation: settingsNavigation)
     LaunchAtLogin.applyDefaultOnFirstLaunch()
     NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) {
       notification in

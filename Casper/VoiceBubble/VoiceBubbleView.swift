@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The voice bubble: the Casper ghost on glass, which grows a live waveform while recording and moves its bars while
@@ -6,15 +7,30 @@ import SwiftUI
 /// The ghost sits at the center of the panel and the waveform always grows to its right. Near the right edge of the
 /// screen, the grown bubble slides left as it grows, so it stays on screen with the ghost at its leading end.
 ///
-/// Hovering over the bubble shows the dictation hotkey in a callout.
+/// Hovering over the bubble shows the dictation hotkey in a callout. While something dictation needs is missing, the
+/// ghost shows an exclamation mark instead, and the callout says what's missing when the bubble is hovered or the
+/// hotkey is pressed. Clicking the bubble then opens the Settings page that fixes it.
 struct VoiceBubbleView: View {
   let status: DictationStatus
   let layout: VoiceBubbleLayout
+  let readiness: DictationReadiness
+  let settingsNavigation: SettingsNavigation
   @AppStorage(Hotkey.dictationStorageKey) private var hotkey = Hotkey.dictationDefault
   @State private var recordingStart = ContinuousClock.now
   @State private var isHovered = false
+  /// Whether the warning callout stays up after a hotkey press, without the bubble being hovered.
+  @State private var isWarningPinned = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.openSettings) private var openSettings
 
+  /// What the callout next to the bubble shows.
+  private enum Callout: Equatable {
+    case hotkey
+    case warning(DictationReadiness.Warning)
+  }
+
+  /// How long the warning callout stays up after a hotkey press.
+  private static let warningDuration = Duration.seconds(4)
   private static let calloutGap: CGFloat = 8
 
   var body: some View {
@@ -46,7 +62,7 @@ struct VoiceBubbleView: View {
     .onHover { isHovered = $0 }
     .animation(.spring(duration: 0.25, bounce: 0.35), value: isHovered)
     .overlay(alignment: .topLeading) { calloutAnchor }
-    .animation(.easeOut(duration: 0.15), value: showsHotkey)
+    .animation(.easeOut(duration: 0.15), value: callout)
     .offset(x: isRecording ? -layout.recordingShift : 0)
     .padding(.leading, metrics.panelSize.width / 2 - metrics.diameter / 2)
     .frame(width: metrics.panelSize.width, height: metrics.panelSize.height, alignment: .leading)
@@ -55,6 +71,18 @@ struct VoiceBubbleView: View {
       if isRecording {
         recordingStart = .now
       }
+    }
+    .task(id: status.pressesWhileNotReady) {
+      guard status.pressesWhileNotReady > 0 else { return }
+      isWarningPinned = true
+      // A later press restarts the wait rather than hiding the callout early.
+      guard (try? await Task.sleep(for: Self.warningDuration)) != nil else { return }
+      isWarningPinned = false
+    }
+    .onChange(of: layout.clicks) {
+      guard let warning = readiness.warning else { return }
+      settingsNavigation.pane = warning.pane
+      NSApp.openWindowInFront { openSettings() }
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(
@@ -75,14 +103,18 @@ struct VoiceBubbleView: View {
 
   private var ghost: some View {
     TimelineView(.animation(paused: status.phase == .idle)) { timeline in
-      GhostLogo(barLevels: barLevels(at: timeline.date), barFill: barFill)
+      GhostLogo(barLevels: barLevels(at: timeline.date), showsExclamationMark: showsWarning, cutoutFill: cutoutFill)
         .frame(height: layout.metrics.ghostHeight)
         .opacity(status.phase == .transcribing && reduceMotion ? fadingOpacity(at: timeline.date) : 1)
     }
   }
 
-  /// Red while recording, and blue while the model transcribes; the logo's own cut-out bars otherwise.
-  private var barFill: Color? {
+  /// Whether the ghost shows an exclamation mark, while something is missing and it isn't showing dictation.
+  private var showsWarning: Bool { !readiness.isReady && status.phase == .idle }
+
+  /// Red while recording, and blue while the model transcribes; otherwise the cut-out is left see-through, like the
+  /// logo's bars.
+  private var cutoutFill: Color? {
     switch status.phase {
     case .idle: nil
     case .recording: .red
@@ -90,7 +122,12 @@ struct VoiceBubbleView: View {
     }
   }
 
-  private var showsHotkey: Bool { isHovered && status.phase == .idle }
+  private var callout: Callout? {
+    if let warning = readiness.warning, isHovered || isWarningPinned {
+      return .warning(warning)
+    }
+    return isHovered && status.phase == .idle ? .hotkey : nil
+  }
 
   /// Places the callout above the ghost, or below it near the top of the screen, lined up with the ghost's center or,
   /// near the screen's side, its edge.
@@ -101,8 +138,8 @@ struct VoiceBubbleView: View {
       .frame(width: layout.metrics.diameter, height: layout.metrics.diameter)
       .overlay(alignment: Alignment(horizontal: layout.calloutAlignment, vertical: isBelow ? .bottom : .top)) {
         ZStack {
-          if showsHotkey {
-            hotkeyCallout
+          if let callout {
+            calloutView(callout)
               .transition(.opacity.combined(with: .offset(y: isBelow ? -4 : 4)))
           }
         }
@@ -117,11 +154,27 @@ struct VoiceBubbleView: View {
       .allowsHitTesting(false)
   }
 
-  private var hotkeyCallout: some View {
-    Text(
-      "Hold \(hotkey.displayName) to dictate",
-      comment: "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
-    )
+  private func calloutView(_ callout: Callout) -> some View {
+    Group {
+      switch callout {
+      case .hotkey:
+        Text(
+          "Hold \(hotkey.displayName) to dictate",
+          comment: "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
+        )
+      case .warning(let warning):
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .symbolRenderingMode(.multicolor)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(warning.message)
+              .fontWeight(.semibold)
+            Text(warning.action)
+              .foregroundStyle(.secondary)
+          }
+        }
+      }
+    }
     .font(.callout)
     .fixedSize(horizontal: false, vertical: true)
     .padding(.horizontal, 10)
@@ -175,7 +228,8 @@ struct VoiceBubbleView: View {
   private var phaseDescription: Text {
     switch status.phase {
     case .idle:
-      Text("Ready", comment: "Accessibility value of the voice bubble when Casper isn't dictating.")
+      readiness.warning.map { Text($0.message) }
+        ?? Text("Ready", comment: "Accessibility value of the voice bubble when Casper isn't dictating.")
     case .recording:
       Text("Listening", comment: "Accessibility value of the voice bubble while the dictation shortcut is held.")
     case .transcribing:
@@ -184,8 +238,8 @@ struct VoiceBubbleView: View {
   }
 }
 
-/// The voice bubble's size, where it places its callout, and how far the grown bubble slides left to stay on screen
-/// where it sits.
+/// The voice bubble's size, where it places its callout and how far the grown bubble slides left to stay on screen
+/// where it sits, and the clicks the panel receives on it.
 @MainActor
 @Observable
 final class VoiceBubbleLayout {
@@ -193,6 +247,8 @@ final class VoiceBubbleLayout {
   var recordingShift: CGFloat = 0
   var showsCalloutBelow = false
   var calloutAlignment = HorizontalAlignment.center
+  /// Counts clicks on the bubble that didn't drag it.
+  var clicks = 0
 
   init(metrics: VoiceBubbleMetrics) {
     self.metrics = metrics

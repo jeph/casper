@@ -10,6 +10,9 @@ struct CasperApp: App {
     }
     Settings {
       SettingsView()
+        .environment(appDelegate.readiness)
+        .environment(appDelegate.readiness.permissions)
+        .environment(appDelegate.settingsNavigation)
     }
   }
 }

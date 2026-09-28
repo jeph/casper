@@ -1,21 +1,36 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @State private var selection: SettingsPane? = .general
+  @Environment(SettingsNavigation.self) private var navigation
+  @Environment(DictationReadiness.self) private var readiness
 
   var body: some View {
+    @Bindable var navigation = navigation
     NavigationSplitView {
-      List(SettingsPane.allCases, selection: $selection) { pane in
-        Label {
-          Text(pane.title)
-        } icon: {
-          Image(systemName: pane.systemImage)
+      List(SettingsPane.allCases, selection: $navigation.pane) { pane in
+        HStack {
+          Label {
+            Text(pane.title)
+          } icon: {
+            Image(systemName: pane.systemImage)
+          }
+          if readiness.needsAttention(pane) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle.fill")
+              .symbolRenderingMode(.multicolor)
+              .accessibilityLabel(
+                Text(
+                  "Needs attention",
+                  comment: "Accessibility label of the warning next to a Settings sidebar page that fixes something."
+                )
+              )
+          }
         }
       }
       .navigationSplitViewColumnWidth(180)
       .toolbar(removing: .sidebarToggle)
     } detail: {
-      switch selection {
+      switch navigation.pane {
       case .general:
         GeneralView()
       case .voiceModels:
@@ -32,7 +47,14 @@ struct SettingsView: View {
   }
 }
 
-private enum SettingsPane: CaseIterable, Identifiable {
+/// The Settings page shown, which other parts of Casper can switch before opening Settings.
+@MainActor
+@Observable
+final class SettingsNavigation {
+  var pane: SettingsPane? = .general
+}
+
+enum SettingsPane: CaseIterable, Identifiable {
   case general
   case voiceModels
   case languageModels

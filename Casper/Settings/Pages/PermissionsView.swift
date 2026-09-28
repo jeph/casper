@@ -4,8 +4,7 @@ import ApplicationServices
 import SwiftUI
 
 struct PermissionsView: View {
-  @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-  @State private var isAccessibilityTrusted = AXIsProcessTrusted()
+  @Environment(Permissions.self) private var permissions
 
   var body: some View {
     Form {
@@ -16,7 +15,7 @@ struct PermissionsView: View {
             microphoneControl
               .transition(Self.statusTransition)
           }
-          .animation(.easeInOut(duration: 0.2), value: microphoneStatus)
+          .animation(.easeInOut(duration: 0.2), value: permissions.microphone)
         } label: {
           Label {
             Text("Microphone")
@@ -30,7 +29,7 @@ struct PermissionsView: View {
             accessibilityControl
               .transition(Self.statusTransition)
           }
-          .animation(.easeInOut(duration: 0.2), value: isAccessibilityTrusted)
+          .animation(.easeInOut(duration: 0.2), value: permissions.isAccessibilityTrusted)
         } label: {
           Label {
             Text("Accessibility")
@@ -43,18 +42,6 @@ struct PermissionsView: View {
     }
     .formStyle(.grouped)
     .navigationTitle(Text("Permissions"))
-    // The user may change access in System Settings while this pane is open.
-    .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-      refreshStatus()
-    }
-    // macOS doesn't tell Casper when access is granted in System Settings, so check until everything is allowed,
-    // rather than waiting for the user to come back to Casper.
-    .task(id: isEverythingAllowed) {
-      guard !isEverythingAllowed else { return }
-      while (try? await Task.sleep(for: .milliseconds(500))) != nil {
-        refreshStatus()
-      }
-    }
   }
 
   /// Slides a control in from the left and out to the right while fading it, the way the Voice Models page's
@@ -64,16 +51,9 @@ struct PermissionsView: View {
     removal: .opacity.combined(with: .offset(x: 20))
   )
 
-  private var isEverythingAllowed: Bool { microphoneStatus == .authorized && isAccessibilityTrusted }
-
-  private func refreshStatus() {
-    microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    isAccessibilityTrusted = AXIsProcessTrusted()
-  }
-
   @ViewBuilder
   private var microphoneControl: some View {
-    switch microphoneStatus {
+    switch permissions.microphone {
     case .authorized:
       Label("Allowed", systemImage: "checkmark.circle.fill")
         .foregroundStyle(.green)
@@ -81,7 +61,7 @@ struct PermissionsView: View {
       Button("Allow Access") {
         Task {
           await AVCaptureDevice.requestAccess(for: .audio)
-          microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+          permissions.refresh()
         }
       }
     case .restricted:
@@ -96,7 +76,7 @@ struct PermissionsView: View {
 
   @ViewBuilder
   private var accessibilityControl: some View {
-    if isAccessibilityTrusted {
+    if permissions.isAccessibilityTrusted {
       Label("Allowed", systemImage: "checkmark.circle.fill")
         .foregroundStyle(.green)
     } else {

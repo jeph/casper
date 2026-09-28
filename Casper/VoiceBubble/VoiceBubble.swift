@@ -4,7 +4,8 @@ import SwiftUI
 /// Shows the voice bubble in a floating panel above other windows, on every Space, while the setting is on.
 ///
 /// The panel never becomes key or activates Casper, so dictation keeps typing into the app in front, including while
-/// the bubble is dragged. Its position is saved as the ghost's center and kept on screen.
+/// the bubble is dragged. Its position is saved as the ghost's center and kept on screen. Clicking the bubble while
+/// something dictation needs is missing opens the Settings page that fixes it.
 @MainActor
 final class VoiceBubble {
   /// The `UserDefaults` key for whether the voice bubble is shown, on unless turned off.
@@ -16,14 +17,22 @@ final class VoiceBubble {
   private let panel: VoiceBubblePanel
   private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
 
-  init(status: DictationStatus) {
+  init(status: DictationStatus, readiness: DictationReadiness, settingsNavigation: SettingsNavigation) {
     panel = VoiceBubblePanel(size: layout.metrics.panelSize)
-    let hostingView = NSHostingView(rootView: VoiceBubbleView(status: status, layout: layout))
+    let hostingView = NSHostingView(
+      rootView: VoiceBubbleView(
+        status: status,
+        layout: layout,
+        readiness: readiness,
+        settingsNavigation: settingsNavigation
+      )
+    )
     // The panel keeps its size as the bubble grows and shrinks inside it.
     hostingView.sizingOptions = []
     panel.contentView = hostingView
     move(toCenter: Self.savedCenter)
     panel.onDragEnd = { [weak self] in self?.dragEnded() }
+    panel.onClick = { [weak self] in self?.layout.clicks += 1 }
     let center = NotificationCenter.default
     center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) {
       [weak self] _ in
@@ -156,6 +165,8 @@ private final class VoiceBubblePanel: NSPanel {
 
   /// Called when a drag that moved the bubble ends.
   var onDragEnd: (@MainActor () -> Void)?
+  /// Called when the bubble is pressed and released without moving it.
+  var onClick: (@MainActor () -> Void)?
   /// Where the pointer is from the panel's origin, while a drag is in progress.
   private var dragOffset: NSPoint?
   private var dragStartOrigin = NSPoint.zero
@@ -180,6 +191,8 @@ private final class VoiceBubblePanel: NSPanel {
       dragOffset = nil
       if frame.origin != dragStartOrigin {
         onDragEnd?()
+      } else {
+        onClick?()
       }
     default:
       super.sendEvent(event)

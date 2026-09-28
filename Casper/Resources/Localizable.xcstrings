@@ -84,11 +84,32 @@
     "Casper is turned off in Login Items in System Settings." : {
       "comment" : "Note in Settings > General when the user has turned Casper off in the macOS Login Items settings."
     },
+    "Casper needs Accessibility access" : {
+      "comment" : "Voice bubble warning when Accessibility access is missing. Accessibility is the System Settings pane."
+    },
+    "Casper needs a voice model" : {
+      "comment" : "Voice bubble warning when no voice model is installed."
+    },
+    "Casper needs microphone access" : {
+      "comment" : "Voice bubble warning when microphone access is missing."
+    },
+    "Casper needs microphone and Accessibility access" : {
+      "comment" : "Voice bubble warning when both permissions are missing. Accessibility is the System Settings pane."
+    },
     "Casper uses accessibility to type what you dictate into other apps." : {
       "comment" : "Explanation under the Accessibility row in Settings > Permissions."
     },
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
+    },
+    "Click to open Language Models" : {
+      "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Language Models page of Settings."
+    },
+    "Click to open Permissions" : {
+      "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Permissions page of Settings."
+    },
+    "Click to open Voice Models" : {
+      "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Voice Models page of Settings."
     },
     "Delete" : {
       "comment" : "Button on the Voice Models page that deletes a downloaded speech model, and the confirming button in the dialog that asks first."
@@ -147,6 +168,9 @@
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
     },
+    "Needs attention" : {
+      "comment" : "Accessibility label of the warning next to a Settings sidebar page that fixes something."
+    },
     "Neural Engine" : {
       "comment" : "Heading on the Voice Models page for the models that run on the Neural Engine."
     },
@@ -176,6 +200,9 @@
     },
     "Refine Transcripts" : {
       "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
+    },
+    "Refining needs a language model" : {
+      "comment" : "Voice bubble warning when refining transcripts is on but no language model is installed."
     },
     "Remove filler words and fix grammar and punctuation with a language model that runs on this Mac." : {
       "comment" : "Description of the Refine Transcripts setting."
