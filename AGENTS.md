@@ -1,10 +1,12 @@
 # Casper
 
-## Worktrees
+## Branches and worktrees
 
 Several agents work on this repository at once, so make every change in its own git worktree instead of in the main checkout at `~/Developer/casper`. Create the worktree next to the main checkout on a new branch from `dev`, for example `git worktree add ../casper-<branch> -b <branch> dev`, and leave the main checkout on `dev`.
 
 Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree.
+
+Never push to `main`, since every push there publishes a release (see Releases). Push finished work directly to `dev` instead; that's always allowed, and this project doesn't use pull requests. From a worktree, rebase the branch onto `origin/dev` and run `git push origin HEAD:dev`.
 
 ## Third-party licenses
 
