@@ -1,5 +1,11 @@
 # Casper
 
+## Worktrees
+
+Several agents work on this repository at once, so make every change in its own git worktree instead of in the main checkout at `~/Developer/casper`. Create the worktree next to the main checkout on a new branch from `dev`, for example `git worktree add ../casper-<branch> -b <branch> dev`, and leave the main checkout on `dev`.
+
+Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree.
+
 ## Third-party licenses
 
 `Casper/Resources/Acknowledgements.txt` ships inside the app and holds the license text and notices for every third-party component compiled into the binary. Keep it current in the same change whenever you:
