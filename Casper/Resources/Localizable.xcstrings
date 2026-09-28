@@ -130,7 +130,13 @@
       "comment" : "Settings tab and window title for general app settings."
     },
     "Hold %@ to dictate" : {
-      "comment" : "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
+      "comment" : "Voice bubble hover text in hold mode. The argument is the dictation shortcut, such as ⌥Space."
+    },
+    "Hold the shortcut while you speak, or press it once to start and again to stop." : {
+      "comment" : "Explanation under the Shortcut Mode row in Settings > General."
+    },
+    "Hold to Talk" : {
+      "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
     },
     "How large the voice bubble is on screen." : {
       "comment" : "Description of the General setting for how large the floating voice bubble is."
@@ -160,7 +166,7 @@
       "comment" : "Title of the settings page for downloading and choosing the language models that refine transcripts."
     },
     "Listening" : {
-      "comment" : "Accessibility value of the voice bubble while the dictation shortcut is held."
+      "comment" : "Accessibility value of the voice bubble while dictation is recording."
     },
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
@@ -189,6 +195,12 @@
     "Permissions" : {
       "comment" : "Settings tab and window title for system permissions."
     },
+    "Press %@ to dictate" : {
+      "comment" : "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
+    },
+    "Press to Toggle" : {
+      "comment" : "Option in the Shortcut Mode setting: pressing the shortcut starts dictation and pressing it again stops it."
+    },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
     },
@@ -212,6 +224,9 @@
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
+    },
+    "Shortcut Mode" : {
+      "comment" : "Row title in Settings > General for whether the dictation shortcut is held while speaking or pressed to start and stop."
     },
     "Show Voice Bubble" : {
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."

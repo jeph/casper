@@ -1,7 +1,8 @@
 import AVFoundation
 import OSLog
 
-/// Push-to-talk dictation: records while the dictation hotkey is held, then types the refined transcript at the cursor.
+/// Hotkey-driven dictation: records while the hotkey is held, or from one press to the next in toggle mode, then types
+/// the refined transcript at the cursor.
 @MainActor
 final class DictationController {
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Dictation")
@@ -21,7 +22,7 @@ final class DictationController {
   private var nextDelivery = 0
   /// Text of dictations that finished before an earlier one, waiting to be typed in order, by dictation number.
   private var undelivered: [Int: String] = [:]
-  /// Stops the recording shortly after the hotkey is released, unless the hotkey is pressed again first.
+  /// Stops the recording shortly after the user ends it, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
   /// The active models' IDs, compared against the stored ones when settings change.
   private var activeSpeechModelID = SpeechModel.active?.id
@@ -31,10 +32,10 @@ final class DictationController {
   /// Whether the recording in progress will be refined, decided when it starts so its model loads while the user speaks.
   private var refinesRecording = false
 
-  /// How long recording continues after the hotkey is released.
+  /// How long recording continues after the hotkey is released, or pressed again in toggle mode.
   ///
-  /// People tend to let go while still finishing the last word, and the microphone delivers audio slightly after it's
-  /// spoken.
+  /// People tend to end a recording while still finishing the last word, and the microphone delivers audio slightly
+  /// after it's spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
   init(readiness: DictationReadiness) {
@@ -123,6 +124,10 @@ final class DictationController {
       self.pendingStop = nil
       return
     }
+    if recorder.isRecording, DictationMode.stored == .toggle {
+      stopRecordingAfterTail()
+      return
+    }
     // Access may have been turned off in System Settings since it was last checked.
     readiness.permissions.refresh()
     guard readiness.isReady else {
@@ -140,6 +145,12 @@ final class DictationController {
   }
 
   private func hotkeyReleased() {
+    guard DictationMode.stored == .hold else { return }
+    stopRecordingAfterTail()
+  }
+
+  /// Finishes the recording once `recordingTail` has passed.
+  private func stopRecordingAfterTail() {
     guard recorder.isRecording, pendingStop == nil else { return }
     pendingStop = Task.afterDelay(Self.recordingTail) { [weak self] in
       self?.pendingStop = nil

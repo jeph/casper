@@ -25,7 +25,7 @@ Casper is designed so dictation feels instant, from the moment you press the sho
 
 ## Features
 
-- **Push to talk** with any global shortcut (⌥Space by default). The shortcut doesn't need Input Monitoring permission. Recording continues for a moment after you let go so your last word isn't cut off, and pressing the shortcut again during that moment keeps the same recording going.
+- **Hold or toggle** with any global shortcut (⌥Space by default). Hold the shortcut while you speak, or switch **Shortcut Mode** on the General page to press it once to start and again to stop. The shortcut doesn't need Input Monitoring permission. Recording continues for a moment after you stop so your last word isn't cut off, and pressing the shortcut again during that moment keeps the same recording going.
 - **Voice bubble.** A small floating ghost shows a live waveform while you speak and animates while Casper transcribes. It stays above your windows on every Space, never takes focus from the app you're typing in, and remembers where you dragged it, even across displays. If something dictation needs is missing, such as a permission or a model, the bubble says what's wrong, and clicking it opens the Settings page that fixes it.
 - **Microphone choice.** Use the system default or pick a specific input. Casper follows devices as they're plugged in and removed, and keeps recording through audio configuration changes.
 - **Model library.** Download speech and language models in the sizes and precisions that suit your Mac, switch between them, and delete the ones you don't use. Downloads are verified before they're installed, so a failed download never leaves a half-installed model.

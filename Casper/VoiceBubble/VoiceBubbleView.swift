@@ -16,6 +16,7 @@ struct VoiceBubbleView: View {
   let readiness: DictationReadiness
   let settingsNavigation: SettingsNavigation
   @AppStorage(Hotkey.dictationStorageKey) private var hotkey = Hotkey.dictationDefault
+  @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @State private var recordingStart = ContinuousClock.now
   @State private var isHovered = false
   /// Whether the warning callout stays up after a hotkey press, without the bubble being hovered.
@@ -158,10 +159,18 @@ struct VoiceBubbleView: View {
     Group {
       switch callout {
       case .hotkey:
-        Text(
-          "Hold \(hotkey.displayName) to dictate",
-          comment: "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
-        )
+        switch dictationMode {
+        case .hold:
+          Text(
+            "Hold \(hotkey.displayName) to dictate",
+            comment: "Voice bubble hover text in hold mode. The argument is the dictation shortcut, such as ⌥Space."
+          )
+        case .toggle:
+          Text(
+            "Press \(hotkey.displayName) to dictate",
+            comment: "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
+          )
+        }
       case .warning(let warning):
         HStack(alignment: .firstTextBaseline, spacing: 6) {
           Image(systemName: "exclamationmark.triangle.fill")
@@ -231,7 +240,7 @@ struct VoiceBubbleView: View {
       readiness.warning.map { Text($0.message) }
         ?? Text("Ready", comment: "Accessibility value of the voice bubble when Casper isn't dictating.")
     case .recording:
-      Text("Listening", comment: "Accessibility value of the voice bubble while the dictation shortcut is held.")
+      Text("Listening", comment: "Accessibility value of the voice bubble while dictation is recording.")
     case .transcribing:
       Text("Transcribing", comment: "Accessibility value of the voice bubble while a recording is being transcribed.")
     }

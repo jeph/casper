@@ -5,6 +5,7 @@ import SwiftUI
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
+  @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
@@ -46,6 +47,18 @@ struct GeneralView: View {
             Text("The shortcut used to start dictation.")
           } icon: {
             Image(systemName: "keyboard")
+          }
+        }
+        Picker(selection: $dictationMode) {
+          ForEach(DictationMode.allCases) { mode in
+            Text(mode.title).tag(mode)
+          }
+        } label: {
+          Label {
+            Text("Shortcut Mode")
+            Text("Hold the shortcut while you speak, or press it once to start and again to stop.")
+          } icon: {
+            Image(systemName: "hand.tap")
           }
         }
       }

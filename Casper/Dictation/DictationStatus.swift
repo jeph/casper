@@ -6,7 +6,7 @@ import Observation
 final class DictationStatus {
   enum Phase {
     case idle
-    /// The hotkey is held, or was just released and the last moment of speech is still being recorded.
+    /// Dictation is recording, including the last moment of speech after the user ends the recording.
     case recording
     /// Recording ended and its transcript hasn't been typed yet.
     case transcribing
