@@ -21,17 +21,21 @@ env:
   # Every push to main is an alpha release, numbered by this workflow's run count like venmo-cli.
   VERSION: 0.0.${{ github.run_number }}
   BUILD_NUMBER: ${{ github.run_number }}
-  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
   XCODEGEN_VERSION: 2.46.0
   XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+  # Must match the entitlements in project.yml.
+  ENTITLEMENTS: '{"com.apple.security.device.audio-input":true}'
 
 jobs:
   # Builds with no access to secrets: package plugins and build scripts from dependencies run here.
   build:
-    runs-on: macos-26
+    # Casper needs the macOS 27 SDK; Xcode 26's AVFAudio doesn't mark AVAudioPCMBuffer Sendable.
+    runs-on: xcode-27
     timeout-minutes: 90
     permissions:
       contents: read
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -55,6 +59,9 @@ jobs:
       - name: Build production app
         run: make archive
 
+      - name: Check Package.resolved is unchanged
+        run: git diff --exit-code -- Casper.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
       - name: Verify production app
         run: |
           app=build/Casper.xcarchive/Products/Applications/Casper.app
@@ -63,7 +70,7 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")" = "$BUILD_NUMBER"
           test "$(lipo -archs "$app/Contents/MacOS/Casper")" = arm64
           test -s "$app/Contents/Resources/Acknowledgements.txt"
-          codesign --display --entitlements - --xml "$app" | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - - | grep -qx true
+          test "$(codesign --display --entitlements - --xml "$app" | plutil -convert json -o - -)" = "$ENTITLEMENTS"
 
       - name: Prepare build artifact
         run: |
@@ -149,7 +156,8 @@ jobs:
           done
           sign --options runtime --preserve-metadata=entitlements "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
-          codesign --display --entitlements - --xml "$app" | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - - | grep -qx true
+          # Entitlements carry over from the build artifact, so refuse anything beyond what Casper declares.
+          test "$(codesign --display --entitlements - --xml "$app" | plutil -convert json -o - -)" = "$ENTITLEMENTS"
 
           ditto -c -k --keepParent "$app" "$RUNNER_TEMP/Casper.zip"
           notarize "$RUNNER_TEMP/Casper.zip"

@@ -68,7 +68,7 @@ Settings opens the first time Casper launches. Grant microphone and Accessibilit
 
 ## Build from source
 
-To build Casper you need Xcode 26 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). The Xcode project is generated from `project.yml` and isn't committed, except for `Package.resolved`, which pins every package version.
+To build Casper you need Xcode 27 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). The Xcode project is generated from `project.yml` and isn't committed, except for `Package.resolved`, which pins every package version.
 
 ```sh
 make run       # generate the project, build, and launch

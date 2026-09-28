@@ -13,7 +13,8 @@ run: build
 
 test: generate
 	xcodebuild -project Casper.xcodeproj -scheme Casper -configuration Debug \
-		-derivedDataPath build -destination 'platform=macOS,arch=arm64' -skipPackagePluginValidation -quiet test
+		-derivedDataPath build -destination 'platform=macOS,arch=arm64' -skipPackagePluginValidation \
+		-onlyUsePackageVersionsFromResolvedFile -quiet test
 
 # A production build: optimized, stripped, with dSYMs beside it, and package versions taken only from the
 # committed Package.resolved. ARCHS goes on the command line so package targets skip x86_64 as well.
