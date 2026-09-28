@@ -224,7 +224,8 @@ jobs:
           echo "dmg-sha256=$(sha256sum "$RUNNER_TEMP/published/Casper-$VERSION.dmg" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
           echo "is-newest=$is_newest" >> "$GITHUB_OUTPUT"
 
-      - if: steps.publish.outputs.is-newest == 'true'
+      # Homebrew downloads anonymously, so a cask can't install from a private repository's releases.
+      - if: steps.publish.outputs.is-newest == 'true' && !github.event.repository.private
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # The deploy key must persist to push the cask; tap/ is never uploaded as an artifact.
         with: # zizmor: ignore[artipacked]
@@ -233,7 +234,7 @@ jobs:
           path: tap
 
       - name: Update tap
-        if: steps.publish.outputs.is-newest == 'true'
+        if: steps.publish.outputs.is-newest == 'true' && !github.event.repository.private
         env:
           DMG_SHA256: ${{ steps.publish.outputs.dmg-sha256 }}
         run: |
