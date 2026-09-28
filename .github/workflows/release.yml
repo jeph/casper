@@ -1,0 +1,246 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+# Run releases one at a time, in push order, so tap updates can't race. `queue: max` keeps every pending
+# run; the default would cancel a waiting release when a newer push arrives.
+concurrency:
+  group: release
+  queue: max
+
+# Unlike the default shell, an explicit bash shell adds pipefail, so a failure anywhere in a pipeline fails the step.
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Every push to main is an alpha release, numbered by this workflow's run count like venmo-cli.
+  VERSION: 0.0.${{ github.run_number }}
+  BUILD_NUMBER: ${{ github.run_number }}
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  XCODEGEN_VERSION: 2.46.0
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+jobs:
+  # Builds with no access to secrets: package plugins and build scripts from dependencies run here.
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install XcodeGen
+        run: |
+          archive="$RUNNER_TEMP/xcodegen.zip"
+          curl --fail --silent --show-error --location --output "$archive" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $archive" | shasum --algorithm 256 --check
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
+
+      - name: Build production app
+        run: make archive
+
+      - name: Verify production app
+        run: |
+          app=build/Casper.xcarchive/Products/Applications/Casper.app
+          plist="$app/Contents/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" = "$VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")" = "$BUILD_NUMBER"
+          test "$(lipo -archs "$app/Contents/MacOS/Casper")" = arm64
+          test -s "$app/Contents/Resources/Acknowledgements.txt"
+          codesign --display --entitlements - --xml "$app" | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - - | grep -qx true
+
+      - name: Prepare build artifact
+        run: |
+          mkdir dist
+          ditto -c -k --keepParent build/Casper.xcarchive/Products/Applications/Casper.app dist/Casper-unsigned.zip
+          ditto -c -k --keepParent build/Casper.xcarchive/dSYMs "dist/Casper-$VERSION-dSYMs.zip"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build
+          path: dist/
+          retention-days: 7
+
+  sign:
+    needs: build
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions: {}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: build
+          path: unsigned
+
+      - name: Sign, notarize, and package
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          : "${MACOS_CERTIFICATE_P12_BASE64:?missing certificate}"
+          : "${MACOS_CERTIFICATE_PASSWORD:?missing certificate password}"
+          : "${MACOS_SIGNING_IDENTITY:?missing signing identity}"
+          : "${APPLE_API_KEY_P8:?missing API key}"
+          : "${APPLE_API_KEY_ID:?missing API key ID}"
+          : "${APPLE_API_ISSUER_ID:?missing API issuer ID}"
+
+          keychain="$RUNNER_TEMP/release.keychain-db"
+          certificate="$RUNNER_TEMP/certificate.p12"
+          api_key="$RUNNER_TEMP/AuthKey_$APPLE_API_KEY_ID.p8"
+          keychain_password=$(openssl rand -hex 32)
+          cleanup() {
+            security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db" >/dev/null 2>&1 || true
+            security delete-keychain "$keychain" >/dev/null 2>&1 || true
+            rm -f "$certificate" "$api_key"
+          }
+          trap cleanup EXIT
+
+          (umask 077
+            printf '%s' "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$certificate"
+            printf '%s\n' "$APPLE_API_KEY_P8" > "$api_key")
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -P "$MACOS_CERTIFICATE_PASSWORD" -f pkcs12 -k "$keychain" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain"
+
+          sign() {
+            codesign --force --keychain "$keychain" --sign "$MACOS_SIGNING_IDENTITY" --timestamp "$@"
+          }
+          notarize() {
+            result="$RUNNER_TEMP/notary-$(basename "$1").json"
+            xcrun notarytool submit "$1" \
+              --key "$api_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" \
+              --wait --timeout 30m --no-progress --output-format json > "$result"
+            if [ "$(plutil -extract status raw -o - "$result")" != Accepted ]; then
+              xcrun notarytool log "$(plutil -extract id raw -o - "$result")" \
+                --key "$api_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID"
+              exit 1
+            fi
+          }
+
+          ditto -x -k unsigned/Casper-unsigned.zip "$RUNNER_TEMP/app"
+          app="$RUNNER_TEMP/app/Casper.app"
+
+          # Nested code first, then the app, keeping the entitlements the build embedded.
+          find "$app/Contents/Frameworks" -name '*.dylib' -print0 | while IFS= read -r -d '' library; do
+            sign --options runtime "$library"
+          done
+          sign --options runtime --preserve-metadata=entitlements "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --entitlements - --xml "$app" | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - - | grep -qx true
+
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/Casper.zip"
+          notarize "$RUNNER_TEMP/Casper.zip"
+          xcrun stapler staple "$app"
+          spctl --assess --type execute --verbose=2 "$app"
+
+          mkdir dist "$RUNNER_TEMP/dmg"
+          dmg="dist/Casper-$VERSION.dmg"
+          ditto "$app" "$RUNNER_TEMP/dmg/Casper.app"
+          ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
+          hdiutil create -quiet -volname Casper -srcfolder "$RUNNER_TEMP/dmg" -fs APFS -format ULMO "$dmg"
+          sign "$dmg"
+          notarize "$dmg"
+          xcrun stapler staple "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
+
+          cp "unsigned/Casper-$VERSION-dSYMs.zip" dist/
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed
+          path: dist/
+          retention-days: 7
+
+  release:
+    needs: sign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed
+          path: dist
+
+      - name: Publish release
+        run: |
+          cd dist
+          sha256sum ./* > SHA256SUMS
+          if ! gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release create "v$VERSION" ./* \
+              --target "$GITHUB_SHA" \
+              --title "Casper $VERSION" \
+              --generate-notes \
+              --latest
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # The deploy key must persist to push the cask; tap/ is never uploaded as an artifact.
+        with: # zizmor: ignore[artipacked]
+          repository: jeph/homebrew-tap
+          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          path: tap
+
+      - name: Update tap
+        run: |
+          dmg_sha=$(sha256sum "dist/Casper-$VERSION.dmg" | cut -d ' ' -f 1)
+          mkdir -p tap/Casks
+          cat > tap/Casks/casper.rb <<EOF
+          cask "casper" do
+            version "$VERSION"
+            sha256 "$dmg_sha"
+
+            url "https://github.com/$GITHUB_REPOSITORY/releases/download/v#{version}/Casper-#{version}.dmg"
+            name "Casper"
+            desc "Private, on-device dictation"
+            homepage "https://github.com/$GITHUB_REPOSITORY"
+
+            depends_on arch: :arm64
+            depends_on macos: :sequoia
+
+            app "Casper.app"
+
+            uninstall quit: "io.jeph.Casper"
+
+            zap trash: [
+              "~/Library/Application Support/Casper",
+              "~/Library/Caches/io.jeph.Casper",
+              "~/Library/Preferences/io.jeph.Casper.plist",
+            ]
+          end
+          EOF
+
+          git -C tap config user.name github-actions[bot]
+          git -C tap config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C tap add Casks/casper.rb
+          if ! git -C tap diff --cached --quiet; then
+            git -C tap commit -m "casper $VERSION"
+            git -C tap push
+          fi

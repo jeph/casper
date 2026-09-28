@@ -52,20 +52,33 @@ All cleanup models are 4-bit MLX conversions. Downloads range from about 350 MB 
 - Microphone access, to hear you
 - Accessibility access, to paste the text into the app you're using
 
+## Install
+
+Casper is alpha software. Every change to `main` publishes a new release, numbered 0.0.x, signed with a Developer ID certificate and notarized by Apple.
+
+With [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask jeph/tap/casper
+```
+
+Or download `Casper-<version>.dmg` from the [latest release](https://github.com/jeph/casper/releases/latest), open it, and drag Casper to Applications.
+
+Settings opens the first time Casper launches. Grant microphone and Accessibility access, download a speech model, and download a cleanup model or turn off **Refine Transcripts** on the General page. Then hold ⌥Space and start talking.
+
 ## Build from source
 
-There's no prebuilt release yet. To build Casper you need Xcode 26 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). The Xcode project is generated from `project.yml` and isn't committed.
+To build Casper you need Xcode 26 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). The Xcode project is generated from `project.yml` and isn't committed, except for `Package.resolved`, which pins every package version.
 
 ```sh
 make run       # generate the project, build, and launch
-make build     # generate and build only
+make build     # generate and build a debug app
 make test      # run the unit tests
+make archive   # build the optimized, stripped release app into build/Casper.xcarchive
 make generate  # generate Casper.xcodeproj to work in Xcode
 make lint      # check formatting with swift-format
 make format    # apply swift-format
 ```
-
-Settings opens the first time Casper launches. Grant microphone and Accessibility access, download a speech model, and download a cleanup model or turn off **Refine Transcripts** on the General page. Then hold ⌥Space and start talking.
 
 ## Translations
 
