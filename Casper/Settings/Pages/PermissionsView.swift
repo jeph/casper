@@ -23,6 +23,7 @@ struct PermissionsView: View {
           } icon: {
             Image(systemName: "mic")
           }
+          .labelStyle(.settings)
         }
         LabeledContent {
           ZStack(alignment: .trailing) {
@@ -37,6 +38,7 @@ struct PermissionsView: View {
           } icon: {
             Image(systemName: "accessibility")
           }
+          .labelStyle(.settings)
         }
       }
     }

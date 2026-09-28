@@ -129,14 +129,14 @@
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
     },
+    "Hold" : {
+      "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
+    },
     "Hold %@ to dictate" : {
       "comment" : "Voice bubble hover text in hold mode. The argument is the dictation shortcut, such as ⌥Space."
     },
     "Hold the shortcut to dictate." : {
-      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Hold to Talk is chosen."
-    },
-    "Hold to Talk" : {
-      "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
+      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Hold is chosen."
     },
     "How large the voice bubble is on screen." : {
       "comment" : "Description of the General setting for how large the floating voice bubble is."
@@ -198,11 +198,8 @@
     "Press %@ to dictate" : {
       "comment" : "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
     },
-    "Press to Toggle" : {
-      "comment" : "Option in the Shortcut Mode setting: pressing the shortcut starts dictation and pressing it again stops it."
-    },
-    "Press to start recording, press again to stop." : {
-      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Press to Toggle is chosen."
+    "Press to start dictation, press again to stop." : {
+      "comment" : "Explanation under the Shortcut Mode row in Settings > General when Toggle is chosen."
     },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
@@ -251,6 +248,9 @@
     },
     "The shortcut used to start dictation." : {
       "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
+    },
+    "Toggle" : {
+      "comment" : "Option in the Shortcut Mode setting: pressing the shortcut starts dictation and pressing it again stops it."
     },
     "Transcribing" : {
       "comment" : "Accessibility value of the voice bubble while a recording is being transcribed."

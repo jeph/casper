@@ -54,8 +54,8 @@ enum DictationMode: String, CaseIterable, Identifiable {
 
   var title: LocalizedStringResource {
     switch self {
-    case .hold: "Hold to Talk"
-    case .toggle: "Press to Toggle"
+    case .hold: "Hold"
+    case .toggle: "Toggle"
     }
   }
 
@@ -63,7 +63,7 @@ enum DictationMode: String, CaseIterable, Identifiable {
   var explanation: LocalizedStringResource {
     switch self {
     case .hold: "Hold the shortcut to dictate."
-    case .toggle: "Press to start recording, press again to stop."
+    case .toggle: "Press to start dictation, press again to stop."
     }
   }
 }

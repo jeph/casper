@@ -135,6 +135,7 @@ struct GeneralView: View {
       }
     }
     .formStyle(.grouped)
+    .labelStyle(.settings)
     // The user may change Login Items in System Settings while this pane is open.
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
       launchAtLoginStatus = LaunchAtLogin.status
