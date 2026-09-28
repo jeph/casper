@@ -177,6 +177,10 @@ final class DictationController {
   private func finishRecording() {
     guard recorder.isRecording else { return }
     let samples = recorder.stop()
+    // Counted before the recording ends, so the voice bubble goes straight from recording to transcribing.
+    if !samples.isEmpty {
+      status.transcriptionsInProgress += 1
+    }
     status.isRecording = false
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
@@ -186,7 +190,6 @@ final class DictationController {
       endSpeechModelUse()
       return
     }
-    status.transcriptionsInProgress += 1
     let dictation = nextDictation
     nextDictation += 1
     let refines = refinesRecording

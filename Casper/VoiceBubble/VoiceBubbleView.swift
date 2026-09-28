@@ -118,14 +118,10 @@ struct VoiceBubbleView: View {
   /// Whether the ghost shows an exclamation mark, while something is missing and it isn't showing dictation.
   private var showsWarning: Bool { !readiness.isReady && status.phase == .idle }
 
-  /// Red while recording, and blue while the model transcribes; otherwise the cut-out is left see-through, like the
-  /// logo's bars.
+  /// The system accent color from the moment recording starts until the last transcript is typed, so it never changes
+  /// between recording and transcribing; otherwise the cut-out is left see-through, like the logo's bars.
   private var cutoutFill: Color? {
-    switch status.phase {
-    case .idle: nil
-    case .recording: .red
-    case .transcribing: .blue
-    }
+    status.phase == .idle ? nil : .accentColor
   }
 
   private var callout: Callout? {
