@@ -6,12 +6,12 @@ Casper is a native macOS app written in Swift, built to get the most out of Appl
 
 ## Why Casper
 
-- **Private by design.** Transcription and cleanup happen on your Mac, with no account and no cloud service. The only thing Casper downloads is the models you pick, from Hugging Face, and each file is checked against its published SHA-256 checksum.
+- **Private by design.** Transcription and cleanup happen on your Mac, with no account and no cloud service. The only thing Casper downloads is the models you pick, from Hugging Face, and each file is checked against its published checksum.
 - **A real Mac app.** Casper is built with Swift, SwiftUI and AppKit. It has no Electron, no bundled browser and no Python runtime. It lives in your menu bar, launches at login, and follows the macOS conventions you expect.
 - **Made for Apple silicon.** Parakeet speech models run on the Neural Engine through Core ML. Qwen3-ASR speech models and the cleanup models run on the GPU with MLX, Apple's machine learning framework.
 - **You never wait for the last dictation.** Start the next one while the previous one is still being processed. Each dictation moves through the pipeline as soon as it can, and the text still arrives in the order you spoke it.
 - **Cleanup that keeps your words.** A local language model removes filler words and false starts, fixes punctuation, and handles self-corrections, so "send it Thursday, no wait, Friday" becomes "Send it Friday." It turns spoken punctuation, numbers, dates and prices into written form. When you dictate a question, Casper types the question instead of answering it. You can turn cleanup off to get the raw transcript.
-- **Works wherever you type.** Text goes in through a paste, which works in nearly every app, including browsers, Electron apps and terminals. Casper puts your clipboard back afterward and marks the dictated text so clipboard managers don't save it.
+- **Works wherever you type.** Text goes in through a paste, which works in nearly every app, including browsers, Electron apps and terminals. Casper puts your clipboard back afterward and marks the dictated text so clipboard managers that honor the [nspasteboard.org](http://nspasteboard.org) conventions skip it.
 
 ## Built for speed
 
