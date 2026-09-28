@@ -289,6 +289,9 @@ final class VoiceBubbleLayout {
 }
 
 /// Liquid Glass on macOS 26 and later, and the closest material before it, tinted with a color that fades in and out.
+///
+/// In a window that isn't active, as the bubble's panel never is, glass leaves its own tint out, except clear glass on
+/// macOS 27 and later. Elsewhere the tint is a solid fill beneath the content instead.
 private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Animatable {
   let shape: GlassShape
   /// Whether the glass responds to the pointer the way system controls do.
@@ -304,23 +307,27 @@ private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Anima
   }
 
   func body(content: Content) -> some View {
-    if #available(macOS 26, *) {
+    if #available(macOS 27, *) {
       content.glassEffect(glass, in: shape)
+    } else if #available(macOS 26, *) {
+      filled(content).glassEffect(.regular.interactive(isInteractive), in: shape)
     } else {
-      content
-        .background(tint?.opacity(tintAmount) ?? .clear, in: shape)
+      filled(content)
         .background(.regularMaterial, in: shape)
         .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
     }
   }
 
+  private func filled(_ content: Content) -> some View {
+    content.background(tint?.opacity(tintAmount) ?? .clear, in: shape)
+  }
+
   /// How strong the glass's tint is when fully faded in, short of solid so the tinted bubble still reads as glass.
   private static var fullTint: Double { 0.5 }
 
-  /// Regular glass, or clear glass when it's tinted: regular glass leaves its tint out in a window that isn't active,
-  /// as the bubble's panel never is, while clear glass keeps it.
-  @available(macOS 26, *)
+  /// Regular glass, or clear glass when it's tinted, since that's the glass that keeps its tint.
+  @available(macOS 27, *)
   private var glass: Glass {
     guard let tint else { return .regular.interactive(isInteractive) }
     return .clear.tint(tint.opacity(tintAmount * Self.fullTint)).interactive(isInteractive)
