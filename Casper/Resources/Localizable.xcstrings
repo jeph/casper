@@ -42,7 +42,7 @@
       "comment" : "The languages the Qwen3.5 and Qwen3.8 language models understand, shown on the Language Models page."
     },
     "25 European languages" : {
-      "comment" : "The languages the Parakeet speech model transcribes, shown on the Voice Models page."
+      "comment" : "The languages the Parakeet speech models transcribe, shown on the Voice Models page."
     },
     "30 languages and 22 Chinese dialects" : {
       "comment" : "The languages the Qwen3-ASR speech models transcribe, shown on the Voice Models page."
