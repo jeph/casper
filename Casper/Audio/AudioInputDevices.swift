@@ -43,11 +43,11 @@ final class AudioInputDevices {
 
   private func refresh() {
     let system = AudioObjectID(kAudioObjectSystemObject)
-    devices = Self.array(of: AudioObjectID.self, from: system, selector: kAudioHardwarePropertyDevices)
+    devices = Self.values(from: system, selector: kAudioHardwarePropertyDevices)
       .filter { Self.hasInput($0) && !Self.isHidden($0) }
       .compactMap(Self.device)
       .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    systemDefault = Self.array(of: AudioObjectID.self, from: system, selector: kAudioHardwarePropertyDefaultInputDevice)
+    systemDefault = Self.values(from: system, selector: kAudioHardwarePropertyDefaultInputDevice)
       .first
       .flatMap(Self.device)
   }
@@ -92,23 +92,18 @@ final class AudioInputDevices {
   }
 
   private static func isHidden(_ id: AudioObjectID) -> Bool {
-    array(of: UInt32.self, from: id, selector: kAudioDevicePropertyIsHidden).first == 1
+    values(from: id, selector: kAudioDevicePropertyIsHidden).first == 1
   }
 
-  private static func array<T>(of type: T.Type, from id: AudioObjectID, selector: AudioObjectPropertySelector) -> [T] {
+  /// A property made of 32-bit values, such as device IDs and flags.
+  private static func values(from id: AudioObjectID, selector: AudioObjectPropertySelector) -> ArraySlice<UInt32> {
     var address = address(selector)
     var size: UInt32 = 0
     guard AudioObjectGetPropertyDataSize(id, &address, 0, nil, &size) == noErr, size > 0 else { return [] }
-    let count = Int(size) / MemoryLayout<T>.stride
-    return [T](unsafeUninitializedCapacity: count) { buffer, initialized in
-      guard let base = buffer.baseAddress,
-        AudioObjectGetPropertyData(id, &address, 0, nil, &size, base) == noErr
-      else {
-        initialized = 0
-        return
-      }
-      initialized = Int(size) / MemoryLayout<T>.stride
-    }
+    var values = [UInt32](repeating: 0, count: Int(size) / MemoryLayout<UInt32>.stride)
+    guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &values) == noErr else { return [] }
+    // The property can shrink between reading its size and its data, such as when a device is unplugged.
+    return values.prefix(Int(size) / MemoryLayout<UInt32>.stride)
   }
 
   private static func string(from id: AudioObjectID, selector: AudioObjectPropertySelector) -> String? {

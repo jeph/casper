@@ -93,11 +93,7 @@ private struct WaveformBars: View {
 extension [AudioLevelMeter.Level] {
   /// The loudest level measured in the given time range, or 0 if none was.
   func peak(from start: ContinuousClock.Instant, to end: ContinuousClock.Instant) -> Float {
-    var peak: Float = 0
-    for level in self where level.time >= start && level.time < end {
-      peak = Swift.max(peak, level.value)
-    }
-    return peak
+    lazy.filter { $0.time >= start && $0.time < end }.map(\.value).max() ?? 0
   }
 }
 

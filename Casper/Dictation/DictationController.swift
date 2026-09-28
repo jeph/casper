@@ -190,12 +190,13 @@ final class DictationController {
           endLanguageModelUse()
         }
       }
-      var text = ""
+      let text: String
       do {
         let transcript = try await transcribe(samples)
         text = refines ? await refine(transcript) : transcript
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
+        text = ""
       }
       deliver(text, of: dictation)
     }
@@ -208,11 +209,10 @@ final class DictationController {
   private func deliver(_ text: String, of dictation: Int) {
     // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
     undelivered[dictation] = text.last.map { $0.isWhitespace ? text : text + " " } ?? ""
-    var ready = ""
-    while let next = undelivered.removeValue(forKey: nextDelivery) {
-      ready += next
-      nextDelivery += 1
-    }
+    let finished = (nextDelivery...).prefix { undelivered[$0] != nil }
+    let ready = finished.compactMap { undelivered[$0] }.joined()
+    nextDelivery += finished.count
+    undelivered = undelivered.filter { $0.key >= nextDelivery }
     if !ready.isEmpty {
       TextInserter.insert(ready)
     }
