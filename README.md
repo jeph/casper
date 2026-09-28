@@ -80,6 +80,15 @@ make lint      # check formatting with swift-format
 make format    # apply swift-format
 ```
 
+### Signing local builds
+
+macOS ties Casper's Microphone and Accessibility permissions to the app's signature. Without a certificate, builds are signed ad hoc, the signature changes every time, and you have to grant both permissions again after each build. To avoid that, add a signing certificate to your keychain once:
+
+1. In Xcode, open **Settings › Accounts** and sign in with your Apple ID.
+2. Select your team, click **Manage Certificates**, then click **+** and choose **Developer ID Application** if your team is in the Apple Developer Program, or **Apple Development** otherwise.
+
+After that, `make build`, `make run`, and `make archive` find the certificate and sign with it; there's nothing to configure. They prefer Developer ID, whose signature also matches the published releases, then Apple Development. If you have several certificates and want a specific one, set `LOCAL_SIGNING_IDENTITY` to its SHA-1 hash from `security find-identity -v -p codesigning`, in your environment or on the command line; set it to `-` to sign ad hoc.
+
 ## Translations
 
 All user-facing text lives in String Catalogs: `Casper/Resources/Localizable.xcstrings` for the app and `Casper/Resources/InfoPlist.xcstrings` for system text such as the microphone permission prompt. Write UI text as string literals in SwiftUI (`Text("…")`, `Button("…")`), and Xcode adds them to the catalog when you build in Xcode. To add a language, open a catalog in Xcode and click **+** in the language list.

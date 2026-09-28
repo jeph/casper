@@ -82,7 +82,11 @@ targets:
         CURRENT_PROJECT_VERSION: "0"
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
+        # Ad hoc unless `make` finds a signing certificate; see LOCAL_SIGNING_IDENTITY in the Makefile. It stays
+        # separate from CODE_SIGN_IDENTITY so a command-line value reaches only this target, not the package targets,
+        # which can't be signed with a certificate.
+        LOCAL_SIGNING_IDENTITY: "-"
+        CODE_SIGN_IDENTITY: $(LOCAL_SIGNING_IDENTITY)
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   # Tests compile the app sources they cover instead of loading the app, so running them doesn't start dictation.
