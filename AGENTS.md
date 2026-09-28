@@ -6,6 +6,8 @@ Several agents work on this repository at once, so make every change in its own 
 
 Documentation changes are the exception. Edit Markdown files such as `AGENTS.md` and `README.md` directly in the main checkout on `dev`; they don't need a worktree.
 
+Development is trunk-based: `dev` is the trunk, and work reaches it in small, frequent pushes. There's one installed copy of Casper on this machine, `/Applications/Casper.app`, and any agent may replace it with a build from its worktree to test changes. Always pull `dev` into the worktree before building, with `git fetch origin && git rebase origin/dev`. Resolve any conflicts, and if changes other agents landed on `dev` break yours or don't work with them, fix that in your branch before you build. That way every build tested on this machine is the current `dev` plus your work, so changes on `dev` get integrated and tested together as they land.
+
 Never push to `main`, since every push there publishes a release (see Releases). Push finished work directly to `dev` instead; that's always allowed, and this project doesn't use pull requests. From a worktree, rebase the branch onto `origin/dev` and run `git push origin HEAD:dev`. Worktree branches stay local: never push them to the repository under their own names.
 
 Once the push has landed, remove the worktree and its branch so they don't pile up on this machine. Confirm the work is on `dev` with `git fetch origin && git merge-base --is-ancestor HEAD origin/dev`, then from the main checkout run `git worktree remove ../casper-<branch>` and `git branch -D <branch>`.
