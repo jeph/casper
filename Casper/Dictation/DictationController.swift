@@ -54,11 +54,8 @@ final class DictationController {
       isPrepared: { recorder.isOpen },
       prepare: {
         // Asking for access is left to the first dictation, rather than prompting as Casper launches.
-        guard permissions.isMicrophoneAllowed else { return }
-        do {
-          try recorder.open()
-        } catch {
-          Self.logger.error("Couldn't turn the microphone on: \(error)")
+        if permissions.isMicrophoneAllowed {
+          recorder.open()
         }
       },
       release: { recorder.close() }
@@ -159,12 +156,7 @@ final class DictationController {
   private func startRecording() {
     guard !recorder.isRecording else { return }
     microphoneKeepAlive.useStarted()
-    do {
-      try recorder.start()
-    } catch {
-      Self.logger.error("Couldn't start recording: \(error)")
-      return
-    }
+    recorder.start()
     status.isRecording = true
     speechModel.beginUse()
     refinesRecording = TranscriptRefiner.isEnabled && LanguageModel.active != nil

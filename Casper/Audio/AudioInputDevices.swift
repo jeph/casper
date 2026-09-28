@@ -29,14 +29,20 @@ final class AudioInputDevices {
 
   private init() {
     refresh()
+    Self.observeChanges { [weak self] in self?.refresh() }
+  }
+
+  /// Calls `handler` on the main thread whenever an input device is plugged in or unplugged, or the system default
+  /// input changes.
+  static func observeChanges(_ handler: @escaping @MainActor () -> Void) {
+    let system = AudioObjectID(kAudioObjectSystemObject)
     for selector in [kAudioHardwarePropertyDevices, kAudioHardwarePropertyDefaultInputDevice] {
-      var address = Self.address(selector)
-      let status = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main) {
-        [weak self] _, _ in
-        MainActor.assumeIsolated { self?.refresh() }
+      var address = address(selector)
+      let status = AudioObjectAddPropertyListenerBlock(system, &address, .main) { _, _ in
+        MainActor.assumeIsolated { handler() }
       }
       if status != noErr {
-        Self.logger.error("Couldn't watch audio device property \(selector): \(status)")
+        logger.error("Couldn't watch audio device property \(selector): \(status)")
       }
     }
   }
@@ -52,8 +58,18 @@ final class AudioInputDevices {
       .flatMap(Self.device)
   }
 
+  /// The input to record from: the chosen device while it's connected, and otherwise the system default. `nil` when
+  /// there's no input at all.
+  nonisolated static func recordingDeviceID() -> AudioObjectID? {
+    let system = AudioObjectID(kAudioObjectSystemObject)
+    let systemDefault = values(from: system, selector: kAudioHardwarePropertyDefaultInputDevice)
+      .first { $0 != kAudioObjectUnknown }
+    guard let uid = UserDefaults.standard.string(forKey: uidStorageKey), !uid.isEmpty else { return systemDefault }
+    return deviceID(forUID: uid) ?? systemDefault
+  }
+
   /// The Core Audio ID of the device with this UID, or `nil` if it isn't connected.
-  static func deviceID(forUID uid: String) -> AudioObjectID? {
+  nonisolated private static func deviceID(forUID uid: String) -> AudioObjectID? {
     var address = address(kAudioHardwarePropertyTranslateUIDToDevice)
     var qualifier = uid as CFString
     var id = AudioObjectID(kAudioObjectUnknown)
@@ -70,12 +86,6 @@ final class AudioInputDevices {
     }
     guard status == noErr, id != kAudioObjectUnknown else { return nil }
     return id
-  }
-
-  /// The chosen input device, or `nil` for the system default, which is also used while the chosen one is unplugged.
-  static func chosenDeviceID() -> AudioObjectID? {
-    guard let uid = UserDefaults.standard.string(forKey: uidStorageKey), !uid.isEmpty else { return nil }
-    return deviceID(forUID: uid)
   }
 
   private static func device(_ id: AudioObjectID) -> AudioInputDevice? {
@@ -96,7 +106,10 @@ final class AudioInputDevices {
   }
 
   /// A property made of 32-bit values, such as device IDs and flags.
-  private static func values(from id: AudioObjectID, selector: AudioObjectPropertySelector) -> ArraySlice<UInt32> {
+  nonisolated private static func values(
+    from id: AudioObjectID,
+    selector: AudioObjectPropertySelector
+  ) -> ArraySlice<UInt32> {
     var address = address(selector)
     var size: UInt32 = 0
     guard AudioObjectGetPropertyDataSize(id, &address, 0, nil, &size) == noErr, size > 0 else { return [] }
@@ -115,7 +128,7 @@ final class AudioInputDevices {
     return value?.takeRetainedValue() as String?
   }
 
-  private static func address(
+  nonisolated private static func address(
     _ selector: AudioObjectPropertySelector,
     scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal
   ) -> AudioObjectPropertyAddress {
