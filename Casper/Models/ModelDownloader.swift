@@ -134,6 +134,11 @@ private final class Transfer: NSObject, URLSessionDownloadDelegate, Sendable {
     /// The bytes of the file downloading now.
     var currentBytes: Int64 = 0
     var reportedFraction = 0.0
+    /// Set once the download is cancelled.
+    ///
+    /// A cancel that arrives before the continuation is stored leaves the task for `download` to cancel, since the
+    /// task's completion, which cancelling sends, would find no continuation.
+    var isCancelled = false
   }
 
   private let totalBytes: Int64
@@ -149,15 +154,26 @@ private final class Transfer: NSObject, URLSessionDownloadDelegate, Sendable {
     let task = session.downloadTask(with: url)
     try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { continuation in
-        state.withLock { state in
+        let isCancelled = state.withLock { state in
           state.continuation = continuation
           state.destination = destination
           state.error = nil
+          return state.isCancelled
         }
-        task.resume()
+        if isCancelled {
+          task.cancel()
+        } else {
+          task.resume()
+        }
       }
     } onCancel: {
-      task.cancel()
+      let isWaiting = state.withLock { state in
+        state.isCancelled = true
+        return state.continuation != nil
+      }
+      if isWaiting {
+        task.cancel()
+      }
     }
   }
 
