@@ -5,12 +5,17 @@ import SwiftUI
 ///
 /// The ghost sits at the center of the panel and the waveform always grows to its right. Near the right edge of the
 /// screen, the grown bubble slides left as it grows, so it stays on screen with the ghost at its leading end.
+///
+/// Hovering over the bubble shows the dictation hotkey in a callout.
 struct VoiceBubbleView: View {
   let status: DictationStatus
   let layout: VoiceBubbleLayout
+  @AppStorage(Hotkey.dictationStorageKey) private var hotkey = Hotkey.dictationDefault
   @State private var recordingStart = ContinuousClock.now
   @State private var isHovered = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  private static let calloutGap: CGFloat = 8
 
   var body: some View {
     let metrics = layout.metrics
@@ -35,11 +40,13 @@ struct VoiceBubbleView: View {
           .padding(.trailing, metrics.waveformOuterPadding)
       }
     }
-    .modifier(BubbleBackground())
+    .modifier(GlassBackground(shape: Capsule(), isInteractive: true))
     // The circle grows from its center, and the grown bubble from its leading end so the ghost stays put.
     .scaleEffect(isHovered ? VoiceBubbleMetrics.hoverScale : 1, anchor: isRecording ? .leading : .center)
     .onHover { isHovered = $0 }
     .animation(.spring(duration: 0.25, bounce: 0.35), value: isHovered)
+    .overlay(alignment: .topLeading) { calloutAnchor }
+    .animation(.easeOut(duration: 0.15), value: showsHotkey)
     .offset(x: isRecording ? -layout.recordingShift : 0)
     .padding(.leading, metrics.panelSize.width / 2 - metrics.diameter / 2)
     .frame(width: metrics.panelSize.width, height: metrics.panelSize.height, alignment: .leading)
@@ -81,6 +88,45 @@ struct VoiceBubbleView: View {
     case .recording: .red
     case .transcribing: .blue
     }
+  }
+
+  private var showsHotkey: Bool { isHovered && status.phase == .idle }
+
+  /// Places the callout above the ghost, or below it near the top of the screen, lined up with the ghost's center or,
+  /// near the screen's side, its edge.
+  private var calloutAnchor: some View {
+    let isBelow = layout.showsCalloutBelow
+    let gap = Self.calloutGap
+    return Color.clear
+      .frame(width: layout.metrics.diameter, height: layout.metrics.diameter)
+      .overlay(alignment: Alignment(horizontal: layout.calloutAlignment, vertical: isBelow ? .bottom : .top)) {
+        ZStack {
+          if showsHotkey {
+            hotkeyCallout
+              .transition(.opacity.combined(with: .offset(y: isBelow ? -4 : 4)))
+          }
+        }
+        .frame(
+          width: VoiceBubbleMetrics.calloutMaxWidth,
+          alignment: Alignment(horizontal: layout.calloutAlignment, vertical: .center)
+        )
+        .alignmentGuide(isBelow ? .bottom : .top) { dimensions in
+          isBelow ? dimensions[.top] - gap : dimensions[.bottom] + gap
+        }
+      }
+      .allowsHitTesting(false)
+  }
+
+  private var hotkeyCallout: some View {
+    Text(
+      "Hold \(hotkey.displayName) to dictate",
+      comment: "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
+    )
+    .font(.callout)
+    .fixedSize(horizontal: false, vertical: true)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
+    .modifier(GlassBackground(shape: RoundedRectangle(cornerRadius: 12, style: .continuous), isInteractive: false))
   }
 
   /// The ghost's bar heights for the current phase, or `nil` for the logo's own.
@@ -138,12 +184,15 @@ struct VoiceBubbleView: View {
   }
 }
 
-/// The voice bubble's size, and how far the grown bubble slides left to stay on screen where it sits.
+/// The voice bubble's size, where it places its callout, and how far the grown bubble slides left to stay on screen
+/// where it sits.
 @MainActor
 @Observable
 final class VoiceBubbleLayout {
   var metrics: VoiceBubbleMetrics
   var recordingShift: CGFloat = 0
+  var showsCalloutBelow = false
+  var calloutAlignment = HorizontalAlignment.center
 
   init(metrics: VoiceBubbleMetrics) {
     self.metrics = metrics
@@ -151,15 +200,18 @@ final class VoiceBubbleLayout {
 }
 
 /// Liquid Glass on macOS 26 and later, and the closest material before it.
-private struct BubbleBackground: ViewModifier {
+private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier {
+  let shape: GlassShape
+  /// Whether the glass responds to the pointer the way system controls do.
+  let isInteractive: Bool
+
   func body(content: Content) -> some View {
     if #available(macOS 26, *) {
-      // Interactive glass responds to the pointer the way system controls do.
-      content.glassEffect(.regular.interactive(), in: .capsule)
+      content.glassEffect(.regular.interactive(isInteractive), in: shape)
     } else {
       content
-        .background(.regularMaterial, in: .capsule)
-        .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
+        .background(.regularMaterial, in: shape)
+        .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
     }
   }

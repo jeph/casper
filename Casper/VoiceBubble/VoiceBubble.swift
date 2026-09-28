@@ -97,6 +97,18 @@ final class VoiceBubble {
     let hoverScale = VoiceBubbleMetrics.hoverScale
     let hoveredRightEdge = clamped.x - radius + (radius + layout.metrics.reach) * hoverScale
     layout.recordingShift = max(hoveredRightEdge - visible.maxX, 0)
+    // The callout goes below the bubble when there's no room above it, and lines up with the ghost's edge rather than
+    // its center when centering it would cross the screen's edge.
+    layout.showsCalloutBelow = clamped.y + hoveredRadius + VoiceBubbleMetrics.calloutRoom > visible.maxY
+    let calloutHalfWidth = VoiceBubbleMetrics.calloutMaxWidth / 2
+    layout.calloutAlignment =
+      if clamped.x - calloutHalfWidth < visible.minX {
+        .leading
+      } else if clamped.x + calloutHalfWidth > visible.maxX {
+        .trailing
+      } else {
+        .center
+      }
     let size = layout.metrics.panelSize
     let frame = NSRect(
       x: clamped.x - size.width / 2,

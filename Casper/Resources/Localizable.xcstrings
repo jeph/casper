@@ -108,6 +108,9 @@
     "General" : {
       "comment" : "Settings sidebar item and page title for general app settings."
     },
+    "Hold %@ to dictate" : {
+      "comment" : "Shown when hovering over the voice bubble. The argument is the dictation shortcut, such as ⌥Space."
+    },
     "How large the voice bubble is on screen." : {
       "comment" : "Description of the General setting for how large the floating voice bubble is."
     },

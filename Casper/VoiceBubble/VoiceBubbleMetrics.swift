@@ -10,6 +10,10 @@ struct VoiceBubbleMetrics: Equatable {
   static let defaultSize = 3
   /// How much the bubble grows while the pointer is over it.
   static let hoverScale: CGFloat = 1.08
+  /// The widest the callout above or below the bubble gets before its text wraps.
+  static let calloutMaxWidth: CGFloat = 260
+  /// Room above and below the bubble for the callout and the gap to it, which doesn't scale with the bubble's size.
+  static let calloutRoom: CGFloat = 64
   private static let diameters: [CGFloat] = [38, 44, 50, 58, 66]
   /// The size the other dimensions were designed at, and are scaled from.
   private static let designDiameter: CGFloat = 44
@@ -40,6 +44,13 @@ struct VoiceBubbleMetrics: Equatable {
   /// How far the bubble reaches right of the ghost's center when it's grown.
   var reach: CGFloat { diameter / 2 + waveformInnerSpacing + waveformSize.width + waveformOuterPadding }
 
-  /// The panel's size, with the ghost at its center and room for the grown bubble on either side.
-  var panelSize: CGSize { CGSize(width: (reach + margin) * 2, height: diameter + margin * 2) }
+  /// The panel's size, with the ghost at its center and room for the grown bubble and the callout on either side.
+  ///
+  /// Placed beside the ghost, the callout can reach a whole callout's width to one side of it.
+  var panelSize: CGSize {
+    CGSize(
+      width: max(reach + margin, Self.calloutMaxWidth) * 2,
+      height: diameter + (margin + Self.calloutRoom) * 2
+    )
+  }
 }
