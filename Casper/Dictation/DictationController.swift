@@ -80,8 +80,8 @@ final class DictationController {
       }
     )
     hotkey = GlobalHotkey(
-      onPress: { [weak self] in self?.hotkeyPressed() },
-      onRelease: { [weak self] in self?.hotkeyReleased() }
+      onPress: { [weak self] in self?.handle(.press) },
+      onRelease: { [weak self] in self?.handle(.release) }
     )
     NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
       [weak self] _ in
@@ -117,17 +117,29 @@ final class DictationController {
     modelKeepAlive.apply()
   }
 
-  private func hotkeyPressed() {
-    // Pressing again before the recording stops continues the same recording.
-    if let pendingStop {
-      pendingStop.cancel()
-      self.pendingStop = nil
-      return
+  private func handle(_ event: DictationMode.HotkeyEvent) {
+    let action = DictationMode.stored.action(
+      for: event,
+      isRecording: recorder.isRecording,
+      isStopping: pendingStop != nil
+    )
+    switch action {
+    case .startRecording:
+      startRecordingIfReady()
+    case .stopRecording:
+      pendingStop = Task.afterDelay(Self.recordingTail) { [weak self] in
+        self?.pendingStop = nil
+        self?.finishRecording()
+      }
+    case .continueRecording:
+      pendingStop?.cancel()
+      pendingStop = nil
+    case nil:
+      break
     }
-    if recorder.isRecording, DictationMode.stored == .toggle {
-      stopRecordingAfterTail()
-      return
-    }
+  }
+
+  private func startRecordingIfReady() {
     // Access may have been turned off in System Settings since it was last checked.
     readiness.permissions.refresh()
     guard readiness.isReady else {
@@ -142,20 +154,6 @@ final class DictationController {
       return
     }
     startRecording()
-  }
-
-  private func hotkeyReleased() {
-    guard DictationMode.stored == .hold else { return }
-    stopRecordingAfterTail()
-  }
-
-  /// Finishes the recording once `recordingTail` has passed.
-  private func stopRecordingAfterTail() {
-    guard recorder.isRecording, pendingStop == nil else { return }
-    pendingStop = Task.afterDelay(Self.recordingTail) { [weak self] in
-      self?.pendingStop = nil
-      self?.finishRecording()
-    }
   }
 
   private func startRecording() {

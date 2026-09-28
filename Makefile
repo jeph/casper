@@ -1,4 +1,4 @@
-.PHONY: generate build run lint format clean
+.PHONY: generate build run test lint format clean
 
 generate:
 	xcodegen generate --quiet
@@ -11,11 +11,15 @@ build: generate
 run: build
 	open build/Build/Products/Debug/Casper.app
 
+test: generate
+	xcodebuild -project Casper.xcodeproj -scheme Casper -configuration Debug \
+		-derivedDataPath build -destination 'platform=macOS,arch=arm64' -skipPackagePluginValidation -quiet test
+
 lint:
-	swift format lint --strict --recursive Casper
+	swift format lint --strict --recursive Casper CasperTests
 
 format:
-	swift format format --in-place --recursive Casper
+	swift format format --in-place --recursive Casper CasperTests
 
 clean:
 	-trash build Casper.xcodeproj Casper/Info.plist Casper/Casper.entitlements

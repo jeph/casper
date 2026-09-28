@@ -59,6 +59,7 @@ There's no prebuilt release yet. To build Casper you need Xcode 26 or later and 
 ```sh
 make run       # generate the project, build, and launch
 make build     # generate and build only
+make test      # run the unit tests
 make generate  # generate Casper.xcodeproj to work in Xcode
 make lint      # check formatting with swift-format
 make format    # apply swift-format
