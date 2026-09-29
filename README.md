@@ -17,7 +17,7 @@ Casper is a native macOS app written in Swift, built to get the most out of Appl
 
 Casper is designed so dictation feels instant, from the moment you press the shortcut to the moment the text lands.
 
-- **Models load while you talk.** Pressing the shortcut starts loading the models in the background, so they're usually ready by the time you finish speaking. You can keep the microphone and models ready between dictations for anywhere from no time at all to as long as Casper is running.
+- **Models stay loaded.** The speech and language models load when Casper starts and stay in memory, so no dictation waits for them. Switching models loads the new one in the background. You can also keep the microphone on between dictations for anywhere from no time at all to as long as Casper is running.
 - **Neural Engine and GPU working together.** With a Parakeet speech model, the Neural Engine transcribes your latest dictation while the GPU cleans up the one before it.
 - **Speculative decoding.** A cleaned-up transcript mostly repeats the transcript, so Casper guesses the next words from what you said and has the model check several of them in a single pass. This technique, called prompt lookup decoding, produces exactly the same text as decoding one word at a time, just faster. It's used with the Qwen3 cleanup models; Qwen3.5 and Qwen3.8 are built in a way that doesn't support it.
 - **The cleanup instructions are read once.** The model processes the cleanup instructions when it loads and reuses that work for every dictation, so it only has to read your words.

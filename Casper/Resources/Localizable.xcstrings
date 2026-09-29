@@ -27,16 +27,16 @@
       }
     },
     "1 Minute" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
     "10 Minutes" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
     "119 languages and dialects" : {
       "comment" : "The languages the Qwen3 language models understand, shown on the Language Models page."
     },
     "15 Minutes" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
     "201 languages and dialects" : {
       "comment" : "The languages the Qwen3.5 and Qwen3.8 language models understand, shown on the Language Models page."
@@ -48,7 +48,7 @@
       "comment" : "The languages the Qwen3-ASR speech models transcribe, shown on the Voice Models page."
     },
     "5 Minutes" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: how long the microphone stays on, or the models stay loaded, after a dictation."
+      "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
     "A bubble on screen that shows when Casper is listening. Drag it to move it." : {
       "comment" : "Description of the General setting that shows or hides the floating voice bubble."
@@ -69,7 +69,7 @@
       "comment" : "Status in Settings > Permissions when the app has been granted a permission, such as microphone or accessibility access."
     },
     "Always" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: the microphone stays on, or the models stay loaded, the whole time Casper runs."
+      "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper runs."
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
@@ -141,9 +141,6 @@
     "How large the voice bubble is on screen." : {
       "comment" : "Description of the General setting for how large the floating voice bubble is."
     },
-    "How long a model stays in memory after your last dictation. Loading into memory adds a small delay." : {
-      "comment" : "Description of the Keep Model Alive setting, whose options are Never, a number of minutes, or Always. The models are the speech-to-text model and the language model that refines transcripts."
-    },
     "How long the mic stays on after your last dictation. Mic reactivation adds a recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always. Mic is short for microphone."
     },
@@ -155,9 +152,6 @@
     },
     "Keep Microphone On" : {
       "comment" : "Setting that keeps the microphone on after a dictation."
-    },
-    "Keep Model Alive" : {
-      "comment" : "Setting for how long the speech-to-text model and the language model that refines transcripts stay loaded in memory after a dictation."
     },
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
@@ -181,7 +175,7 @@
       "comment" : "Heading on the Voice Models page for the models that run on the Neural Engine."
     },
     "Never" : {
-      "comment" : "Option in the Keep Microphone On and Keep Model Alive settings: the microphone turns off, or the models unload, as soon as a dictation ends."
+      "comment" : "Option in the Keep Microphone On setting: the microphone turns off as soon as a dictation ends."
     },
     "Open Casper automatically when you log in to your Mac." : {
       "comment" : "Explanation under the Start at Login toggle in Settings > General."

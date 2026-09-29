@@ -1,7 +1,7 @@
 import Foundation
 
-/// How long something Casper needs for dictation, such as the microphone or the models, stays ready after the
-/// last dictation, so the next one doesn't wait for it.
+/// How long something Casper needs for dictation, such as the microphone, stays ready after the last dictation, so
+/// the next one doesn't wait for it.
 enum KeepAlive: String, CaseIterable, Identifiable {
   /// Released as soon as each dictation ends.
   case never
@@ -14,8 +14,6 @@ enum KeepAlive: String, CaseIterable, Identifiable {
 
   /// The `UserDefaults` key for how long the microphone stays on.
   static let microphoneStorageKey = "microphoneKeepAlive"
-  /// The `UserDefaults` key for how long the speech and language models stay loaded.
-  static let modelStorageKey = "modelKeepAlive"
   static let defaultValue = KeepAlive.fiveMinutes
 
   /// The setting stored under `key`, or the default if none is stored.

@@ -1,7 +1,6 @@
 import Foundation
 
-/// Keeps something dictation needs, such as the microphone or the models, ready for as long as its keep-alive
-/// setting says.
+/// Keeps something dictation needs, such as the microphone, ready for as long as its keep-alive setting says.
 ///
 /// The owner reports when a dictation starts and stops using the resource. The schedule decides when to prepare and
 /// release it: at launch, after the last use, and whenever the setting changes.
@@ -60,8 +59,7 @@ final class KeepAliveSchedule {
 
   /// Prepares or releases the resource, or schedules its release, as the setting says.
   ///
-  /// Call when a dictation stops using the resource, or when what the resource is changes, such as switching to another
-  /// speech model. A timed setting counts from when this runs.
+  /// Call when a dictation stops using the resource. A timed setting counts from when this runs.
   func apply() {
     scheduledRelease?.cancel()
     scheduledRelease = nil

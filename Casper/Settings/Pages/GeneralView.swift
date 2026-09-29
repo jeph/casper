@@ -71,14 +71,6 @@ struct GeneralView: View {
             Image(systemName: "timer")
           }
         }
-        KeepAlivePicker(storageKey: KeepAlive.modelStorageKey) {
-          Label {
-            Text("Keep Model Alive")
-            Text("How long a model stays in memory after your last dictation. Loading into memory adds a small delay.")
-          } icon: {
-            Image(systemName: "memorychip")
-          }
-        }
       }
       Section {
         Toggle(isOn: $showsVoiceBubble) {

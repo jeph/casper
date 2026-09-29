@@ -14,10 +14,11 @@ protocol LoadableModel: DownloadableModel {
   static func unload(_ loaded: Loaded) async
 }
 
-/// Loads the active model of one kind when dictation needs it, and unloads it to free memory.
+/// Loads the active model of one kind and keeps it in memory, so dictations don't wait for it.
 ///
-/// A model counts as in use from when a recording starts until dictation is done with it. When to unload it is up to
-/// a `KeepAliveSchedule`. When the active model changes, the previous one unloads as soon as nothing is using it.
+/// A model stays loaded until the active model changes, or until `release()` says it's no longer needed. A model
+/// counts as in use from when a recording starts until dictation is done with it, and one that's replaced or released
+/// while in use unloads once nothing is using it.
 @MainActor
 final class ModelLoader<Model: LoadableModel> {
   enum LoadError: Error {
@@ -27,30 +28,44 @@ final class ModelLoader<Model: LoadableModel> {
   typealias Loading = Task<Model.Loaded, any Error>
   private typealias Loaded = (model: Model, loading: Loading)
 
-  /// The loaded model, or the load in progress; `nil` while unloaded.
+  /// The active model, or its load in progress; `nil` while nothing is loaded.
   private var loaded: Loaded?
   /// Models the active model replaced while dictations were using them, unloaded once nothing is.
   private var replaced: [Loaded] = []
   /// How many dictations are using a model.
   private var users = 0
+  /// Whether the model stays loaded once no dictation is using it.
+  private var staysLoaded = false
 
-  var isInUse: Bool { users > 0 }
-  var isLoaded: Bool { loaded != nil }
+  /// Loads the active model, replacing a model that's no longer active, and keeps it loaded.
+  func keepLoaded() {
+    staysLoaded = true
+    load()
+  }
+
+  /// Unloads the model, once nothing is using it, because nothing needs it anymore.
+  func release() {
+    staysLoaded = false
+    if users == 0 {
+      retireLoaded()
+    }
+  }
 
   /// Marks the model as in use and starts loading it if needed, so it loads while the user is still speaking.
   func beginUse() {
-    // Loading first lets a model the active one replaced unload right away, if no other dictation is using it.
-    load()
     users += 1
+    load()
   }
 
-  /// Marks one use of the model as finished, unloading models that are no longer active once nothing is in use.
+  /// Marks one use of the model as finished, unloading models nothing needs once nothing is using them.
   func endUse() {
     users -= 1
     guard users == 0 else { return }
     replaced.forEach(Self.unload)
     replaced = []
-    unloadIfInactive()
+    if !staysLoaded {
+      retireLoaded()
+    }
   }
 
   /// The active model, loading it if needed.
@@ -61,14 +76,17 @@ final class ModelLoader<Model: LoadableModel> {
     return loading
   }
 
-  /// Starts loading the active model, if it isn't loaded or loading already, and returns it.
+  /// Starts loading the active model, unless it's loaded or loading already, and returns it.
   @discardableResult
-  func load() -> Loading? {
-    guard let model = Model.active else { return nil }
+  private func load() -> Loading? {
+    guard let model = Model.active else {
+      retireLoaded()
+      return nil
+    }
     if let loaded, loaded.model.id == model.id {
       return loaded.loading
     }
-    unload()
+    retireLoaded()
     let loading = Loading.detached(priority: .userInitiated) {
       let start = ContinuousClock.now
       let instance = try await model.load()
@@ -88,7 +106,7 @@ final class ModelLoader<Model: LoadableModel> {
   }
 
   /// Unloads the loaded model, or once nothing is using it if a dictation is.
-  func unload() {
+  private func retireLoaded() {
     guard let loaded else { return }
     self.loaded = nil
     if users == 0 {
@@ -96,12 +114,6 @@ final class ModelLoader<Model: LoadableModel> {
     } else {
       replaced.append(loaded)
     }
-  }
-
-  /// Unloads the loaded model if it's no longer the active one and nothing is using it.
-  func unloadIfInactive() {
-    guard users == 0, let loaded, loaded.model.id != Model.active?.id else { return }
-    unload()
   }
 
   /// Unloads a model after its load finishes.

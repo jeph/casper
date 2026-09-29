@@ -13,7 +13,6 @@ final class DictationController {
   private let languageModel: ModelLoader<LanguageModel>
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
-  private let modelKeepAlive: KeepAliveSchedule
   private let readiness: DictationReadiness
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
@@ -42,11 +41,9 @@ final class DictationController {
     self.readiness = readiness
     let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
-    let speechModel = ModelLoader<SpeechModel>()
-    let languageModel = ModelLoader<LanguageModel>()
     self.recorder = recorder
-    self.speechModel = speechModel
-    self.languageModel = languageModel
+    speechModel = ModelLoader()
+    languageModel = ModelLoader()
     status = DictationStatus(meter: recorder.meter)
     microphoneKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.microphoneStorageKey,
@@ -60,58 +57,48 @@ final class DictationController {
       },
       release: { recorder.close() }
     )
-    // The speech and language models share one keep-alive setting, since each dictation needs both.
-    modelKeepAlive = KeepAliveSchedule(
-      storageKey: KeepAlive.modelStorageKey,
-      isInUse: { speechModel.isInUse || languageModel.isInUse },
-      isPrepared: { speechModel.isLoaded || languageModel.isLoaded },
-      prepare: {
-        speechModel.load()
-        if TranscriptRefiner.isEnabled {
-          languageModel.load()
-        }
-      },
-      release: {
-        speechModel.unload()
-        languageModel.unload()
-      }
-    )
     hotkey = GlobalHotkey(
       onPress: { [weak self] in self?.handle(.press) },
       onRelease: { [weak self] in self?.handle(.release) }
     )
+    // The models load as Casper launches and stay loaded, so no dictation waits for them.
+    speechModel.keepLoaded()
+    if refinesTranscripts {
+      languageModel.keepLoaded()
+    }
     NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) {
       [weak self] _ in
       MainActor.assumeIsolated {
-        self?.activeModelsMayHaveChanged()
+        // The refine setting comes first, so a model chosen at the same time loads only if refining is on.
         self?.refineSettingMayHaveChanged()
+        self?.activeModelsMayHaveChanged()
       }
     }
   }
 
-  /// Unloads previous models once nothing is using them, and loads new ones if the keep-alive setting says to.
+  /// Loads the language model if refining was turned on, and unloads it once nothing is using it if it was turned off.
+  private func refineSettingMayHaveChanged() {
+    let enabled = TranscriptRefiner.isEnabled
+    guard enabled != refinesTranscripts else { return }
+    refinesTranscripts = enabled
+    if enabled {
+      languageModel.keepLoaded()
+    } else {
+      languageModel.release()
+    }
+  }
+
+  /// Replaces a model the user switched away from with the newly chosen one.
   private func activeModelsMayHaveChanged() {
     let speechModelID = SpeechModel.active?.id
     let languageModelID = LanguageModel.active?.id
     guard speechModelID != activeSpeechModelID || languageModelID != activeLanguageModelID else { return }
     activeSpeechModelID = speechModelID
     activeLanguageModelID = languageModelID
-    speechModel.unloadIfInactive()
-    languageModel.unloadIfInactive()
-    modelKeepAlive.apply()
-  }
-
-  /// Unloads the language model once nothing is using it if refining was turned off, and loads it if it was turned on
-  /// and the keep-alive setting says to.
-  private func refineSettingMayHaveChanged() {
-    let enabled = TranscriptRefiner.isEnabled
-    guard enabled != refinesTranscripts else { return }
-    refinesTranscripts = enabled
-    // A dictation using the model unloads it when it's done.
-    if !enabled, !languageModel.isInUse {
-      languageModel.unload()
+    speechModel.keepLoaded()
+    if refinesTranscripts {
+      languageModel.keepLoaded()
     }
-    modelKeepAlive.apply()
   }
 
   private func handle(_ event: DictationMode.HotkeyEvent) {
@@ -163,7 +150,6 @@ final class DictationController {
     if refinesRecording {
       languageModel.beginUse()
     }
-    modelKeepAlive.useStarted()
   }
 
   private func finishRecording() {
@@ -177,9 +163,9 @@ final class DictationController {
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
       if refinesRecording {
-        endLanguageModelUse()
+        languageModel.endUse()
       }
-      endSpeechModelUse()
+      speechModel.endUse()
       return
     }
     let dictation = nextDictation
@@ -191,7 +177,7 @@ final class DictationController {
       defer {
         status.transcriptionsInProgress -= 1
         if refines {
-          endLanguageModelUse()
+          languageModel.endUse()
         }
       }
       let text: String
@@ -224,7 +210,7 @@ final class DictationController {
 
   /// Transcribes a recording, then ends its use of the speech model.
   private func transcribe(_ samples: [Float]) async throws -> String {
-    defer { endSpeechModelUse() }
+    defer { speechModel.endUse() }
     let start = ContinuousClock.now
     let text = try await speechModel.model().value.transcribe(samples, sampleRate: SpeechModel.sampleRate)
     let seconds = Double(samples.count) / SpeechModel.sampleRate
@@ -246,18 +232,5 @@ final class DictationController {
       Self.logger.error("Couldn't refine, so the transcript is typed as it is: \(error)")
       return transcript
     }
-  }
-
-  private func endSpeechModelUse() {
-    speechModel.endUse()
-    modelKeepAlive.apply()
-  }
-
-  private func endLanguageModelUse() {
-    languageModel.endUse()
-    if !TranscriptRefiner.isEnabled, !languageModel.isInUse {
-      languageModel.unload()
-    }
-    modelKeepAlive.apply()
   }
 }
