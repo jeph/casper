@@ -213,8 +213,7 @@ final class DictationController {
   private func transcribe(_ recording: [Float]) async throws -> String {
     defer { speechModel.endUse() }
     let start = ContinuousClock.now
-    let speech =
-      SilenceTrimmer.isEnabled ? SilenceTrimmer().trim(recording, sampleRate: SpeechModel.sampleRate) : recording
+    let speech = await Self.shortenSilence(in: recording)
     let trimmed = ContinuousClock.now
     let text = try await speechModel.model().value.transcribe(speech, sampleRate: SpeechModel.sampleRate)
     let recordingSeconds = Double(recording.count) / SpeechModel.sampleRate
@@ -227,6 +226,15 @@ final class DictationController {
       """
     )
     return text
+  }
+
+  /// Returns the recording with its silence shortened, unless that's turned off.
+  ///
+  /// Runs off the main actor, since the work grows with the recording's length and would otherwise hold up the UI.
+  @concurrent
+  nonisolated private static func shortenSilence(in recording: [Float]) async -> [Float] {
+    guard SilenceTrimmer.isEnabled else { return recording }
+    return SilenceTrimmer().trim(recording, sampleRate: SpeechModel.sampleRate)
   }
 
   /// Refines a transcript, or returns it unchanged if refining fails.
