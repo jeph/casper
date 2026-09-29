@@ -18,3 +18,4 @@ xcuserdata/
 .DS_Store
 .idea/
 /WATCHDOG.yml
+__pycache__/
