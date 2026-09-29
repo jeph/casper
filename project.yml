@@ -88,8 +88,6 @@ targets:
         LOCAL_SIGNING_IDENTITY: "-"
         CODE_SIGN_IDENTITY: $(LOCAL_SIGNING_IDENTITY)
         GENERATE_INFOPLIST_FILE: NO
-        # Exposes the Objective-C that catches the exceptions AVFAudio raises, which Swift can't.
-        SWIFT_OBJC_BRIDGING_HEADER: Casper/Casper-Bridging-Header.h
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   # Tests compile the app sources they cover instead of loading the app, so running them doesn't start dictation.
   CasperTests:

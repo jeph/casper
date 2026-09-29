@@ -50,11 +50,11 @@ final class AudioRecorder {
   /// Starts recording, turning the microphone on first if needed.
   ///
   /// This returns without waiting for the microphone, which records from when it's on. A device that couldn't be
-  /// turned on is tried again.
+  /// turned on is tried again, and again after short delays if it still fails.
   func start() {
     recording.begin()
     microphone.isWanted.withLock { $0 = true }
-    Task { [microphone] in await microphone.update(retryingFailedDevice: true) }
+    Task { [microphone] in await microphone.recordingStarted() }
   }
 
   /// Stops recording and returns the samples recorded since `start()`, leaving the microphone on.
@@ -73,233 +73,199 @@ final class AudioRecorder {
   }
 }
 
-/// Keeps an audio engine running on the device to record from while the microphone is wanted, sending its audio to
+/// Keeps a capture session running on the device to record from while the microphone is wanted, sending its audio to
 /// the recording.
 ///
-/// Turning an engine on or off can block for seconds, such as while Bluetooth headphones switch to their headset
-/// profile, so the engine runs on its own queue instead of the main thread, where it would hold up the hotkey and
-/// the voice bubble.
+/// A capture session records from only the device it's given. AVAudioEngine, which this replaced, follows the system
+/// default input on its own, and turns it on when it changes, which switches Bluetooth headphones to their headset
+/// profile and makes them sound like a phone call. A session also converts the device's audio to the recording's
+/// format itself, whatever rate the device changes to.
+///
+/// Turning a session on or off can block for seconds, such as while Bluetooth headphones switch to their headset
+/// profile, so it runs on its own queue instead of the main thread, where it would hold up the hotkey and the voice
+/// bubble.
 private actor Microphone {
   private enum MicrophoneError: Error {
-    case noInput
-    case unsupportedFormat(AVAudioFormat)
+    /// AVFoundation doesn't offer the device for capture, though Core Audio lists it.
+    case notCapturable
   }
 
-  /// Called by Core Audio when a device property changes, and kept so the same block can be removed.
-  private typealias PropertyListener =
-    @Sendable @convention(block) (UInt32, UnsafePointer<AudioObjectPropertyAddress>) -> Void
-
-  /// A running engine, the device it was opened on, and what watches it for changes that need the engine restarted.
+  /// A running capture session, the device it records from, and what watches it for errors.
   private struct Session {
-    let engine: AVAudioEngine
-    let deviceID: AudioObjectID
-    let configurationObserver: any NSObjectProtocol
-    let sampleRateListener: PropertyListener
+    let captureSession: AVCaptureSession
+    let deviceUID: String
+    let errorObserver: any NSObjectProtocol
   }
 
-  private static let sampleRateAddress = AudioObjectPropertyAddress(
-    mSelector: kAudioDevicePropertyNominalSampleRate,
-    mScope: kAudioObjectPropertyScopeGlobal,
-    mElement: kAudioObjectPropertyElementMain
-  )
+  /// How long to wait before each new try at a device that couldn't be turned on, such as Bluetooth headphones that
+  /// are still switching to their headset profile.
+  private static let retryDelays: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2)]
 
   /// Whether the microphone should be on.
   ///
   /// Callers set this before asking for an update, so updates running in any order end with the latest setting.
   nonisolated let isWanted = Mutex(false)
   private let recording: Recording
+  private let capture: Capture
   private let queue = DispatchSerialQueue(label: "io.jeph.Casper.Microphone", qos: .userInitiated)
+  /// Where sessions deliver audio, apart from `queue` so turning a session on or off doesn't hold up audio.
+  private let sampleQueue = DispatchSerialQueue(label: "io.jeph.Casper.Microphone.samples", qos: .userInitiated)
   private var session: Session?
-  /// The device that last couldn't be turned on.
+  /// The device to record from when the microphone was last updated, or `nil` if there was none, so a device that
+  /// goes away and comes back with the same UID counts as a change.
+  private var targetDeviceUID: String?
+  /// The device that last couldn't be turned on, or stopped working.
   ///
-  /// It isn't tried again until a recording starts or the device to record from changes. Otherwise every settings
-  /// change, and the device list changes that turning an engine on causes itself, would try it again.
-  private var failedDeviceID: AudioObjectID?
+  /// Apart from the delayed retries, it isn't tried again until a recording starts or the device to record from
+  /// changes. Otherwise every settings change would try it again.
+  private var failedDeviceUID: String?
+  /// Counts series of delayed retries.
+  ///
+  /// A series starts when a recording starts or the device to record from changes, and replaces the one before, whose
+  /// pending retries are dropped.
+  private var retrySeries = 0
+  /// How many delayed retries the current series has left, so a device that keeps failing isn't retried endlessly.
+  private var retriesLeft = retryDelays.count
 
   nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
 
   init(recording: Recording) {
     self.recording = recording
+    capture = Capture(recording: recording)
   }
 
-  /// Turns the engine on or off, or moves it to the device to record from, as needed.
+  /// Turns the microphone on for a recording that just started, trying again a device that couldn't be turned on.
+  func recordingStarted() {
+    startRetrySeries()
+    update(retryingFailedDevice: true)
+  }
+
+  /// Turns the microphone on or off, or moves it to the device to record from, as needed.
   ///
-  /// - Parameters:
-  ///   - restartingEngine: Whether the engine stopped for an audio configuration change and needs its input read
-  ///     again, if it stays on the same device.
-  ///   - retryingFailedDevice: Whether to try again to turn on a device that couldn't be turned on.
-  func update(restartingEngine: Bool = false, retryingFailedDevice: Bool = false) {
+  /// - Parameter retryingFailedDevice: Whether to try again to turn on a device that couldn't be turned on.
+  func update(retryingFailedDevice: Bool = false) {
     guard isWanted.withLock({ $0 }) else { return close() }
-    guard let deviceID = AudioInputDevices.recordingDeviceID() else {
+    let deviceUID = AudioInputDevices.recordingDeviceUID()
+    if deviceUID != targetDeviceUID {
+      targetDeviceUID = deviceUID
+      failedDeviceUID = nil
+      startRetrySeries()
+    }
+    guard let deviceUID else {
       logger.error("There's no microphone to record from")
       return close()
     }
     if let session {
-      // Compared with the device the engine was opened on, whose sample rate is watched, and the one it's on now,
-      // because a device that goes away while in use leaves the engine running on the system default, and may come
-      // back with the same ID.
-      if session.deviceID == deviceID, session.engine.inputNode.auAudioUnit.deviceID == deviceID {
-        if restartingEngine || !session.engine.isRunning {
-          restart()
-        }
+      if session.deviceUID == deviceUID, session.captureSession.isRunning {
         return
       }
-    } else if deviceID == failedDeviceID, !retryingFailedDevice {
+    } else if deviceUID == failedDeviceUID, !retryingFailedDevice {
       return
     }
     close()
-    open(on: deviceID)
+    open(on: deviceUID)
   }
 
-  private func open(on deviceID: AudioObjectID) {
-    let engine = AVAudioEngine()
-    let engineID = ObjectIdentifier(engine)
-    // Posted when the device's format changes, or it goes away. Choosing the device below also causes one, shortly
-    // after the engine starts.
-    let configurationObserver = NotificationCenter.default.addObserver(
-      forName: .AVAudioEngineConfigurationChange,
-      object: engine,
+  private func open(on deviceUID: String) {
+    let captureSession: AVCaptureSession
+    do {
+      captureSession = try makeCaptureSession(on: deviceUID)
+    } catch {
+      logger.error("Couldn't turn the microphone on for device \(deviceUID, privacy: .public): \(error)")
+      return failed(on: deviceUID)
+    }
+    let sessionID = ObjectIdentifier(captureSession)
+    // Posted when the session fails to start, or stops after starting, such as when the device fails.
+    let errorObserver = NotificationCenter.default.addObserver(
+      forName: AVCaptureSession.runtimeErrorNotification,
+      object: captureSession,
       queue: nil
-    ) { [weak self] _ in
-      Task { await self?.configurationChanged(engineID) }
+    ) { [weak self] notification in
+      let error = notification.userInfo?[AVCaptureSessionErrorKey] as? AVError
+      Task { await self?.captureFailed(sessionID, error) }
     }
-    // Another app, such as a video call, can change the device's sample rate. The engine posts no configuration
-    // change for that, and keeps labeling the audio with the old rate, so the recording would be too fast or too slow.
-    let sampleRateListener: PropertyListener = { [weak self] _, _ in
-      Task { await self?.sampleRateChanged(engineID) }
+    captureSession.startRunning()
+    guard captureSession.isRunning else {
+      logger.error("Couldn't turn the microphone on for device \(deviceUID, privacy: .public)")
+      NotificationCenter.default.removeObserver(errorObserver)
+      return failed(on: deviceUID)
     }
-    let status = withUnsafePointer(to: Self.sampleRateAddress) {
-      AudioObjectAddPropertyListenerBlock(deviceID, $0, queue, sampleRateListener)
-    }
-    if status != noErr {
-      logger.error("Couldn't watch the sample rate of device \(deviceID): \(status)")
-    }
-    let session = Session(
-      engine: engine,
-      deviceID: deviceID,
-      configurationObserver: configurationObserver,
-      sampleRateListener: sampleRateListener
-    )
-    do {
-      // The device has to be chosen before the input's format is read, because the format comes from the device.
-      try engine.inputNode.auAudioUnit.setDeviceID(deviceID)
-      try installCapture(on: engine)
-      engine.prepare()
-      try engine.start()
-      self.session = session
-      failedDeviceID = nil
-      logger.info("Turned the microphone on, recording from device \(deviceID)")
-    } catch {
-      logger.error("Couldn't turn the microphone on for device \(deviceID): \(error)")
-      failedDeviceID = deviceID
-      end(session)
-    }
+    session = Session(captureSession: captureSession, deviceUID: deviceUID, errorObserver: errorObserver)
+    failedDeviceUID = nil
+    logger.info("Turned the microphone on, recording from device \(deviceUID, privacy: .public)")
   }
 
-  private func configurationChanged(_ engineID: ObjectIdentifier) {
-    guard let session, ObjectIdentifier(session.engine) == engineID else { return }
-    update(restartingEngine: true)
+  /// A session that records from the device into the recording, in the recording's format.
+  private func makeCaptureSession(on deviceUID: String) throws -> AVCaptureSession {
+    // AVFoundation identifies audio devices by their Core Audio UIDs.
+    guard let device = AVCaptureDevice(uniqueID: deviceUID) else { throw MicrophoneError.notCapturable }
+    let input = try AVCaptureDeviceInput(device: device)
+    let output = AVCaptureAudioDataOutput()
+    output.audioSettings = [
+      AVFormatIDKey: kAudioFormatLinearPCM,
+      AVSampleRateKey: recording.sampleRate,
+      AVNumberOfChannelsKey: 1,
+      AVLinearPCMBitDepthKey: 32,
+      AVLinearPCMIsFloatKey: true,
+      AVLinearPCMIsNonInterleaved: false,
+    ]
+    output.setSampleBufferDelegate(capture, queue: sampleQueue)
+    let captureSession = AVCaptureSession()
+    // Adding an input or output the session can't take raises an exception, which Swift can't catch.
+    guard captureSession.canAddInput(input), captureSession.canAddOutput(output) else {
+      throw MicrophoneError.notCapturable
+    }
+    captureSession.addInput(input)
+    captureSession.addOutput(output)
+    return captureSession
   }
 
-  /// Moves the microphone to a new engine if the device's rate no longer matches the rate the engine records at,
-  /// because the running engine keeps reporting the device's old rate.
-  ///
-  /// Rates that already match are left alone, such as after the move itself, so a device that changes its rate as it
-  /// turns on, like Bluetooth headphones switching to their headset profile, isn't moved again and again.
-  private func sampleRateChanged(_ engineID: ObjectIdentifier) {
-    guard let session, ObjectIdentifier(session.engine) == engineID else { return }
-    let recordedRate = session.engine.inputNode.outputFormat(forBus: 0).sampleRate
-    guard let deviceRate = AudioInputDevices.sampleRate(of: session.deviceID), deviceRate != recordedRate else {
-      return
-    }
-    logger.info("Device \(session.deviceID) changed its sample rate from \(recordedRate) Hz to \(deviceRate) Hz")
+  private func captureFailed(_ sessionID: ObjectIdentifier, _ error: AVError?) {
+    logger.error("The microphone failed: \(String(describing: error), privacy: .public)")
+    guard let session, ObjectIdentifier(session.captureSession) == sessionID else { return }
     close()
-    update()
+    failed(on: session.deviceUID)
   }
 
-  /// Restarts the engine with its input's current format.
-  ///
-  /// The same engine is restarted rather than a new one opened, because choosing the device on a new engine causes
-  /// another configuration change, which would repeat this endlessly.
-  private func restart() {
-    guard let session else { return }
-    session.engine.inputNode.removeTap(onBus: 0)
-    do {
-      try installCapture(on: session.engine)
-      try session.engine.start()
-    } catch {
-      logger.error("Couldn't turn the microphone back on after an audio configuration change: \(error)")
-      failedDeviceID = session.engine.inputNode.auAudioUnit.deviceID
-      close()
+  /// Remembers that the device couldn't be turned on or stopped working, and tries it again after a delay while the
+  /// current series has retries left.
+  private func failed(on deviceUID: String) {
+    failedDeviceUID = deviceUID
+    guard retriesLeft > 0 else { return }
+    let delay = Self.retryDelays[Self.retryDelays.count - retriesLeft]
+    retriesLeft -= 1
+    let series = retrySeries
+    Task { [weak self] in
+      try? await Task.sleep(for: delay)
+      await self?.retry(deviceUID, series: series)
     }
+  }
+
+  private func retry(_ deviceUID: String, series: Int) {
+    guard series == retrySeries, session == nil, failedDeviceUID == deviceUID else { return }
+    update(retryingFailedDevice: true)
+  }
+
+  private func startRetrySeries() {
+    retrySeries += 1
+    retriesLeft = Self.retryDelays.count
   }
 
   private func close() {
     guard let session else { return }
     self.session = nil
-    end(session)
-  }
-
-  private func end(_ session: Session) {
-    NotificationCenter.default.removeObserver(session.configurationObserver)
-    _ = withUnsafePointer(to: Self.sampleRateAddress) {
-      AudioObjectRemovePropertyListenerBlock(session.deviceID, $0, queue, session.sampleRateListener)
-    }
-    session.engine.inputNode.removeTap(onBus: 0)
-    session.engine.stop()
-  }
-
-  /// Sends the engine's input, in the device's current format, to the recording.
-  ///
-  /// The tap takes the hardware format rather than the input node's output format, because the output format keeps
-  /// the previous sample rate after the engine moves to another device or the device's rate changes, such as when a
-  /// video call opens the same microphone. A tap at that stale rate receives no audio.
-  ///
-  /// AVFAudio rejects a tap whose format no longer matches the hardware. Bluetooth headphones change theirs just after
-  /// they're chosen, when turning their microphone on switches them to their headset profile, and that can land
-  /// between reading the format and installing the tap. The input reports the new format by the time the tap is
-  /// rejected, so the tap is tried again with it.
-  private func installCapture(on engine: AVAudioEngine) throws {
-    let attempts = 3
-    for attempt in 1...attempts {
-      do {
-        return try installCapture(on: engine, format: engine.inputNode.inputFormat(forBus: 0))
-      } catch AudioNodeTapError.rejected where attempt < attempts {
-        logger.info("The microphone changed its format as its audio was being captured, so capturing is starting again")
-      }
-    }
-  }
-
-  private func installCapture(on engine: AVAudioEngine, format hardwareFormat: AVAudioFormat) throws {
-    guard hardwareFormat.sampleRate > 0, hardwareFormat.channelCount > 0 else { throw MicrophoneError.noInput }
-    guard
-      let recordingFormat = AVAudioFormat(
-        commonFormat: .pcmFormatFloat32,
-        sampleRate: recording.sampleRate,
-        channels: 1,
-        interleaved: false
-      ),
-      let converter = AVAudioConverter(from: hardwareFormat, to: recordingFormat)
-    else { throw MicrophoneError.unsupportedFormat(hardwareFormat) }
-    converter.downmix = true
-    let capture = Capture(converter: converter, recording: recording)
-    try AudioNodeTap.install(
-      on: engine.inputNode,
-      bus: 0,
-      bufferSize: 4096,
-      format: hardwareFormat,
-      block: capture.tapBlock()
-    )
+    NotificationCenter.default.removeObserver(session.errorObserver)
+    session.captureSession.stopRunning()
   }
 }
 
-/// The samples of the recording in progress, kept apart from any engine so the recording continues when the
+/// The samples of the recording in progress, kept apart from any capture session so the recording continues when the
 /// microphone moves to another device.
 private final class Recording: Sendable {
   private struct State {
     /// The samples recorded so far, or `nil` while not recording.
     var samples: [Float]?
-    /// Counts recordings, so audio converted during one isn't added to the next.
+    /// Counts recordings, so audio captured during one isn't added to the next.
     var number = 0
   }
 
@@ -338,7 +304,7 @@ private final class Recording: Sendable {
     }
   }
 
-  /// Adds samples converted during recording `number`, unless it has ended.
+  /// Adds samples captured during recording `number`, unless it has ended.
   func append(_ samples: UnsafeBufferPointer<Float>, to number: Int) {
     state.withLock { state in
       guard state.number == number, let recordedCount = state.samples?.count else { return }
@@ -350,64 +316,33 @@ private final class Recording: Sendable {
   }
 }
 
-/// Converts one engine's audio for the recording while something is recording, and discards it the rest of the time.
-private final class Capture: Sendable {
-  private struct State {
-    let converter: AVAudioConverter
-    /// The number of the recording the converter last converted audio for.
-    var recordingNumber: Int?
-  }
-
-  private let state: Mutex<State>
+/// Adds a capture session's audio, already in the recording's format, to the recording while something is recording,
+/// and discards it the rest of the time.
+private final class Capture: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate, Sendable {
   private let recording: Recording
 
-  init(converter: sending AVAudioConverter, recording: Recording) {
-    state = Mutex(State(converter: converter))
+  init(recording: Recording) {
     self.recording = recording
   }
 
-  /// A tap block created outside any actor, because AVAudioEngine calls it on its own thread.
-  nonisolated func tapBlock() -> AVAudioNodeTapBlock {
-    { [self] buffer, _ in append(buffer) }
-  }
-
-  private func append(_ buffer: AVAudioPCMBuffer) {
+  func captureOutput(
+    _ output: AVCaptureOutput,
+    didOutput sampleBuffer: CMSampleBuffer,
+    from connection: AVCaptureConnection
+  ) {
     guard let number = recording.number else { return }
-    state.withLock { state in
-      if state.recordingNumber != number {
-        // Clears the resampler's memory of audio from before this recording.
-        state.converter.reset()
-        state.recordingNumber = number
+    do {
+      try sampleBuffer.withAudioBufferList { buffers, _ in
+        // Mono, interleaved audio arrives in a single buffer.
+        guard let buffer = buffers.first, let data = buffer.mData else { return }
+        let samples = UnsafeBufferPointer(
+          start: data.assumingMemoryBound(to: Float.self),
+          count: Int(buffer.mDataByteSize) / MemoryLayout<Float>.size
+        )
+        recording.append(samples, to: number)
       }
-      let outputFormat = state.converter.outputFormat
-      let ratio = outputFormat.sampleRate / buffer.format.sampleRate
-      let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up)) + 1
-      guard let output = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity),
-        Self.convert(buffer, with: state.converter, into: output),
-        let channel = output.floatChannelData?[0]
-      else { return }
-      recording.append(UnsafeBufferPointer(start: channel, count: Int(output.frameLength)), to: number)
+    } catch {
+      logger.error("Couldn't read the microphone's audio: \(error)")
     }
-  }
-
-  /// Hands the converter exactly one buffer, returning whether it converted without an error.
-  ///
-  /// `.noDataNow` keeps the resampler's state for the next buffer, where `.endOfStream` would reset it.
-  private static func convert(
-    _ buffer: AVAudioPCMBuffer,
-    with converter: AVAudioConverter,
-    into output: AVAudioPCMBuffer
-  ) -> Bool {
-    var isConsumed = false
-    let status = converter.convert(to: output, error: nil) { _, status in
-      if isConsumed {
-        status.pointee = .noDataNow
-        return nil
-      }
-      isConsumed = true
-      status.pointee = .haveData
-      return buffer
-    }
-    return status != .error
   }
 }

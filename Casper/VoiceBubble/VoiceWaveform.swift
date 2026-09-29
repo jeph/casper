@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The recording's loudness as bars scrolling from the trailing edge, updated each frame from the audio level meter.
 ///
-/// Audio arrives in chunks about a tenth of a second apart, so the bars trail it slightly to scroll evenly.
+/// Audio arrives in chunks, so the bars trail it slightly to scroll evenly.
 struct VoiceWaveform: View {
   let meter: AudioLevelMeter
   /// When the recording started, which the bars are counted from.

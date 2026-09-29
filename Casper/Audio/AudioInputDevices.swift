@@ -58,14 +58,16 @@ final class AudioInputDevices {
       .flatMap(Self.device)
   }
 
-  /// The input to record from: the chosen device while it's connected, and otherwise the system default. `nil` when
-  /// there's no input at all.
-  nonisolated static func recordingDeviceID() -> AudioObjectID? {
+  /// The UID of the input to record from: the chosen device while it's connected, and otherwise the system default.
+  /// `nil` when there's no input at all.
+  nonisolated static func recordingDeviceUID() -> String? {
+    if let uid = UserDefaults.standard.string(forKey: uidStorageKey), !uid.isEmpty, deviceID(forUID: uid) != nil {
+      return uid
+    }
     let system = AudioObjectID(kAudioObjectSystemObject)
-    let systemDefault = values(from: system, selector: kAudioHardwarePropertyDefaultInputDevice)
+    return values(from: system, selector: kAudioHardwarePropertyDefaultInputDevice)
       .first { $0 != kAudioObjectUnknown }
-    guard let uid = UserDefaults.standard.string(forKey: uidStorageKey), !uid.isEmpty else { return systemDefault }
-    return deviceID(forUID: uid) ?? systemDefault
+      .flatMap { string(from: $0, selector: kAudioDevicePropertyDeviceUID) }
   }
 
   /// The Core Audio ID of the device with this UID, or `nil` if it isn't connected.
@@ -86,15 +88,6 @@ final class AudioInputDevices {
     }
     guard status == noErr, id != kAudioObjectUnknown else { return nil }
     return id
-  }
-
-  /// The device's nominal sample rate in hertz, or `nil` if it can't be read, such as after it's unplugged.
-  nonisolated static func sampleRate(of id: AudioObjectID) -> Double? {
-    var address = address(kAudioDevicePropertyNominalSampleRate)
-    var rate: Float64 = 0
-    var size = UInt32(MemoryLayout<Float64>.size)
-    guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &rate) == noErr else { return nil }
-    return rate
   }
 
   private static func device(_ id: AudioObjectID) -> AudioInputDevice? {
@@ -128,7 +121,7 @@ final class AudioInputDevices {
     return values.prefix(Int(size) / MemoryLayout<UInt32>.stride)
   }
 
-  private static func string(from id: AudioObjectID, selector: AudioObjectPropertySelector) -> String? {
+  nonisolated private static func string(from id: AudioObjectID, selector: AudioObjectPropertySelector) -> String? {
     var address = address(selector)
     var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
     var value: Unmanaged<CFString>?
