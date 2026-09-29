@@ -88,6 +88,15 @@ final class AudioInputDevices {
     return id
   }
 
+  /// The device's nominal sample rate in hertz, or `nil` if it can't be read, such as after it's unplugged.
+  nonisolated static func sampleRate(of id: AudioObjectID) -> Double? {
+    var address = address(kAudioDevicePropertyNominalSampleRate)
+    var rate: Float64 = 0
+    var size = UInt32(MemoryLayout<Float64>.size)
+    guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &rate) == noErr else { return nil }
+    return rate
+  }
+
   private static func device(_ id: AudioObjectID) -> AudioInputDevice? {
     guard let uid = string(from: id, selector: kAudioDevicePropertyDeviceUID),
       let name = string(from: id, selector: kAudioObjectPropertyName)

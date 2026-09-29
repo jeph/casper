@@ -85,14 +85,31 @@ private actor Microphone {
     case unsupportedFormat(AVAudioFormat)
   }
 
+  /// Called by Core Audio when a device property changes, and kept so the same block can be removed.
+  private typealias PropertyListener =
+    @Sendable @convention(block) (UInt32, UnsafePointer<AudioObjectPropertyAddress>) -> Void
+
+  /// A running engine, the device it was opened on, and what watches it for changes that need the engine restarted.
+  private struct Session {
+    let engine: AVAudioEngine
+    let deviceID: AudioObjectID
+    let configurationObserver: any NSObjectProtocol
+    let sampleRateListener: PropertyListener
+  }
+
+  private static let sampleRateAddress = AudioObjectPropertyAddress(
+    mSelector: kAudioDevicePropertyNominalSampleRate,
+    mScope: kAudioObjectPropertyScopeGlobal,
+    mElement: kAudioObjectPropertyElementMain
+  )
+
   /// Whether the microphone should be on.
   ///
   /// Callers set this before asking for an update, so updates running in any order end with the latest setting.
   nonisolated let isWanted = Mutex(false)
   private let recording: Recording
   private let queue = DispatchSerialQueue(label: "io.jeph.Casper.Microphone", qos: .userInitiated)
-  /// The running engine and the observer that restarts it when the audio configuration changes.
-  private var session: (engine: AVAudioEngine, observer: any NSObjectProtocol)?
+  private var session: Session?
   /// The device that last couldn't be turned on.
   ///
   /// It isn't tried again until a recording starts or the device to record from changes. Otherwise every settings
@@ -118,9 +135,10 @@ private actor Microphone {
       return close()
     }
     if let session {
-      // Compared with the device the engine is on now rather than the one it was given, because a device that goes
-      // away while in use leaves the engine running on the system default, and may come back with the same ID.
-      if session.engine.inputNode.auAudioUnit.deviceID == deviceID {
+      // Compared with the device the engine was opened on, whose sample rate is watched, and the one it's on now,
+      // because a device that goes away while in use leaves the engine running on the system default, and may come
+      // back with the same ID.
+      if session.deviceID == deviceID, session.engine.inputNode.auAudioUnit.deviceID == deviceID {
         if restartingEngine || !session.engine.isRunning {
           restart()
         }
@@ -138,34 +156,65 @@ private actor Microphone {
     let engineID = ObjectIdentifier(engine)
     // Posted when the device's format changes, or it goes away. Choosing the device below also causes one, shortly
     // after the engine starts.
-    let observer = NotificationCenter.default.addObserver(
+    let configurationObserver = NotificationCenter.default.addObserver(
       forName: .AVAudioEngineConfigurationChange,
       object: engine,
       queue: nil
     ) { [weak self] _ in
       Task { await self?.configurationChanged(engineID) }
     }
+    // Another app, such as a video call, can change the device's sample rate. The engine posts no configuration
+    // change for that, and keeps labeling the audio with the old rate, so the recording would be too fast or too slow.
+    let sampleRateListener: PropertyListener = { [weak self] _, _ in
+      Task { await self?.sampleRateChanged(engineID) }
+    }
+    let status = withUnsafePointer(to: Self.sampleRateAddress) {
+      AudioObjectAddPropertyListenerBlock(deviceID, $0, queue, sampleRateListener)
+    }
+    if status != noErr {
+      logger.error("Couldn't watch the sample rate of device \(deviceID): \(status)")
+    }
+    let session = Session(
+      engine: engine,
+      deviceID: deviceID,
+      configurationObserver: configurationObserver,
+      sampleRateListener: sampleRateListener
+    )
     do {
       // The device has to be chosen before the input's format is read, because the format comes from the device.
       try engine.inputNode.auAudioUnit.setDeviceID(deviceID)
       try installCapture(on: engine)
       engine.prepare()
       try engine.start()
-      session = (engine, observer)
+      self.session = session
       failedDeviceID = nil
       logger.info("Turned the microphone on, recording from device \(deviceID)")
     } catch {
       logger.error("Couldn't turn the microphone on for device \(deviceID): \(error)")
       failedDeviceID = deviceID
-      NotificationCenter.default.removeObserver(observer)
-      engine.inputNode.removeTap(onBus: 0)
-      engine.stop()
+      end(session)
     }
   }
 
   private func configurationChanged(_ engineID: ObjectIdentifier) {
     guard let session, ObjectIdentifier(session.engine) == engineID else { return }
     update(restartingEngine: true)
+  }
+
+  /// Moves the microphone to a new engine if the device's rate no longer matches the rate the engine records at,
+  /// because the running engine keeps reporting the device's old rate.
+  ///
+  /// Rates that already match are left alone, such as after the move itself, so a device that changes its rate as it
+  /// turns on, like Bluetooth headphones switching to their headset profile, isn't moved again and again.
+  private func sampleRateChanged(_ engineID: ObjectIdentifier) {
+    guard let session, ObjectIdentifier(session.engine) == engineID else { return }
+    let recordedRate = session.engine.inputNode.outputFormat(forBus: 0).sampleRate
+    guard let deviceRate = AudioInputDevices.sampleRate(of: session.deviceID), deviceRate != recordedRate else {
+      return
+    }
+    logger.info("Device \(session.deviceID) changed its sample rate from \(recordedRate) Hz to \(deviceRate) Hz")
+    close()
+    update()
   }
 
   /// Restarts the engine with its input's current format.
@@ -188,7 +237,14 @@ private actor Microphone {
   private func close() {
     guard let session else { return }
     self.session = nil
-    NotificationCenter.default.removeObserver(session.observer)
+    end(session)
+  }
+
+  private func end(_ session: Session) {
+    NotificationCenter.default.removeObserver(session.configurationObserver)
+    _ = withUnsafePointer(to: Self.sampleRateAddress) {
+      AudioObjectRemovePropertyListenerBlock(session.deviceID, $0, queue, session.sampleRateListener)
+    }
     session.engine.inputNode.removeTap(onBus: 0)
     session.engine.stop()
   }
