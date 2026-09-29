@@ -10,6 +10,7 @@ struct GeneralView: View {
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
   @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
+  @AppStorage(RefinePersona.storageKey) private var refinePersona = RefinePersona.defaultValue
 
   var body: some View {
     Form {
@@ -136,6 +137,19 @@ struct GeneralView: View {
             Image(systemName: "scissors")
           }
         }
+        Picker(selection: $refinePersona) {
+          ForEach(RefinePersona.allCases) { persona in
+            Text(persona.title).tag(persona)
+          }
+        } label: {
+          Label {
+            Text("Refine Persona")
+            Text(refinePersona.explanation)
+          } icon: {
+            Image(systemName: "person.bubble")
+          }
+        }
+        .disabled(!refinesTranscripts)
       } header: {
         Text("Experimental")
       }

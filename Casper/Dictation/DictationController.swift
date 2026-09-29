@@ -28,8 +28,9 @@ final class DictationController {
   private var activeLanguageModelID = LanguageModel.active?.id
   /// The refine setting in effect, compared against the stored one when settings change.
   private var refinesTranscripts = TranscriptRefiner.isEnabled
-  /// Whether the recording in progress will be refined, decided when it starts so its model loads while the user speaks.
-  private var refinesRecording = false
+  /// The persona the recording in progress is refined with, or `nil` if it isn't refined, decided when it starts so its
+  /// model loads and reads the persona's prompt while the user speaks.
+  private var recordingPersona: RefinePersona?
 
   /// How long recording continues after the hotkey is released, or pressed again in toggle mode.
   ///
@@ -146,9 +147,13 @@ final class DictationController {
     recorder.start()
     status.isRecording = true
     speechModel.beginUse()
-    refinesRecording = TranscriptRefiner.isEnabled && LanguageModel.active != nil
-    if refinesRecording {
-      languageModel.beginUse()
+    recordingPersona = TranscriptRefiner.isEnabled && LanguageModel.active != nil ? RefinePersona.stored : nil
+    guard let persona = recordingPersona else { return }
+    languageModel.beginUse()
+    // A persona switched to since the model loaded has its prompt read now rather than after the recording.
+    guard let loading = try? languageModel.model() else { return }
+    Task {
+      try? await loading.value.cachePrompt(for: persona)
     }
   }
 
@@ -162,7 +167,7 @@ final class DictationController {
     status.isRecording = false
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
-      if refinesRecording {
+      if recordingPersona != nil {
         languageModel.endUse()
       }
       speechModel.endUse()
@@ -170,20 +175,20 @@ final class DictationController {
     }
     let dictation = nextDictation
     nextDictation += 1
-    let refines = refinesRecording
+    let persona = recordingPersona
     // Each dictation is transcribed and refined as soon as it can be, alongside earlier ones still in progress. Only
     // typing waits for them.
     Task {
       defer {
         status.transcriptionsInProgress -= 1
-        if refines {
+        if persona != nil {
           languageModel.endUse()
         }
       }
       let text: String
       do {
         let transcript = try await transcribe(samples)
-        text = refines ? await refine(transcript) : transcript
+        text = if let persona { await refine(transcript, persona: persona) } else { transcript }
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
         text = ""
@@ -237,12 +242,12 @@ final class DictationController {
     return SilenceTrimmer().trim(recording, sampleRate: SpeechModel.sampleRate)
   }
 
-  /// Refines a transcript, or returns it unchanged if refining fails.
-  private func refine(_ transcript: String) async -> String {
+  /// Refines a transcript in a persona, or returns it unchanged if refining fails.
+  private func refine(_ transcript: String, persona: RefinePersona) async -> String {
     guard !transcript.isEmpty else { return transcript }
     let start = ContinuousClock.now
     do {
-      let text = try await languageModel.model().value.refine(transcript)
+      let text = try await languageModel.model().value.refine(transcript, persona: persona)
       Self.logger.info("Refined the transcript in \(ContinuousClock.now - start, privacy: .public)")
       return text
     } catch {

@@ -102,6 +102,9 @@
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
     },
+    "Casual" : {
+      "comment" : "Option in the Refine Persona setting: refined transcripts read like a text message, keeping slang and shortening common words and phrases."
+    },
     "Click to open Language Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Language Models page of Settings."
     },
@@ -128,6 +131,12 @@
     },
     "Experimental" : {
       "comment" : "Header of the last section in Settings > General, for features still being tried out."
+    },
+    "Fix grammar and punctuation into polished writing." : {
+      "comment" : "Explanation under the Refine Persona row in Settings > General when Formal is chosen."
+    },
+    "Formal" : {
+      "comment" : "Option in the Refine Persona setting: refined transcripts have their grammar and punctuation fixed into polished writing."
     },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
@@ -207,6 +216,9 @@
     "Recommended" : {
       "comment" : "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
     },
+    "Refine Persona" : {
+      "comment" : "Picker in the Experimental section of Settings > General for the style transcripts are refined in, Formal or Casual."
+    },
     "Refine Transcripts" : {
       "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
     },
@@ -272,6 +284,9 @@
     },
     "Voice Models" : {
       "comment" : "Title of the settings page for downloading and choosing speech recognition models."
+    },
+    "Write like a text message, keeping slang and shortening common words and phrases." : {
+      "comment" : "Explanation under the Refine Persona row in Settings > General when Casual is chosen."
     }
   },
   "version" : "1.0"

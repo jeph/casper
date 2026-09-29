@@ -4,8 +4,9 @@ import MLXLMCommon
 
 /// Cleans up transcripts with a language model, following `RefinePrompt`.
 ///
-/// Every prompt starts with the same system prompt, so the model reads it once as it loads, and each transcript
-/// continues from a copy of that state instead of reading the system prompt again.
+/// Every prompt for a persona starts with the same system prompt, so the model reads it once, and each transcript
+/// continues from a copy of that state instead of reading the system prompt again. The stored persona's system prompt
+/// is read as the model loads, and another persona's the first time it's used.
 actor TranscriptRefiner {
   enum RefineError: Error {
     case unloaded
@@ -13,12 +14,17 @@ actor TranscriptRefiner {
     case incomplete
   }
 
+  /// The start of a persona's prompt, which every transcript's prompt shares, and the model's state after reading it.
+  private struct CachedPrompt {
+    let tokens: [Int]
+    /// Copied for each transcript.
+    let cache: [KVCache]
+  }
+
   private struct Loaded {
     let context: ModelContext
-    /// The start of the prompt, which every transcript's prompt shares.
-    let promptTokens: [Int]
-    /// The model's state after reading `promptTokens`, copied for each transcript.
-    let promptCache: [KVCache]
+    /// The prompt start of each persona used so far.
+    var prompts: [RefinePersona: CachedPrompt]
   }
 
   /// The `UserDefaults` key for whether transcripts are refined, on unless turned off.
@@ -30,39 +36,31 @@ actor TranscriptRefiner {
 
   private var loaded: Loaded?
 
-  /// Reads the system prompt with a loaded model.
-  init(context: sending ModelContext) throws {
-    let tokenizer = context.tokenizer
-    // Prompts for two different transcripts share everything before the transcript.
-    let first = try Self.promptTokens(for: "a", tokenizer: tokenizer)
-    let second = try Self.promptTokens(for: "b", tokenizer: tokenizer)
-    let shared = zip(first, second).prefix { $0 == $1 }.count
-    // A transcript's first characters can merge with the text before them into different tokens, but never with a
-    // special token, so the cached start ends at the last special token before the transcript.
-    let end = first[..<shared].lastIndex { Self.isSpecial($0, tokenizer: tokenizer) }.map { $0 + 1 } ?? 0
-    let tokens = Array(first[..<end])
-    let cache = context.model.newCache(parameters: nil)
-    if !tokens.isEmpty {
-      _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
-      eval(cache)
-    }
-    loaded = Loaded(context: context, promptTokens: tokens, promptCache: cache)
+  /// Reads a persona's system prompt with a loaded model.
+  init(context: sending ModelContext, persona: RefinePersona) throws {
+    let prompt = try Self.readPrompt(for: persona, context: context)
+    loaded = Loaded(context: context, prompts: [persona: prompt])
+  }
+
+  /// Reads a persona's system prompt ahead of its first transcript, so refining that transcript doesn't wait for it.
+  func cachePrompt(for persona: RefinePersona) throws {
+    _ = try cachedPrompt(for: persona)
   }
 
   /// Returns the cleaned-up transcript, which is empty if the transcript was only filler words.
-  func refine(_ transcript: String) async throws -> String {
-    guard let loaded else { throw RefineError.unloaded }
-    let context = loaded.context
-    let tokens = try Self.promptTokens(for: transcript, tokenizer: context.tokenizer)
+  func refine(_ transcript: String, persona: RefinePersona) async throws -> String {
+    guard let context = loaded?.context else { throw RefineError.unloaded }
+    let prompt = try cachedPrompt(for: persona)
+    let tokens = try Self.promptTokens(for: transcript, persona: persona, tokenizer: context.tokenizer)
     // A chat template could render the start differently for some transcripts, and then the whole prompt is read.
-    let continuesPrompt = tokens.starts(with: loaded.promptTokens)
-    let unread = continuesPrompt ? tokens[loaded.promptTokens.count...] : tokens[...]
+    let continuesPrompt = tokens.starts(with: prompt.tokens)
+    let unread = continuesPrompt ? tokens[prompt.tokens.count...] : tokens[...]
     // A cleaned-up transcript is rarely longer than the transcript, so a model still writing past twice its length has
     // started answering it or repeating itself.
     let transcriptLength = context.tokenizer.encode(text: transcript, addSpecialTokens: false).count
     let maxTokens = max(64, 2 * transcriptLength)
     let input = LMInput(tokens: MLXArray(Array(unread)))
-    let cache = continuesPrompt ? loaded.promptCache.map { $0.copy() } : context.model.newCache(parameters: nil)
+    let cache = continuesPrompt ? prompt.cache.map { $0.copy() } : context.model.newCache(parameters: nil)
     let stream: AsyncStream<Generation>
     // Guessing ahead needs a cache that can drop wrong guesses, which caches of models that mix in other layers than
     // attention, like Qwen3.5's, can't, so those models write one token per pass.
@@ -108,10 +106,41 @@ actor TranscriptRefiner {
     MLX.Memory.clearCache()
   }
 
-  private static func promptTokens(for transcript: String, tokenizer: any MLXLMCommon.Tokenizer) throws -> [Int] {
+  private func cachedPrompt(for persona: RefinePersona) throws -> CachedPrompt {
+    guard let loaded else { throw RefineError.unloaded }
+    if let prompt = loaded.prompts[persona] { return prompt }
+    let prompt = try Self.readPrompt(for: persona, context: loaded.context)
+    self.loaded?.prompts[persona] = prompt
+    return prompt
+  }
+
+  /// Has the model read the start of a persona's prompt, up to where transcripts' prompts differ.
+  private static func readPrompt(for persona: RefinePersona, context: ModelContext) throws -> CachedPrompt {
+    let tokenizer = context.tokenizer
+    // Prompts for two different transcripts share everything before the transcript.
+    let first = try promptTokens(for: "a", persona: persona, tokenizer: tokenizer)
+    let second = try promptTokens(for: "b", persona: persona, tokenizer: tokenizer)
+    let shared = zip(first, second).prefix { $0 == $1 }.count
+    // A transcript's first characters can merge with the text before them into different tokens, but never with a
+    // special token, so the cached start ends at the last special token before the transcript.
+    let end = first[..<shared].lastIndex { isSpecial($0, tokenizer: tokenizer) }.map { $0 + 1 } ?? 0
+    let tokens = Array(first[..<end])
+    let cache = context.model.newCache(parameters: nil)
+    if !tokens.isEmpty {
+      _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
+      eval(cache)
+    }
+    return CachedPrompt(tokens: tokens, cache: cache)
+  }
+
+  private static func promptTokens(
+    for transcript: String,
+    persona: RefinePersona,
+    tokenizer: any MLXLMCommon.Tokenizer
+  ) throws -> [Int] {
     try tokenizer.applyChatTemplate(
       messages: [
-        ["role": "system", "content": RefinePrompt.system],
+        ["role": "system", "content": RefinePrompt.system(for: persona)],
         ["role": "user", "content": RefinePrompt.message(for: transcript)],
       ],
       tools: nil,
