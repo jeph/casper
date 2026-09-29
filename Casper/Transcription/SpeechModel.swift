@@ -124,7 +124,7 @@ struct SpeechModel: LoadableModel {
       return try await ParakeetTranscriber(models: AsrModels.loadLocal(from: directory, version: .ultra))
     case .qwen3ASR:
       // speech-swift reads the model size and bit width from the Hugging Face ID. Offline mode only reads the folder.
-      return SpeechSwiftTranscriber(
+      return Qwen3Transcriber(
         model: try await Qwen3ASRModel.fromPretrained(modelId: repository, cacheDir: directory, offlineMode: true)
       )
     }

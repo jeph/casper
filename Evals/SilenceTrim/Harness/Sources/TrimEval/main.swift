@@ -45,17 +45,18 @@ final class Parakeet: Model {
   }
 }
 
+/// Casper's own Qwen3 transcriber, so the evaluation runs the app's code, including its limit on transcript length.
 final class Qwen3: Model {
-  let model: any SpeechRecognitionModel
+  let transcriber: Qwen3Transcriber
 
   init(directory: URL) async throws {
-    model = try await Qwen3ASRModel.fromPretrained(
-      modelId: "aufklarer/Qwen3-ASR-0.6B-MLX-5bit", cacheDir: directory, offlineMode: true)
+    transcriber = Qwen3Transcriber(
+      model: try await Qwen3ASRModel.fromPretrained(
+        modelId: "aufklarer/Qwen3-ASR-0.6B-MLX-5bit", cacheDir: directory, offlineMode: true))
   }
 
   func transcribe(_ samples: [Float]) async throws -> String {
-    model.transcribe(audio: samples, sampleRate: 16_000, language: nil)
-      .trimmingCharacters(in: .whitespacesAndNewlines)
+    try await transcriber.transcribe(samples, sampleRate: 16_000)
   }
 }
 

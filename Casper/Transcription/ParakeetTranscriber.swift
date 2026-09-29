@@ -1,6 +1,9 @@
 import FluidAudio
 
 /// Transcribes with a Parakeet TDT model through FluidAudio.
+///
+/// Parakeet writes each token at a point in the audio and can't go past its end, and FluidAudio caps the tokens in
+/// each 15-second window, so its transcripts are already bounded by the length of the audio.
 actor ParakeetTranscriber: Transcriber {
   enum TranscriptionError: Error {
     case unloaded

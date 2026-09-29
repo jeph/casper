@@ -1,23 +1,30 @@
 import AudioCommon
 import MLX
+import Qwen3ASR
 
-/// Transcribes with a speech-swift model.
-actor SpeechSwiftTranscriber: Transcriber {
+/// Transcribes with a Qwen3-ASR model through speech-swift.
+actor Qwen3Transcriber: Transcriber {
   enum TranscriptionError: Error {
     case unloaded
   }
 
-  private var model: (any SpeechRecognitionModel & ModelMemoryManageable)?
+  private var model: Qwen3ASRModel?
 
-  init(model: sending any SpeechRecognitionModel & ModelMemoryManageable) {
+  init(model: sending Qwen3ASRModel) {
     self.model = model
   }
 
   func transcribe(_ samples: [Float], sampleRate: Double) async throws -> String {
     guard let model else { throw TranscriptionError.unloaded }
+    let seconds = Double(samples.count) / sampleRate
     // A nil language lets the model detect it.
-    return model.transcribe(audio: samples, sampleRate: Int(sampleRate), language: nil)
-      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let text = model.transcribe(
+      audio: samples,
+      sampleRate: Int(sampleRate),
+      language: nil,
+      maxTokens: Self.maximumTokens(forSeconds: seconds)
+    )
+    return text.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
   func unload() async {
