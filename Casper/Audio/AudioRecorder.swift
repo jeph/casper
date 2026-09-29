@@ -253,11 +253,24 @@ private actor Microphone {
   ///
   /// The tap takes the hardware format rather than the input node's output format, because the output format keeps
   /// the previous sample rate after the engine moves to another device or the device's rate changes, such as when a
-  /// video call opens the same microphone. A tap at that stale rate receives no audio, and installing one while the
-  /// rates differ raises an exception that ends the app.
+  /// video call opens the same microphone. A tap at that stale rate receives no audio.
+  ///
+  /// AVFAudio rejects a tap whose format no longer matches the hardware. Bluetooth headphones change theirs just after
+  /// they're chosen, when turning their microphone on switches them to their headset profile, and that can land
+  /// between reading the format and installing the tap. The input reports the new format by the time the tap is
+  /// rejected, so the tap is tried again with it.
   private func installCapture(on engine: AVAudioEngine) throws {
-    let input = engine.inputNode
-    let hardwareFormat = input.inputFormat(forBus: 0)
+    let attempts = 3
+    for attempt in 1...attempts {
+      do {
+        return try installCapture(on: engine, format: engine.inputNode.inputFormat(forBus: 0))
+      } catch AudioNodeTapError.rejected where attempt < attempts {
+        logger.info("The microphone changed its format as its audio was being captured, so capturing is starting again")
+      }
+    }
+  }
+
+  private func installCapture(on engine: AVAudioEngine, format hardwareFormat: AVAudioFormat) throws {
     guard hardwareFormat.sampleRate > 0, hardwareFormat.channelCount > 0 else { throw MicrophoneError.noInput }
     guard
       let recordingFormat = AVAudioFormat(
@@ -270,7 +283,13 @@ private actor Microphone {
     else { throw MicrophoneError.unsupportedFormat(hardwareFormat) }
     converter.downmix = true
     let capture = Capture(converter: converter, recording: recording)
-    input.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat, block: capture.tapBlock())
+    try AudioNodeTap.install(
+      on: engine.inputNode,
+      bus: 0,
+      bufferSize: 4096,
+      format: hardwareFormat,
+      block: capture.tapBlock()
+    )
   }
 }
 
