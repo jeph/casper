@@ -95,6 +95,7 @@ targets:
     platform: macOS
     sources:
       - CasperTests
+      - Casper/Audio/SilenceTrimmer.swift
       - Casper/Dictation/DictationMode.swift
     settings:
       base:

@@ -9,6 +9,7 @@ struct GeneralView: View {
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
+  @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
 
   var body: some View {
     Form {
@@ -124,6 +125,19 @@ struct GeneralView: View {
               .foregroundStyle(.secondary)
           }
         }
+      }
+      // Experimental features can be turned off if they cause problems, until they've proven themselves.
+      Section {
+        Toggle(isOn: $trimsSilence) {
+          Label {
+            Text("Trim Silence")
+            Text("Shorten silence and long pauses in recordings so they're transcribed faster.")
+          } icon: {
+            Image(systemName: "scissors")
+          }
+        }
+      } header: {
+        Text("Experimental")
       }
     }
     .formStyle(.grouped)

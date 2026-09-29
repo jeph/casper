@@ -208,14 +208,23 @@ final class DictationController {
     }
   }
 
-  /// Transcribes a recording, then ends its use of the speech model.
-  private func transcribe(_ samples: [Float]) async throws -> String {
+  /// Transcribes a recording, with its silence shortened unless that's turned off, then ends its use of the speech
+  /// model.
+  private func transcribe(_ recording: [Float]) async throws -> String {
     defer { speechModel.endUse() }
     let start = ContinuousClock.now
-    let text = try await speechModel.model().value.transcribe(samples, sampleRate: SpeechModel.sampleRate)
-    let seconds = Double(samples.count) / SpeechModel.sampleRate
+    let speech =
+      SilenceTrimmer.isEnabled ? SilenceTrimmer().trim(recording, sampleRate: SpeechModel.sampleRate) : recording
+    let trimmed = ContinuousClock.now
+    let text = try await speechModel.model().value.transcribe(speech, sampleRate: SpeechModel.sampleRate)
+    let recordingSeconds = Double(recording.count) / SpeechModel.sampleRate
+    let speechSeconds = Double(speech.count) / SpeechModel.sampleRate
     Self.logger.info(
-      "Transcribed \(seconds, format: .fixed(precision: 1)) s of audio in \(ContinuousClock.now - start, privacy: .public)"
+      """
+      Trimmed \(recordingSeconds, format: .fixed(precision: 1)) s of audio to \
+      \(speechSeconds, format: .fixed(precision: 1)) s in \(trimmed - start, privacy: .public), and transcribed it \
+      in \(ContinuousClock.now - trimmed, privacy: .public)
+      """
     )
     return text
   }

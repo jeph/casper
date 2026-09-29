@@ -126,6 +126,9 @@
     "Download failed" : {
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
     },
+    "Experimental" : {
+      "comment" : "Header of the last section in Settings > General, for features still being tried out."
+    },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
     },
@@ -222,6 +225,9 @@
     "Shortcut Mode" : {
       "comment" : "Row title in Settings > General for whether the dictation shortcut is held while speaking or pressed to start and stop."
     },
+    "Shorten silence and long pauses in recordings so they're transcribed faster." : {
+      "comment" : "Description of the Trim Silence setting."
+    },
     "Show Voice Bubble" : {
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."
     },
@@ -248,6 +254,9 @@
     },
     "Transcribing" : {
       "comment" : "Accessibility value of the voice bubble while a recording is being transcribed."
+    },
+    "Trim Silence" : {
+      "comment" : "Toggle in the Experimental section of Settings > General that shortens silence in recordings before transcribing them."
     },
     "Try Again" : {
       "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."
