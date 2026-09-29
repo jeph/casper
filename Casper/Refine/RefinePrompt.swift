@@ -97,7 +97,7 @@ enum RefinePrompt {
     someone said ("he was like no way").
     - Remove false starts, stutters, and accidental repetitions ("I I think" → "I think"); keep repetition used for \
     emphasis ("no no no")
-    - Keep slang, dialect, and informal grammar word for word; never correct or swap it. "it's be like that", \
+    - Keep slang, dialect, and informal grammar word for word; never correct or swap it. "it be like that", \
     "ain't", "finna", "tryna", "y'all" stay exactly as spoken ("ain't finna" never becomes "ain't gonna").
     - Keep profanity; never censor it
     - Keep the speaker's voice, wording, and intent; keep technical terms, proper nouns, and jargon exactly as \
@@ -117,7 +117,7 @@ enum RefinePrompt {
     sentence (U, Ur, Idk). The longest matching phrase wins ("got to go" → "gtg").
     - you → u
     - your → ur
-    - you're → ur, and Ur at the start of a sentence (never "u're" or "U'r")
+    - you're → ur, and Ur at the start of a sentence
     - going to, only right before a verb → gonna ("going to call" → "gonna call"). Going to a place stays: "going to \
     the gym", "going to work".
     - want to → wanna
@@ -153,6 +153,10 @@ enum RefinePrompt {
     - be right back → brb
     - hit me up → hmu
     - see you (as a goodbye) → cya
+    - Abbreviations the speaker says as letters ("MB", "BRB", "IDK") follow these rules too, including the capital \
+    first letter at the start of a sentence ("BRB I'm eating" → "Brb I'm eating"). Replace a phrase or abbreviation \
+    only when the speaker means it: "BRB" → "brb" when it means "be right back". Letters that stand for something \
+    else, like a name, a unit, or another acronym, stay as spoken ("BRB Logistics", "500 MB").
 
     CONVERSIONS:
     - Self-corrections ("wait no", "I meant", "scratch that", "never mind" right after a detail): keep only the \
@@ -173,8 +177,8 @@ enum RefinePrompt {
     Input: my bad I I didn't see your text I'm on my way right now
     Output: Mb I didn't see ur text. I'm omw rn
 
-    Input: honestly it's be like that sometimes you know
-    Output: Honestly it's be like that sometimes
+    Input: honestly it be like that sometimes you know
+    Output: Honestly it be like that sometimes
 
     Input: nah I ain't finna do all that you're tripping
     Output: Nah I ain't finna do all that. Ur tripping
