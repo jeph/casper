@@ -193,23 +193,28 @@ private actor Microphone {
     session.engine.stop()
   }
 
-  /// Sends the engine's input, in its current format, to the recording.
+  /// Sends the engine's input, in the device's current format, to the recording.
+  ///
+  /// The tap takes the hardware format rather than the input node's output format, because the output format keeps
+  /// the previous sample rate after the engine moves to another device or the device's rate changes, such as when a
+  /// video call opens the same microphone. A tap at that stale rate receives no audio, and installing one while the
+  /// rates differ raises an exception that ends the app.
   private func installCapture(on engine: AVAudioEngine) throws {
     let input = engine.inputNode
-    let inputFormat = input.outputFormat(forBus: 0)
-    guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else { throw MicrophoneError.noInput }
+    let hardwareFormat = input.inputFormat(forBus: 0)
+    guard hardwareFormat.sampleRate > 0, hardwareFormat.channelCount > 0 else { throw MicrophoneError.noInput }
     guard
-      let outputFormat = AVAudioFormat(
+      let recordingFormat = AVAudioFormat(
         commonFormat: .pcmFormatFloat32,
         sampleRate: recording.sampleRate,
         channels: 1,
         interleaved: false
       ),
-      let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
-    else { throw MicrophoneError.unsupportedFormat(inputFormat) }
+      let converter = AVAudioConverter(from: hardwareFormat, to: recordingFormat)
+    else { throw MicrophoneError.unsupportedFormat(hardwareFormat) }
     converter.downmix = true
     let capture = Capture(converter: converter, recording: recording)
-    input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat, block: capture.tapBlock())
+    input.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat, block: capture.tapBlock())
   }
 }
 
