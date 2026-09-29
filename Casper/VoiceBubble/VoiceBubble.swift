@@ -18,7 +18,7 @@ final class VoiceBubble {
   private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
 
   init(status: DictationStatus, readiness: DictationReadiness, settingsNavigation: SettingsNavigation) {
-    panel = VoiceBubblePanel(size: layout.metrics.panelSize)
+    panel = VoiceBubblePanel(size: VoiceBubbleMetrics.panelSize)
     let hostingView = NSHostingView(
       rootView: VoiceBubbleView(
         status: status,
@@ -27,7 +27,7 @@ final class VoiceBubble {
         settingsNavigation: settingsNavigation
       )
     )
-    // The panel keeps its size as the bubble grows and shrinks inside it.
+    // The panel keeps its size as the bubble grows and shrinks inside it, including when its size setting changes.
     hostingView.sizingOptions = []
     panel.contentView = hostingView
     move(toCenter: Self.savedCenter)
@@ -76,7 +76,9 @@ final class VoiceBubble {
     }
   }
 
-  private var ghostCenter: NSPoint { NSPoint(x: panel.frame.midX, y: panel.frame.midY) }
+  private var ghostCenter: NSPoint {
+    NSPoint(x: panel.frame.midX + layout.ghostOffset.width, y: panel.frame.midY - layout.ghostOffset.height)
+  }
 
   /// Settles the bubble on screen where the user dropped it, and saves that spot.
   ///
@@ -90,44 +92,55 @@ final class VoiceBubble {
 
   /// Puts the ghost's center at the given point, pulled onto the nearest screen, or at the bottom center of the main
   /// screen when there's no point.
+  ///
+  /// The panel goes where the largest bubble would, and the ghost is offset within it to where its own size is pulled
+  /// to, so changing the size moves only the ghost, which slides as the bubble resizes rather than the panel jumping.
   private func move(toCenter requested: NSPoint?) {
     guard let screen = requested.flatMap(Self.nearestScreen) ?? NSScreen.main else { return }
     let visible = screen.visibleFrame
     let radius = layout.metrics.diameter / 2
     let center = requested ?? NSPoint(x: visible.midX, y: visible.minY + radius + 24)
-    // Sized as when hovered, which grows the bubble, so it stays fully on screen under the pointer too.
-    let hoveredRadius = radius * VoiceBubbleMetrics.hoverScale
-    let clamped = NSPoint(
-      x: min(max(center.x, visible.minX + hoveredRadius), visible.maxX - hoveredRadius),
-      y: min(max(center.y, visible.minY + hoveredRadius), visible.maxY - hoveredRadius)
-    )
+    let ghost = Self.pullOnScreen(center, radius: radius, visible: visible)
+    let panelCenter = Self.pullOnScreen(center, radius: VoiceBubbleMetrics.largest.diameter / 2, visible: visible)
+    // SwiftUI's y axis points down, and AppKit's up.
+    layout.ghostOffset = CGSize(width: ghost.x - panelCenter.x, height: panelCenter.y - ghost.y)
     // The grown bubble reaches right of the ghost, and hovering widens it from its left end; past the screen's edge,
     // it slides back by the difference.
     let hoverScale = VoiceBubbleMetrics.hoverScale
-    let hoveredRightEdge = clamped.x - radius + (radius + layout.metrics.reach) * hoverScale
+    let hoveredRightEdge = ghost.x - radius + (radius + layout.metrics.reach) * hoverScale
     layout.recordingShift = max(hoveredRightEdge - visible.maxX, 0)
     // The callout goes below the bubble when there's no room above it, and lines up with the ghost's edge rather than
     // its center when centering it would cross the screen's edge.
-    layout.showsCalloutBelow = clamped.y + hoveredRadius + VoiceBubbleMetrics.calloutRoom > visible.maxY
+    layout.showsCalloutBelow = ghost.y + radius * hoverScale + VoiceBubbleMetrics.calloutRoom > visible.maxY
     let calloutHalfWidth = VoiceBubbleMetrics.calloutMaxWidth / 2
     layout.calloutAlignment =
-      if clamped.x - calloutHalfWidth < visible.minX {
+      if ghost.x - calloutHalfWidth < visible.minX {
         .leading
-      } else if clamped.x + calloutHalfWidth > visible.maxX {
+      } else if ghost.x + calloutHalfWidth > visible.maxX {
         .trailing
       } else {
         .center
       }
-    let size = layout.metrics.panelSize
+    let size = VoiceBubbleMetrics.panelSize
     let frame = NSRect(
-      x: clamped.x - size.width / 2,
-      y: clamped.y - size.height / 2,
+      x: panelCenter.x - size.width / 2,
+      y: panelCenter.y - size.height / 2,
       width: size.width,
       height: size.height
     )
     if frame != panel.frame {
       panel.setFrame(frame, display: true)
     }
+  }
+
+  /// Pulls a bubble's center in from the edges of the screen until the whole bubble fits, sized as when hovered, which
+  /// grows it, so it stays fully on screen under the pointer too.
+  private static func pullOnScreen(_ center: NSPoint, radius: CGFloat, visible: NSRect) -> NSPoint {
+    let hoveredRadius = radius * VoiceBubbleMetrics.hoverScale
+    return NSPoint(
+      x: min(max(center.x, visible.minX + hoveredRadius), visible.maxX - hoveredRadius),
+      y: min(max(center.y, visible.minY + hoveredRadius), visible.maxY - hoveredRadius)
+    )
   }
 
   private static func nearestScreen(to point: NSPoint) -> NSScreen? {

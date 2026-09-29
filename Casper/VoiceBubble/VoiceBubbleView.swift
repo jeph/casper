@@ -4,8 +4,9 @@ import SwiftUI
 /// The voice bubble: the Casper ghost on glass, which grows a live waveform while recording and moves its bars while
 /// transcribing.
 ///
-/// The ghost sits at the center of the panel and the waveform always grows to its right. Near the right edge of the
-/// screen, the grown bubble slides left as it grows, so it stays on screen with the ghost at its leading end.
+/// The ghost sits at the center of the panel, or off it toward a nearby screen edge, and the waveform always grows to its
+/// right. Near the right edge of the screen, the grown bubble slides left as it grows, so it stays on screen with the
+/// ghost at its leading end.
 ///
 /// Hovering over the bubble shows the dictation hotkey in a callout. While something dictation needs is missing, the
 /// ghost shows an exclamation mark instead, and the callout says what's missing when the bubble is hovered or the
@@ -35,13 +36,14 @@ struct VoiceBubbleView: View {
   /// How long the warning callout stays up after a hotkey press.
   private static let warningDuration = Duration.seconds(4)
   private static let calloutGap: CGFloat = 8
-  /// How long the bubble takes to grow and slide when recording starts and stops.
+  /// How long the bubble takes to grow and slide when recording starts and stops, or its size setting changes.
   private static let resizeDuration = 0.35
   /// How the bubble fades to and from its dictating colors, finishing shortly before it settles when it grows.
   private static let dictationColorFade = Animation.easeInOut(duration: resizeDuration - 0.05)
 
   var body: some View {
     let metrics = layout.metrics
+    let panelSize = VoiceBubbleMetrics.panelSize
     let isRecording = status.phase == .recording
     HStack(spacing: 0) {
       ghost
@@ -78,9 +80,11 @@ struct VoiceBubbleView: View {
     .overlay(alignment: .topLeading) { calloutAnchor }
     .animation(.easeOut(duration: 0.15), value: callout)
     .offset(x: isRecording ? -layout.recordingShift : 0)
-    .padding(.leading, metrics.panelSize.width / 2 - metrics.diameter / 2)
-    .frame(width: metrics.panelSize.width, height: metrics.panelSize.height, alignment: .leading)
+    .offset(layout.ghostOffset)
+    .padding(.leading, panelSize.width / 2 - metrics.diameter / 2)
+    .frame(width: panelSize.width, height: panelSize.height, alignment: .leading)
     .animation(.spring(duration: Self.resizeDuration, bounce: 0.2), value: isRecording)
+    .animation(.spring(duration: Self.resizeDuration, bounce: 0.2), value: metrics)
     .onChange(of: isRecording) { _, isRecording in
       if isRecording {
         recordingStart = .now
@@ -271,13 +275,16 @@ struct VoiceBubbleView: View {
   }
 }
 
-/// The voice bubble's size, where it places its callout and how far the grown bubble slides left to stay on screen
-/// where it sits, and the clicks the panel receives on it.
+/// The voice bubble's size, how far the ghost sits from the panel's center, where it places its callout and how far the
+/// grown bubble slides left to stay on screen where it sits, and the clicks the panel receives on it.
 @MainActor
 @Observable
 final class VoiceBubbleLayout {
   var metrics: VoiceBubbleMetrics
   var recordingShift: CGFloat = 0
+  /// How far the ghost sits from the panel's center, where the bubble's size lets it sit closer to the screen's edge
+  /// than the largest bubble would.
+  var ghostOffset = CGSize.zero
   var showsCalloutBelow = false
   var calloutAlignment = HorizontalAlignment.center
   /// Counts clicks on the bubble that didn't drag it.

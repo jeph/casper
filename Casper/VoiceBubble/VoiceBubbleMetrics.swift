@@ -44,13 +44,15 @@ struct VoiceBubbleMetrics: Equatable {
   /// How far the bubble reaches right of the ghost's center when it's grown.
   var reach: CGFloat { diameter / 2 + waveformInnerSpacing + waveformSize.width + waveformOuterPadding }
 
-  /// The panel's size, with the ghost at its center and room for the grown bubble and the callout on either side.
+  /// The bubble at its largest size, which the panel is sized and placed for.
+  static let largest = VoiceBubbleMetrics(size: sizes.upperBound)
+
+  /// The panel's size, with room around the ghost for the largest grown bubble and the callout on either side, so it
+  /// stays the same size as the bubble resizes inside it.
   ///
   /// Placed beside the ghost, the callout can reach a whole callout's width to one side of it.
-  var panelSize: CGSize {
-    CGSize(
-      width: max(reach + margin, Self.calloutMaxWidth) * 2,
-      height: diameter + (margin + Self.calloutRoom) * 2
-    )
-  }
+  static let panelSize = CGSize(
+    width: max(largest.reach + largest.margin, calloutMaxWidth) * 2,
+    height: largest.diameter + (largest.margin + calloutRoom) * 2
+  )
 }
