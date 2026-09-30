@@ -139,10 +139,7 @@ actor TranscriptRefiner {
     tokenizer: any MLXLMCommon.Tokenizer
   ) throws -> [Int] {
     try tokenizer.applyChatTemplate(
-      messages: [
-        ["role": "system", "content": RefinePrompt.system(for: persona)],
-        ["role": "user", "content": RefinePrompt.message(for: transcript)],
-      ],
+      messages: RefinePrompt.messages(for: transcript, persona: persona),
       tools: nil,
       // Models that can reason before answering, such as Qwen3.5, would otherwise do so by default, which makes
       // refining much slower. Templates without a thinking mode ignore it.
