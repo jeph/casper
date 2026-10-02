@@ -10,7 +10,7 @@ import Foundation
 struct SilenceTrimmer: Sendable {
   /// The `UserDefaults` key for whether recordings are trimmed, on unless turned off.
   ///
-  /// The setting is experimental, so it can be turned off if trimming causes problems.
+  /// It's an advanced setting, so trimming can be turned off if it causes problems.
   static let enabledStorageKey = "trimsSilence"
 
   static var isEnabled: Bool {

@@ -9,7 +9,6 @@ struct GeneralView: View {
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
-  @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
   @AppStorage(RefinePersona.storageKey) private var refinePersona = RefinePersona.defaultValue
 
   var body: some View {
@@ -129,14 +128,6 @@ struct GeneralView: View {
       }
       // Experimental features can be turned off if they cause problems, until they've proven themselves.
       Section {
-        Toggle(isOn: $trimsSilence) {
-          Label {
-            Text("Trim Silence")
-            Text("Shorten silence and long pauses in recordings so they're transcribed faster.")
-          } icon: {
-            Image(systemName: "scissors")
-          }
-        }
         Picker(selection: $refinePersona) {
           ForEach(RefinePersona.allCases) { persona in
             Text(persona.title).tag(persona)

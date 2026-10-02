@@ -258,8 +258,8 @@
     "Shortcut Mode" : {
       "comment" : "Row title in Settings > General for whether the dictation shortcut is held while speaking or pressed to start and stop."
     },
-    "Shorten silence and long pauses in recordings so they're transcribed faster." : {
-      "comment" : "Description of the Trim Silence setting."
+    "Shorten silence and long pauses in recordings so they're transcribed faster. Can inadvertently trim voices in quiet or loud environments." : {
+      "comment" : "Description of the Trim Silence setting in Settings > Advanced. Trimming can cut off quiet speech when the background is very quiet or noisy."
     },
     "Show Voice Bubble" : {
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."
@@ -279,7 +279,7 @@
     "The microphone Casper listens to when you dictate." : {
       "comment" : "Explanation under the Input Device picker in Settings > General."
     },
-    "The most tokens guessed at once. More can refine faster on Macs with more powerful GPUs, but each guess makes every pass slower, so on other Macs they can slow refining down." : {
+    "The most tokens guessed at once. Higher values may improve inference speeds on higher end Macs and slow inference speeds on lower end Macs." : {
       "comment" : "Description of the Guesses per Pass picker in Settings > Advanced. Tokens are the pieces of words a language model writes."
     },
     "The shortcut used to start dictation." : {
@@ -291,8 +291,11 @@
     "Transcribing" : {
       "comment" : "Accessibility value of the voice bubble while a recording is being transcribed."
     },
+    "Transcription" : {
+      "comment" : "Header of the section in Settings > Advanced for settings that tune how recordings are transcribed."
+    },
     "Trim Silence" : {
-      "comment" : "Toggle in the Experimental section of Settings > General that shortens silence in recordings before transcribing them."
+      "comment" : "Toggle in the Transcription section of Settings > Advanced that shortens silence in recordings before transcribing them."
     },
     "Try Again" : {
       "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."

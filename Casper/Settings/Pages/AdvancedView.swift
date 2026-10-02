@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AdvancedView: View {
+  @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
   @AppStorage(PromptLookupTokenIterator.enabledStorageKey) private var promptLookupDecoding = true
   @AppStorage(PromptLookupTokenIterator.mostGuessesStorageKey) private var mostGuesses =
@@ -16,6 +17,20 @@ struct AdvancedView: View {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
         }
+      }
+      Section {
+        Toggle(isOn: $trimsSilence) {
+          Label {
+            Text("Trim Silence")
+            Text(
+              "Shorten silence and long pauses in recordings so they're transcribed faster. Can inadvertently trim voices in quiet or loud environments."
+            )
+          } icon: {
+            Image(systemName: "scissors")
+          }
+        }
+      } header: {
+        Text("Transcription")
       }
       Section {
         Toggle(isOn: $promptLookupDecoding) {
@@ -48,7 +63,7 @@ struct AdvancedView: View {
           Label {
             Text("Guesses per Pass")
             Text(
-              "The most tokens guessed at once. More can refine faster on Macs with more powerful GPUs, but each guess makes every pass slower, so on other Macs they can slow refining down."
+              "The most tokens guessed at once. Higher values may improve inference speeds on higher end Macs and slow inference speeds on lower end Macs."
             )
           } icon: {
             Image(systemName: "number")
