@@ -96,7 +96,7 @@ All user-facing text lives in String Catalogs: `Casper/Resources/Localizable.xcs
 
 ## Acknowledgments
 
-Casper started as a native take on [OpenWhispr](https://github.com/OpenWhispr/openwhispr), and its cleanup prompt is adapted from OpenWhispr's.
+Casper started as a native take on [OpenWhispr](https://github.com/OpenWhispr/openwhispr), and its formal cleanup prompt grew out of OpenWhispr's.
 
 ## License
 
