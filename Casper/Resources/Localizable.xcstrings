@@ -62,6 +62,9 @@
     "Active" : {
       "comment" : "Shown on the Voice Models page next to the speech model dictation uses."
     },
+    "Advanced" : {
+      "comment" : "Settings tab and window title for advanced settings that tune how Casper works."
+    },
     "Allow Access" : {
       "comment" : "Button in Settings > Permissions that shows the macOS prompt for microphone or accessibility access."
     },
@@ -70,6 +73,9 @@
     },
     "Always" : {
       "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper runs."
+    },
+    "Bad values can make Casper slower or less reliable." : {
+      "comment" : "Explanation under the warning at the top of Settings > Advanced."
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
@@ -104,6 +110,9 @@
     },
     "Casual" : {
       "comment" : "Option in the Refine Persona setting: refined transcripts read like a text message, keeping slang and shortening common words and phrases."
+    },
+    "Change these settings only if you know exactly what they do." : {
+      "comment" : "Warning at the top of Settings > Advanced."
     },
     "Click to open Language Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Language Models page of Settings."
@@ -140,6 +149,9 @@
     },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
+    },
+    "Guesses per Pass" : {
+      "comment" : "Picker in Settings > Advanced for the most tokens prompt lookup decoding guesses at once, from 1 to 5."
     },
     "Hold" : {
       "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
@@ -207,6 +219,9 @@
     "Press to start dictation, press again to stop." : {
       "comment" : "Explanation under the Shortcut Mode row in Settings > General when Toggle is chosen."
     },
+    "Prompt Lookup Decoding" : {
+      "comment" : "Toggle in Settings > Advanced for a technique that refines transcripts faster by guessing the next tokens from the transcript. A technical term, usually left untranslated."
+    },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
     },
@@ -222,6 +237,12 @@
     "Refine Transcripts" : {
       "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
     },
+    "Refine faster using token speculation on supported models." : {
+      "comment" : "Description of the Prompt Lookup Decoding toggle in Settings > Advanced. Token speculation means guessing the next pieces of words and having the language model check the guesses together."
+    },
+    "Refining" : {
+      "comment" : "Header of the section in Settings > Advanced for settings that tune how transcripts are refined."
+    },
     "Refining needs a language model" : {
       "comment" : "Voice bubble warning when refining transcripts is on but no language model is installed."
     },
@@ -229,7 +250,7 @@
       "comment" : "Description of the Refine Transcripts setting."
     },
     "Reset to Default" : {
-      "comment" : "Tooltip and accessibility label for the button that restores the default dictation shortcut, Option-Space."
+      "comment" : "Tooltip and accessibility label for the buttons that restore a setting's default: the dictation shortcut, Option-Space, in Settings > General, and Guesses per Pass in Settings > Advanced."
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
@@ -257,6 +278,9 @@
     },
     "The microphone Casper listens to when you dictate." : {
       "comment" : "Explanation under the Input Device picker in Settings > General."
+    },
+    "The most tokens guessed at once. More can refine faster on Macs with more powerful GPUs, but each guess makes every pass slower, so on other Macs they can slow refining down." : {
+      "comment" : "Description of the Guesses per Pass picker in Settings > Advanced. Tokens are the pieces of words a language model writes."
     },
     "The shortcut used to start dictation." : {
       "comment" : "Explanation under the Dictation Shortcut row in Settings > General."

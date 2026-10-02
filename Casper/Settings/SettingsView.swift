@@ -36,6 +36,7 @@ struct SettingsView: View {
     case .voiceModels: VoiceModelsView()
     case .languageModels: LanguageModelsView()
     case .permissions: PermissionsView()
+    case .advanced: AdvancedView()
     }
   }
 }
@@ -52,6 +53,7 @@ enum SettingsPane: CaseIterable, Identifiable {
   case voiceModels
   case languageModels
   case permissions
+  case advanced
 
   var id: Self { self }
 
@@ -61,6 +63,7 @@ enum SettingsPane: CaseIterable, Identifiable {
     case .voiceModels: "Voice Models"
     case .languageModels: "Language Models"
     case .permissions: "Permissions"
+    case .advanced: "Advanced"
     }
   }
 
@@ -70,6 +73,7 @@ enum SettingsPane: CaseIterable, Identifiable {
     case .voiceModels: "waveform"
     case .languageModels: "text.bubble"
     case .permissions: "hand.raised"
+    case .advanced: "wrench.and.screwdriver"
     }
   }
 }

@@ -63,15 +63,16 @@ actor TranscriptRefiner {
     let cache = continuesPrompt ? prompt.cache.map { $0.copy() } : context.model.newCache(parameters: nil)
     let stream: AsyncStream<Generation>
     // Guessing ahead needs a cache that can drop wrong guesses, which caches of models that mix in other layers than
-    // attention, like Qwen3.5's, can't, so those models write one token per pass.
-    if canTrimPromptCache(cache) {
+    // attention, like Qwen3.5's, can't, so those models write one token per pass, as all do with guessing turned off.
+    if PromptLookupTokenIterator.isEnabled, canTrimPromptCache(cache) {
       let iterator = try PromptLookupTokenIterator(
         input: input,
         prompt: tokens,
         model: context.model,
         cache: cache,
         sampler: ArgMaxSampler(),
-        maxTokens: maxTokens
+        maxTokens: maxTokens,
+        mostGuesses: PromptLookupTokenIterator.storedMostGuesses
       )
       (stream, _) = generateTask(
         promptTokenCount: unread.count,

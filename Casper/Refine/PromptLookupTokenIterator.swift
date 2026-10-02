@@ -11,11 +11,32 @@ import MLXLMCommon
 struct PromptLookupTokenIterator: TokenIteratorProtocol {
   /// The longest run of latest tokens looked up, since longer matches make better guesses.
   private static let longestMatch = 3
-  /// The most tokens guessed at once.
+  /// The `UserDefaults` key for whether refining guesses ahead with models that support it, on unless turned off.
+  static let enabledStorageKey = "promptLookupDecoding"
+  /// The `UserDefaults` key for the most tokens guessed at once.
+  static let mostGuessesStorageKey = "promptLookupMostGuesses"
+  /// The choices for the most tokens guessed at once.
+  static let mostGuessesRange = 1...5
+  /// The most tokens guessed at once unless changed.
   ///
   /// Each guessed token makes a pass slower, and on an M5 refines were fastest with one or two, since longer guesses
   /// are more often wrong past their first tokens.
-  private static let mostGuesses = 2
+  static let defaultMostGuesses = 2
+
+  static var isEnabled: Bool {
+    UserDefaults.standard.object(forKey: enabledStorageKey) as? Bool ?? true
+  }
+
+  /// The stored most tokens guessed at once, or the default if it's missing or out of range.
+  static var storedMostGuesses: Int {
+    guard let stored = UserDefaults.standard.object(forKey: mostGuessesStorageKey) as? Int,
+      mostGuessesRange.contains(stored)
+    else { return defaultMostGuesses }
+    return stored
+  }
+
+  /// The most tokens guessed at once.
+  private let mostGuesses: Int
 
   private let model: any MLXLMCommon.LanguageModel
   private let cache: [KVCache]
@@ -39,13 +60,15 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
     model: any MLXLMCommon.LanguageModel,
     cache: [KVCache],
     sampler: LogitSampler,
-    maxTokens: Int?
+    maxTokens: Int?,
+    mostGuesses: Int
   ) throws {
     guard canTrimPromptCache(cache) else { throw UntrimmableCache() }
     self.model = model
     self.cache = cache
     self.sampler = sampler
     self.maxTokens = maxTokens
+    self.mostGuesses = mostGuesses
     history = prompt
     let start = Date.timeIntervalSinceReferenceDate
     switch try model.prepare(input, cache: cache, windowSize: nil) {
@@ -77,8 +100,8 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
   /// and its own next token.
   private mutating func writeTokens() {
     // Each pass writes the right guesses plus one token, which mustn't pass the limit.
-    let room = maxTokens.map { $0 - tokenCount - 1 } ?? Self.mostGuesses
-    let guesses = Array(guess().prefix(Swift.max(0, Swift.min(room, Self.mostGuesses))))
+    let room = maxTokens.map { $0 - tokenCount - 1 } ?? mostGuesses
+    let guesses = Array(guess().prefix(Swift.max(0, Swift.min(room, mostGuesses))))
     let input = unread + guesses
     let result = model(LMInput.Text(tokens: MLXArray(input))[text: .newAxis], cache: cache, state: state)
     state = result.state
@@ -100,7 +123,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
       for start in stride(from: history.count - length - 1, through: 0, by: -1)
       where history[start..<(start + length)].elementsEqual(latest) {
         let next = start + length
-        return history[next..<Swift.min(next + Self.mostGuesses, history.count)]
+        return history[next..<Swift.min(next + mostGuesses, history.count)]
       }
     }
     return []
