@@ -35,7 +35,7 @@ struct AdvancedView: View {
       Section {
         Toggle(isOn: $promptLookupDecoding) {
           Label {
-            Text("Prompt Lookup Decoding")
+            Text("Speculative Decoding")
             Text("Refine faster using token speculation on supported models.")
           } icon: {
             Image(systemName: "bolt")

@@ -151,7 +151,7 @@
       "comment" : "Settings tab and window title for general app settings."
     },
     "Guesses per Pass" : {
-      "comment" : "Picker in Settings > Advanced for the most tokens prompt lookup decoding guesses at once, from 1 to 5."
+      "comment" : "Picker in Settings > Advanced for the most tokens speculative decoding guesses at once, from 1 to 5."
     },
     "Hold" : {
       "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
@@ -219,9 +219,6 @@
     "Press to start dictation, press again to stop." : {
       "comment" : "Explanation under the Shortcut Mode row in Settings > General when Toggle is chosen."
     },
-    "Prompt Lookup Decoding" : {
-      "comment" : "Toggle in Settings > Advanced for a technique that refines transcripts faster by guessing the next tokens from the transcript. A technical term, usually left untranslated."
-    },
     "Quit Casper" : {
       "comment" : "Menu bar item that quits the app."
     },
@@ -238,7 +235,7 @@
       "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
     },
     "Refine faster using token speculation on supported models." : {
-      "comment" : "Description of the Prompt Lookup Decoding toggle in Settings > Advanced. Token speculation means guessing the next pieces of words and having the language model check the guesses together."
+      "comment" : "Description of the Speculative Decoding toggle in Settings > Advanced. Token speculation means guessing the next pieces of words and having the language model check the guesses together."
     },
     "Refining" : {
       "comment" : "Header of the section in Settings > Advanced for settings that tune how transcripts are refined."
@@ -266,6 +263,9 @@
     },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
+    },
+    "Speculative Decoding" : {
+      "comment" : "Toggle in Settings > Advanced for a technique that refines transcripts faster by guessing the next tokens from the transcript and having the language model check them together. A technical term."
     },
     "Start at Login" : {
       "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."
