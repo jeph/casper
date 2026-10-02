@@ -1,37 +1,62 @@
 import Foundation
 
-/// The style transcripts are refined in, each with its own prompt in `RefinePrompt`.
-enum RefinePersona: String, CaseIterable, Identifiable, Sendable {
-  /// Fixes grammar and punctuation into polished writing.
-  case formal
-  /// Writes like a text message: keeps slang, shortens common words and phrases, and leaves out most punctuation.
-  case casual
-
-  /// The `UserDefaults` key the persona is stored under.
+/// A style transcripts are refined in: the instructions the language model follows, and how Settings shows them.
+///
+/// Casper comes with built-in personas, whose prompts can't be edited but can be duplicated, and the user can add their
+/// own.
+struct RefinePersona: Codable, Hashable, Identifiable, Sendable {
+  let id: String
+  var name: String
+  /// What refining does with this persona, shown under its name in Settings.
+  var summary: String
+  /// The SF Symbol shown beside the persona's name.
+  var systemImage: String
+  /// The system prompt, the whole prompt besides the transcript, so the model reads it once per persona.
   ///
-  /// The setting is experimental, so the casual persona can be tried out without replacing the formal one.
+  /// A built-in persona sends its own prompt instead, and these are the instructions its duplicates start with.
+  var instructions: String
+
+  /// The `UserDefaults` key the chosen persona's ID is stored under.
   static let storageKey = "refinePersona"
-  static let defaultValue = RefinePersona.formal
 
-  /// The stored persona, or the default if none is stored.
-  static var stored: RefinePersona {
-    UserDefaults.standard.string(forKey: storageKey).flatMap(Self.init(rawValue:)) ?? defaultValue
-  }
+  /// The most characters a name can have, which keeps it on one line in the Persona menu.
+  static let nameLimit = 40
+  /// The most characters a summary can have, about two lines under the persona's name in Settings.
+  static let summaryLimit = 120
+  /// The most words instructions can have.
+  ///
+  /// Words rather than tokens, because the token count depends on the language model and needs one installed. The
+  /// casual persona, the longest built-in one, uses about half of it, and the model keeps every word it has read in
+  /// memory.
+  static let instructionWordLimit = 10_000
 
-  var id: Self { self }
+  static let formal = RefinePersona(
+    id: RefinePrompt.BuiltIn.formal.rawValue,
+    name: "Formal",
+    summary: "Fix grammar and punctuation into polished writing.",
+    systemImage: "briefcase",
+    instructions: RefinePrompt.instructions(for: .formal)
+  )
 
-  var title: LocalizedStringResource {
-    switch self {
-    case .formal: "Formal"
-    case .casual: "Casual"
+  static let casual = RefinePersona(
+    id: RefinePrompt.BuiltIn.casual.rawValue,
+    name: "Casual",
+    summary: "Write like a text message, keeping slang and shortening common words and phrases.",
+    systemImage: "bubble.left.and.bubble.right",
+    instructions: RefinePrompt.instructions(for: .casual)
+  )
+
+  static let builtIns = [formal, casual]
+
+  var isBuiltIn: Bool { RefinePrompt.BuiltIn(rawValue: id) != nil }
+
+  /// The number of words in a text, found the way text editing finds them, so languages written without spaces count
+  /// each word too.
+  static func wordCount(of text: String) -> Int {
+    var count = 0
+    text.enumerateSubstrings(in: text.startIndex..., options: [.byWords, .substringNotRequired]) { _, _, _, _ in
+      count += 1
     }
-  }
-
-  /// What refining does with this persona, shown under the Refine Persona setting.
-  var explanation: LocalizedStringResource {
-    switch self {
-    case .formal: "Fix grammar and punctuation into polished writing."
-    case .casual: "Write like a text message, keeping slang and shortening common words and phrases."
-    }
+    return count
   }
 }

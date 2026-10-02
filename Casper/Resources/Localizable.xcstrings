@@ -15,6 +15,12 @@
     "%@ (Not Connected)" : {
       "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
     },
+    "%@ Copy" : {
+      "comment" : "Name of a duplicated persona. The argument is the original's name."
+    },
+    "%@ of %@ words" : {
+      "comment" : "Word count under a persona's instructions. The arguments are the count and the most allowed."
+    },
     "%@ · %@" : {
       "comment" : "Details of a model on the Voice Models and Language Models pages: its languages, then its download size.",
       "localizations" : {
@@ -74,11 +80,20 @@
     "Always" : {
       "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper runs."
     },
+    "Another persona is already named “%@”." : {
+      "comment" : "Shown in the persona editor when the name entered is taken. The argument is the name."
+    },
     "Bad values can make Casper slower or less reliable." : {
       "comment" : "Explanation under the warning at the top of Settings > Advanced."
     },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
+    },
+    "Built-in" : {
+      "comment" : "Tag beside a persona that comes with Casper, on the Refine page of Settings."
+    },
+    "Cancel" : {
+      "comment" : "Button that closes the persona editor without saving."
     },
     "Cancel Download" : {
       "comment" : "Button on the Voice Models page that stops a speech model download."
@@ -108,9 +123,6 @@
     "Casper uses the microphone to hear what you dictate." : {
       "comment" : "Explanation under the Microphone row in Settings > Permissions."
     },
-    "Casual" : {
-      "comment" : "Option in the Refine Persona setting: refined transcripts read like a text message, keeping slang and shortening common words and phrases."
-    },
     "Change these settings only if you know exactly what they do." : {
       "comment" : "Warning at the top of Settings > Advanced."
     },
@@ -123,11 +135,23 @@
     "Click to open Voice Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Voice Models page of Settings."
     },
+    "Create" : {
+      "comment" : "Button that saves a new persona in the persona editor."
+    },
     "Delete" : {
-      "comment" : "Button on the Voice Models page that deletes a downloaded speech model, and the confirming button in the dialog that asks first."
+      "comment" : "Button on the Voice Models page that deletes a downloaded speech model, and the confirming button in the dialogs that ask before deleting a speech model or a persona."
     },
     "Delete %@?" : {
       "comment" : "Title of the confirmation before deleting a downloaded model."
+    },
+    "Delete “%@”?" : {
+      "comment" : "Title of the dialog that asks before deleting a persona. The argument is the persona's name."
+    },
+    "Delete…" : {
+      "comment" : "Menu item beside a persona the user added, on the Refine page of Settings, that asks to delete it."
+    },
+    "Description" : {
+      "comment" : "Field in the persona editor for a short description of what the persona does, shown under its name in Settings."
     },
     "Dictation Shortcut" : {
       "comment" : "Row title in Settings > General for the keyboard shortcut that starts dictation."
@@ -138,14 +162,17 @@
     "Download failed" : {
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
     },
-    "Experimental" : {
-      "comment" : "Header of the last section in Settings > General, for features still being tried out."
+    "Duplicate" : {
+      "comment" : "Menu item beside a persona on the Refine page of Settings that adds a copy of it."
     },
-    "Fix grammar and punctuation into polished writing." : {
-      "comment" : "Explanation under the Refine Persona row in Settings > General when Formal is chosen."
+    "Each transcript is sent after these instructions, between <transcript> and </transcript>." : {
+      "comment" : "Note under a persona's instructions in the persona editor. <transcript> and </transcript> are literal tags and must not be translated."
     },
-    "Formal" : {
-      "comment" : "Option in the Refine Persona setting: refined transcripts have their grammar and punctuation fixed into polished writing."
+    "Edit" : {
+      "comment" : "Button beside a persona on the Refine page of Settings that opens it in the persona editor."
+    },
+    "Edit Persona" : {
+      "comment" : "Title of the persona editor when it edits an existing persona."
     },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
@@ -168,8 +195,14 @@
     "How long the mic stays on after your last dictation. Mic reactivation adds a recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always. Mic is short for microphone."
     },
+    "Icon" : {
+      "comment" : "Row in the persona editor with a button that chooses the persona's icon, and that button's accessibility label."
+    },
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
+    },
+    "Instructions" : {
+      "comment" : "Header of the text the language model follows for a persona, in the persona editor."
     },
     "Its files are removed from this Mac. You can download it again later." : {
       "comment" : "Message in the confirmation before deleting a downloaded model."
@@ -192,6 +225,12 @@
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
     },
+    "More Options" : {
+      "comment" : "Accessibility label and tooltip of the ellipsis menu beside a persona on the Refine page of Settings."
+    },
+    "Name" : {
+      "comment" : "Field in the persona editor for the persona's name."
+    },
     "Needs attention" : {
       "comment" : "Accessibility description of the warning on a Settings tab whose page fixes something."
     },
@@ -200,6 +239,9 @@
     },
     "Never" : {
       "comment" : "Option in the Keep Microphone On setting: the microphone turns off as soon as a dictation ends."
+    },
+    "New Persona" : {
+      "comment" : "Title of the persona editor when it creates a persona, and the button under the list of personas on the Refine page of Settings that opens it."
     },
     "Open Casper automatically when you log in to your Mac." : {
       "comment" : "Explanation under the Start at Login toggle in Settings > General."
@@ -212,6 +254,12 @@
     },
     "Permissions" : {
       "comment" : "Settings tab and window title for system permissions."
+    },
+    "Persona" : {
+      "comment" : "Picker on the Refine page of Settings for the persona transcripts are refined in, such as Formal or Casual."
+    },
+    "Personas" : {
+      "comment" : "Header of the list of personas on the Refine page of Settings. A persona is a style transcripts are rewritten in, with the instructions the language model follows."
     },
     "Press %@ to dictate" : {
       "comment" : "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
@@ -228,11 +276,11 @@
     "Recommended" : {
       "comment" : "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
     },
-    "Refine Persona" : {
-      "comment" : "Picker in the Experimental section of Settings > General for the style transcripts are refined in, Formal or Casual."
+    "Refine" : {
+      "comment" : "Settings tab and window title for the settings that clean up transcripts with a language model, and the personas they're written in."
     },
     "Refine Transcripts" : {
-      "comment" : "Title of the General setting that cleans up each transcript with a local language model before typing it."
+      "comment" : "Title of the setting on the Refine page of Settings that cleans up each transcript with a local language model before typing it."
     },
     "Refine faster using token speculation on supported models." : {
       "comment" : "Description of the Speculative Decoding toggle in Settings > Advanced. Token speculation means guessing the next pieces of words and having the language model check the guesses together."
@@ -246,8 +294,14 @@
     "Remove filler words and fix grammar and punctuation with a language model that runs on this Mac." : {
       "comment" : "Description of the Refine Transcripts setting."
     },
+    "Required" : {
+      "comment" : "Placeholder of the Name and Description fields in the persona editor."
+    },
     "Reset to Default" : {
       "comment" : "Tooltip and accessibility label for the buttons that restore a setting's default: the dictation shortcut, Option-Space, in Settings > General, and Guesses per Pass in Settings > Advanced."
+    },
+    "Save" : {
+      "comment" : "Button that saves the changes to a persona in the persona editor."
     },
     "Settings…" : {
       "comment" : "Menu bar item that opens the Settings window."
@@ -312,8 +366,8 @@
     "Voice Models" : {
       "comment" : "Title of the settings page for downloading and choosing speech recognition models."
     },
-    "Write like a text message, keeping slang and shortening common words and phrases." : {
-      "comment" : "Explanation under the Refine Persona row in Settings > General when Casual is chosen."
+    "You can't undo this." : {
+      "comment" : "Message of the dialog that asks before deleting a persona."
     }
   },
   "version" : "1.0"

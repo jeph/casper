@@ -9,11 +9,12 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let readiness = DictationReadiness()
   let settingsNavigation = SettingsNavigation()
+  let personas = PersonaStore()
   private var dictation: DictationController?
   private var voiceBubble: VoiceBubble?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    let dictation = DictationController(readiness: readiness)
+    let dictation = DictationController(readiness: readiness, personas: personas)
     self.dictation = dictation
     voiceBubble = VoiceBubble(status: dictation.status, readiness: readiness, settingsNavigation: settingsNavigation)
     LaunchAtLogin.applyDefaultOnFirstLaunch()

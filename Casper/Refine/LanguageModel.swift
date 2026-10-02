@@ -60,7 +60,7 @@ struct LanguageModel: LoadableModel {
 
   func load() async throws -> TranscriptRefiner {
     let context = try await LLMModelFactory.shared.load(from: directory, using: TransformersTokenizerLoader())
-    return try TranscriptRefiner(context: context, persona: RefinePersona.stored)
+    return TranscriptRefiner(context: context)
   }
 
   static func unload(_ refiner: TranscriptRefiner) async {

@@ -1,13 +1,17 @@
 import Foundation
 import MLX
 import MLXLMCommon
+import OSLog
 
-/// Cleans up transcripts with a language model, following `RefinePrompt`.
+/// Cleans up transcripts with a language model, following a persona's prompt.
 ///
-/// Every prompt for a persona starts with the same system prompt, so the model reads it once, and each transcript
-/// continues from a copy of that state instead of reading the system prompt again. The stored persona's system prompt
-/// is read as the model loads, and another persona's the first time it's used.
+/// Every prompt for a persona starts the same way, so the model reads that start once, and each transcript continues
+/// from a copy of that state instead of reading it again. Only the last persona's start is kept, since a long one
+/// takes hundreds of megabytes; Casper reads the chosen persona's start as soon as the model loads and whenever the
+/// user picks or edits a persona, so dictations don't wait for it.
 actor TranscriptRefiner {
+  private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Refine")
+
   enum RefineError: Error {
     case unloaded
     /// The model reached its token limit, so its output would be cut off.
@@ -16,6 +20,10 @@ actor TranscriptRefiner {
 
   /// The start of a persona's prompt, which every transcript's prompt shares, and the model's state after reading it.
   private struct CachedPrompt {
+    /// The persona the start was made from, which identifies a built-in persona's prompt.
+    let personaID: String
+    /// The persona's instructions, the rest of the prompt of a persona the user wrote.
+    let instructions: String
     let tokens: [Int]
     /// Copied for each transcript.
     let cache: [KVCache]
@@ -23,8 +31,7 @@ actor TranscriptRefiner {
 
   private struct Loaded {
     let context: ModelContext
-    /// The prompt start of each persona used so far.
-    var prompts: [RefinePersona: CachedPrompt]
+    var prompt: CachedPrompt?
   }
 
   /// The `UserDefaults` key for whether transcripts are refined, on unless turned off.
@@ -36,13 +43,11 @@ actor TranscriptRefiner {
 
   private var loaded: Loaded?
 
-  /// Reads a persona's system prompt with a loaded model.
-  init(context: sending ModelContext, persona: RefinePersona) throws {
-    let prompt = try Self.readPrompt(for: persona, context: context)
-    loaded = Loaded(context: context, prompts: [persona: prompt])
+  init(context: sending ModelContext) {
+    loaded = Loaded(context: context)
   }
 
-  /// Reads a persona's system prompt ahead of its first transcript, so refining that transcript doesn't wait for it.
+  /// Reads a persona's prompt start ahead of its first transcript, so refining that transcript doesn't wait for it.
   func cachePrompt(for persona: RefinePersona) throws {
     _ = try cachedPrompt(for: persona)
   }
@@ -109,9 +114,15 @@ actor TranscriptRefiner {
 
   private func cachedPrompt(for persona: RefinePersona) throws -> CachedPrompt {
     guard let loaded else { throw RefineError.unloaded }
-    if let prompt = loaded.prompts[persona] { return prompt }
+    if let prompt = loaded.prompt, prompt.personaID == persona.id, prompt.instructions == persona.instructions {
+      return prompt
+    }
+    // The previous start is released before the new one is read, so the two never take memory at once.
+    self.loaded?.prompt = nil
+    let start = ContinuousClock.now
     let prompt = try Self.readPrompt(for: persona, context: loaded.context)
-    self.loaded?.prompts[persona] = prompt
+    self.loaded?.prompt = prompt
+    Self.logger.info("Read \(prompt.tokens.count) prompt tokens in \(ContinuousClock.now - start, privacy: .public)")
     return prompt
   }
 
@@ -131,7 +142,7 @@ actor TranscriptRefiner {
       _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
       eval(cache)
     }
-    return CachedPrompt(tokens: tokens, cache: cache)
+    return CachedPrompt(personaID: persona.id, instructions: persona.instructions, tokens: tokens, cache: cache)
   }
 
   private static func promptTokens(

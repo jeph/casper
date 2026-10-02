@@ -70,7 +70,8 @@ final class ModelLoader<Model: LoadableModel> {
 
   /// The active model, loading it if needed.
   ///
-  /// Only valid between `beginUse()` and `endUse()`, which keep the model from unloading.
+  /// Between `beginUse()` and `endUse()` the model can't unload. Outside them it can unload during the work, which only
+  /// suits work that may fail without harm, like reading a prompt ahead of the next dictation.
   func model() throws -> Loading {
     guard let loading = load() else { throw LoadError.noActiveModel }
     return loading

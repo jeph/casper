@@ -15,6 +15,7 @@ struct CasperApp: App {
         .environment(appDelegate.readiness)
         .environment(appDelegate.readiness.permissions)
         .environment(appDelegate.settingsNavigation)
+        .environment(appDelegate.personas)
     }
   }
 }

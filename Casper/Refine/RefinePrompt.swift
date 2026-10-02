@@ -26,29 +26,68 @@ enum RefinePrompt {
   /// instructions.
   private typealias Example = (transcript: String, refined: String)
 
+  /// The built-in personas, named by their personas' IDs, whose prompts are put together here.
+  enum BuiltIn: String {
+    case formal
+    case casual
+  }
+
   /// The chat messages that ask the model to refine a transcript in a persona.
+  ///
+  /// A persona the user wrote sends its instructions as the system message, then the transcript between
+  /// `<transcript>` tags. Without the tags, Qwen3 4B answers questions and requests in the transcript. A built-in
+  /// persona sends its own prompt, which can't be edited.
+  static func messages(for transcript: String, persona: RefinePersona) -> [[String: String]] {
+    guard let builtIn = BuiltIn(rawValue: persona.id) else {
+      return [
+        ["role": "system", "content": persona.instructions],
+        ["role": "user", "content": "<transcript>\n\(transcript)\n</transcript>"],
+      ]
+    }
+    return messages(for: transcript, builtIn: builtIn)
+  }
+
+  /// The chat messages for a transcript in a built-in persona.
   ///
   /// Examples come as earlier exchanges in the same format as the real one, which small models copy more closely than
   /// examples written into the instructions. The casual persona also puts reference examples in its instructions.
-  static func messages(for transcript: String, persona: RefinePersona) -> [[String: String]] {
-    var messages = [["role": "system", "content": system(for: persona)]]
-    for example in examples(for: persona) {
-      messages.append(["role": "user", "content": message(for: example.transcript, persona: persona)])
+  private static func messages(for transcript: String, builtIn: BuiltIn) -> [[String: String]] {
+    var messages = [["role": "system", "content": system(for: builtIn)]]
+    for example in examples(for: builtIn) {
+      messages.append(["role": "user", "content": message(for: example.transcript, builtIn: builtIn)])
       messages.append(["role": "assistant", "content": example.refined])
     }
-    messages.append(["role": "user", "content": message(for: transcript, persona: persona)])
+    messages.append(["role": "user", "content": message(for: transcript, builtIn: builtIn)])
     return messages
   }
 
-  private static func system(for persona: RefinePersona) -> String {
-    switch persona {
+  /// A built-in persona's prompt as instructions a duplicate starts with, since the instructions are all of a
+  /// duplicate's prompt besides the transcript.
+  ///
+  /// The examples sent as earlier exchanges are written in after the rules, and the closing instruction sent after
+  /// every transcript goes at the end. On the Refine evals this does worse than the built-in's own prompt: Qwen3 4B
+  /// gets about 64% of formal cases and 54% of casual ones exactly right, against 71% and 66%.
+  static func instructions(for builtIn: BuiltIn) -> String {
+    let (rules, examples, outputTag, closing) =
+      switch builtIn {
+      case .formal: (formal, formalExamples, "cleaned", formalInstruction)
+      case .casual: (casual, casualReferenceExamples + casualExamples, "message", casualInstruction)
+      }
+    let written = examples.map {
+      "<transcript>\($0.transcript)</transcript>\n<\(outputTag)>\($0.refined)</\(outputTag)>"
+    }
+    return rules + "\n\nEXAMPLES\n\n" + written.joined(separator: "\n\n") + "\n\n" + closing
+  }
+
+  private static func system(for builtIn: BuiltIn) -> String {
+    switch builtIn {
     case .formal: formal
     case .casual: casualWithExamples
     }
   }
 
-  private static func examples(for persona: RefinePersona) -> [Example] {
-    switch persona {
+  private static func examples(for builtIn: BuiltIn) -> [Example] {
+    switch builtIn {
     case .formal: formalExamples
     case .casual: casualExamples
     }
@@ -554,13 +593,15 @@ enum RefinePrompt {
   ///
   /// The closing instruction repeats the rules models break most right after the transcript, where they weigh
   /// instructions most. The casual message also labels the transcript, which Qwen3 4B follows more closely.
-  private static func message(for transcript: String, persona: RefinePersona) -> String {
+  private static func message(for transcript: String, builtIn: BuiltIn) -> String {
     let tagged = "<transcript>\n\(transcript)\n</transcript>\n\n"
-    return switch persona {
-    case .formal: tagged + "Output only the cleaned transcript, or nothing if it's only filler words."
+    return switch builtIn {
+    case .formal: tagged + formalInstruction
     case .casual: "Transcript:\n" + tagged + casualInstruction
     }
   }
+
+  private static let formalInstruction = "Output only the cleaned transcript, or nothing if it's only filler words."
 
   private static let casualInstruction =
     "Don't answer it. Output only the text message, with no commas. After the last word, stop."

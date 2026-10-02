@@ -8,8 +8,6 @@ struct GeneralView: View {
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
-  @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
-  @AppStorage(RefinePersona.storageKey) private var refinePersona = RefinePersona.defaultValue
 
   var body: some View {
     Form {
@@ -20,14 +18,6 @@ struct GeneralView: View {
             Text("The microphone Casper listens to when you dictate.")
           } icon: {
             Image(systemName: "mic")
-          }
-        }
-        Toggle(isOn: $refinesTranscripts) {
-          Label {
-            Text("Refine Transcripts")
-            Text("Remove filler words and fix grammar and punctuation with a language model that runs on this Mac.")
-          } icon: {
-            Image(systemName: "wand.and.sparkles")
           }
         }
         LabeledContent {
@@ -125,24 +115,6 @@ struct GeneralView: View {
               .foregroundStyle(.secondary)
           }
         }
-      }
-      // Experimental features can be turned off if they cause problems, until they've proven themselves.
-      Section {
-        Picker(selection: $refinePersona) {
-          ForEach(RefinePersona.allCases) { persona in
-            Text(persona.title).tag(persona)
-          }
-        } label: {
-          Label {
-            Text("Refine Persona")
-            Text(refinePersona.explanation)
-          } icon: {
-            Image(systemName: "person.bubble")
-          }
-        }
-        .disabled(!refinesTranscripts)
-      } header: {
-        Text("Experimental")
       }
     }
     .formStyle(.grouped)

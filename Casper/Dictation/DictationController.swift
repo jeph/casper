@@ -1,5 +1,6 @@
 import AVFoundation
 import OSLog
+import Observation
 
 /// Hotkey-driven dictation: records while the hotkey is held, or from one press to the next in toggle mode, then types
 /// the refined transcript at the cursor.
@@ -14,6 +15,7 @@ final class DictationController {
   private let recorder: AudioRecorder
   private let microphoneKeepAlive: KeepAliveSchedule
   private let readiness: DictationReadiness
+  private let personas: PersonaStore
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
   private var nextDictation = 0
@@ -29,7 +31,7 @@ final class DictationController {
   /// The refine setting in effect, compared against the stored one when settings change.
   private var refinesTranscripts = TranscriptRefiner.isEnabled
   /// The persona the recording in progress is refined with, or `nil` if it isn't refined, decided when it starts so its
-  /// model loads and reads the persona's prompt while the user speaks.
+  /// model loads while the user speaks, and so editing the persona meanwhile doesn't change how it's refined.
   private var recordingPersona: RefinePersona?
 
   /// How long recording continues after the hotkey is released, or pressed again in toggle mode.
@@ -38,8 +40,9 @@ final class DictationController {
   /// after it's spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
-  init(readiness: DictationReadiness) {
+  init(readiness: DictationReadiness, personas: PersonaStore) {
     self.readiness = readiness
+    self.personas = personas
     let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     self.recorder = recorder
@@ -75,6 +78,7 @@ final class DictationController {
         self?.activeModelsMayHaveChanged()
       }
     }
+    cacheChosenPersonaPromptOnChange()
   }
 
   /// Loads the language model if refining was turned on, and unloads it once nothing is using it if it was turned off.
@@ -84,6 +88,7 @@ final class DictationController {
     refinesTranscripts = enabled
     if enabled {
       languageModel.keepLoaded()
+      cacheChosenPersonaPrompt()
     } else {
       languageModel.release()
     }
@@ -99,6 +104,28 @@ final class DictationController {
     speechModel.keepLoaded()
     if refinesTranscripts {
       languageModel.keepLoaded()
+      cacheChosenPersonaPrompt()
+    }
+  }
+
+  /// Caches the chosen persona's prompt now and again whenever the user picks another persona or edits it.
+  private func cacheChosenPersonaPromptOnChange() {
+    withObservationTracking {
+      _ = personas.selected
+    } onChange: { [weak self] in
+      // Tracking ends with the first change, which is reported before it's made, so tracking starts over after it.
+      Task { @MainActor in self?.cacheChosenPersonaPromptOnChange() }
+    }
+    cacheChosenPersonaPrompt()
+  }
+
+  /// Has the language model read the chosen persona's prompt start in the background, if refining is on, so the next
+  /// dictation doesn't wait for it.
+  private func cacheChosenPersonaPrompt() {
+    guard refinesTranscripts, let loading = try? languageModel.model() else { return }
+    let persona = personas.selected
+    Task {
+      try? await loading.value.cachePrompt(for: persona)
     }
   }
 
@@ -147,10 +174,10 @@ final class DictationController {
     recorder.start()
     status.isRecording = true
     speechModel.beginUse()
-    recordingPersona = TranscriptRefiner.isEnabled && LanguageModel.active != nil ? RefinePersona.stored : nil
+    recordingPersona = TranscriptRefiner.isEnabled && LanguageModel.active != nil ? personas.selected : nil
     guard let persona = recordingPersona else { return }
     languageModel.beginUse()
-    // A persona switched to since the model loaded has its prompt read now rather than after the recording.
+    // A model that loads with this recording, after an earlier load failed, reads the prompt while the user speaks.
     guard let loading = try? languageModel.model() else { return }
     Task {
       try? await loading.value.cachePrompt(for: persona)

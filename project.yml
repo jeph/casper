@@ -97,6 +97,9 @@ targets:
       - CasperTests
       - Casper/Audio/SilenceTrimmer.swift
       - Casper/Dictation/DictationMode.swift
+      - Casper/Refine/PersonaStore.swift
+      - Casper/Refine/RefinePersona.swift
+      - Casper/Refine/RefinePrompt.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.jeph.CasperTests

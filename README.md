@@ -20,12 +20,13 @@ Casper is designed so dictation feels instant, from the moment you press the sho
 - **Models stay loaded.** The speech and language models load when Casper starts and stay in memory, so no dictation waits for them. Switching models loads the new one in the background. You can also keep the microphone on between dictations for anywhere from no time at all to as long as Casper is running.
 - **Neural Engine and GPU working together.** With a Parakeet speech model, the Neural Engine transcribes your latest dictation while the GPU cleans up the one before it.
 - **Speculative decoding.** A cleaned-up transcript mostly repeats the transcript, so Casper guesses the next words from what you said and has the model check several of them in a single pass. This technique, called prompt lookup decoding, produces exactly the same text as decoding one word at a time, just faster. It's used with the Qwen3 cleanup models; Qwen3.5 and Qwen3.8 are built in a way that doesn't support it.
-- **The cleanup instructions are read once.** The model processes the cleanup instructions when it loads and reuses that work for every dictation, so it only has to read your words.
+- **The cleanup instructions are read once.** The model processes the chosen persona's prompt when it loads, and again in the background when you pick or edit a persona, then reuses that work for every dictation, so it only has to read your words.
 - **No extended thinking.** Models that can think before they answer, such as Qwen3.5, have it turned off, since cleanup doesn't need it and it would slow every dictation down.
 
 ## Features
 
 - **Hold or toggle** with any global shortcut (⌥Space by default). Hold the shortcut while you speak, or switch **Shortcut Mode** on the General page to press it once to start and again to stop. The shortcut doesn't need Input Monitoring permission. Recording continues for a moment after you stop so your last word isn't cut off, and pressing the shortcut again during that moment keeps the same recording going.
+- **Personas.** Choose how cleanup writes on the Refine page: **Formal** fixes grammar and punctuation into polished writing, and **Casual** writes like a text message. Create your own personas with a name, description, icon, and up to 10,000 words of instructions, or duplicate a built-in one to start from its prompt written out as instructions. Your own persona's instructions are its whole prompt: the model gets them and your transcript between `<transcript>` tags, nothing else.
 - **Voice bubble.** A small floating ghost shows a live waveform while you speak and animates while Casper transcribes. It stays above your windows on every Space, doesn't take focus from the app you're typing in, and remembers where you dragged it, even across displays. Clicking it while Casper is idle brings Casper to the front, so its menus and ⌘, for Settings are a click away even when the menu bar icon is hidden. If something dictation needs is missing, such as a permission or a model, the bubble says what's wrong, and clicking it opens the Settings page that fixes it.
 - **Microphone choice.** Use the system default or pick a specific input. Casper follows devices as they're plugged in and removed, and keeps recording through audio configuration changes.
 - **Model library.** Download speech and language models in the sizes and precisions that suit your Mac, switch between them, and delete the ones you don't use. Downloads are verified before they're installed, so a failed download never leaves a half-installed model.
@@ -64,7 +65,7 @@ brew install --cask jeph/tap/casper
 
 Or download `Casper-<version>.dmg` from the [latest release](https://github.com/jeph/casper/releases/latest), open it, and drag Casper to Applications.
 
-Settings opens the first time Casper launches. Grant microphone and Accessibility access, download a speech model, and download a cleanup model or turn off **Refine Transcripts** on the General page. Then hold ⌥Space and start talking.
+Settings opens the first time Casper launches. Grant microphone and Accessibility access, download a speech model, and download a cleanup model or turn off **Refine Transcripts** on the Refine page. Then hold ⌥Space and start talking.
 
 ## Build from source
 
