@@ -164,7 +164,7 @@
       "comment" : "Title of the persona editor when it edits an existing persona."
     },
     "Faster than 4B 2507, but follows instructions less reliably." : {
-      "comment" : "Description of the Qwen3 1.7B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+      "comment" : "Description of the Qwen3 1.7B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
     },
     "Fastest, but often ignores instructions." : {
       "comment" : "Description of the Qwen3.5 0.8B language model on the Language Models page."
@@ -332,10 +332,10 @@
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."
     },
     "Slightly better at instructions than 4B 2507, but much slower." : {
-      "comment" : "Description of the Qwen3 14B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+      "comment" : "Description of the Qwen3 14B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
     },
     "Slower than 4B 2507, with similar instruction following." : {
-      "comment" : "Description of the Qwen3 8B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+      "comment" : "Description of the Qwen3 8B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
     },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
