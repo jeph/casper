@@ -218,7 +218,7 @@ struct HistoryView: View {
       } description: {
         Text(
           isEnabled
-            ? "Text you dictate appears here, exactly as Casper typed it."
+            ? "Text you dictate appears here."
             : "Turn on history to keep the text you dictate."
         )
       }
