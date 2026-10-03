@@ -9,6 +9,10 @@ import OSLog
 /// from a copy of that state instead of reading it again. Only the last persona's start is kept, since a long one
 /// takes hundreds of megabytes; Casper reads the chosen persona's start as soon as the model loads and whenever the
 /// user picks or edits a persona, so dictations don't wait for it.
+///
+/// Arrays MLX frees go to its cache for reuse rather than back to macOS, and a long transcript leaves gigabytes there,
+/// so the refiner clears the cache after reading a prompt and after each transcript. Clearing only frees arrays nothing
+/// uses, so the persona's cached start survives it.
 actor TranscriptRefiner {
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Refine")
 
@@ -54,6 +58,12 @@ actor TranscriptRefiner {
 
   /// Returns the cleaned-up transcript, which is empty if the transcript was only filler words.
   func refine(_ transcript: String, persona: RefinePersona) async throws -> String {
+    // Runs once `refined` has returned and released its copy of the prompt's state and everything else it allocated.
+    defer { MLX.Memory.clearCache() }
+    return try await refined(transcript, persona: persona)
+  }
+
+  private func refined(_ transcript: String, persona: RefinePersona) async throws -> String {
     guard let context = loaded?.context else { throw RefineError.unloaded }
     let prompt = try cachedPrompt(for: persona)
     let tokens = try Self.promptTokens(for: transcript, persona: persona, tokenizer: context.tokenizer)
@@ -67,6 +77,7 @@ actor TranscriptRefiner {
     let input = LMInput(tokens: MLXArray(Array(unread)))
     let cache = continuesPrompt ? prompt.cache.map { $0.copy() } : context.model.newCache(parameters: nil)
     let stream: AsyncStream<Generation>
+    let generationTask: Task<Void, Never>
     // Guessing ahead needs a cache that can drop wrong guesses, which caches of models that mix in other layers than
     // attention, like Qwen3.5's, can't, so those models write one token per pass, as all do with guessing turned off.
     if PromptLookupTokenIterator.isEnabled, canTrimPromptCache(cache) {
@@ -79,18 +90,24 @@ actor TranscriptRefiner {
         maxTokens: maxTokens,
         mostGuesses: PromptLookupTokenIterator.storedMostGuesses
       )
-      (stream, _) = generateTask(
+      (stream, generationTask) = generateTask(
         promptTokenCount: unread.count,
         modelConfiguration: context.configuration,
         tokenizer: context.tokenizer,
         iterator: iterator
       )
     } else {
-      stream = try generate(
+      let iterator = try TokenIterator(
         input: input,
+        model: context.model,
         cache: cache,
-        parameters: GenerateParameters(maxTokens: maxTokens, temperature: 0),
-        context: context
+        parameters: GenerateParameters(maxTokens: maxTokens, temperature: 0)
+      )
+      (stream, generationTask) = generateTask(
+        promptTokenCount: unread.count,
+        modelConfiguration: context.configuration,
+        tokenizer: context.tokenizer,
+        iterator: iterator
       )
     }
     let initial = (output: "", stopReason: GenerateStopReason?.none)
@@ -101,6 +118,9 @@ actor TranscriptRefiner {
       case .toolCall: break
       }
     }
+    // The stream finishes before the task that writes it, which still holds the iterator and the arrays it allocated
+    // until it ends, so they'd return to MLX's cache after `refine` clears it.
+    await generationTask.value
     guard stopReason == .stop else { throw RefineError.incomplete }
     return output.trimmingCharacters(in: .whitespacesAndNewlines)
   }
@@ -123,6 +143,7 @@ actor TranscriptRefiner {
     let prompt = try Self.readPrompt(for: persona, context: loaded.context)
     self.loaded?.prompt = prompt
     Self.logger.info("Read \(prompt.tokens.count) prompt tokens in \(ContinuousClock.now - start, privacy: .public)")
+    MLX.Memory.clearCache()
     return prompt
   }
 
