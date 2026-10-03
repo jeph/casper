@@ -30,8 +30,8 @@ protocol DownloadableModel: Identifiable, Sendable where ID == String {
   /// The number of parameters, such as "0.6B".
   var parameters: String { get }
   var bits: Int { get }
-  /// A sentence telling the model apart from the others on its page, or `nil` if the page doesn't describe its models.
-  var summary: LocalizedStringResource? { get }
+  /// A sentence telling the model apart from the others on its page.
+  var summary: LocalizedStringResource { get }
   /// The total size of the model's own files, without its companions.
   var downloadSize: Int64 { get }
   /// The memory the model and its companions take once they've loaded and been used.
@@ -62,8 +62,6 @@ extension DownloadableModel {
   static var active: Self? {
     UserDefaults.standard.string(forKey: activeStorageKey).flatMap { id in all.first { $0.id == id } }
   }
-
-  var summary: LocalizedStringResource? { nil }
 
   var files: [String]? { nil }
 

@@ -58,9 +58,7 @@ struct SpeechModel: LoadableModel {
 
   let id: String
   let family: Family
-  // Optional to match `DownloadableModel`: a non-optional property wouldn't satisfy it, and its `nil` default would be
-  // shown instead.
-  let summary: LocalizedStringResource?
+  let summary: LocalizedStringResource
   let parameters: String
   let bits: Int
   let downloadSize: Int64

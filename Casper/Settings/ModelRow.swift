@@ -25,9 +25,7 @@ struct ModelRow<Model: DownloadableModel>: View {
           .background(.tint.opacity(0.15), in: .capsule)
         }
       }
-      if let summary = model.summary {
-        Text(summary)
-      }
+      Text(model.summary)
       memoryImpact
     }
     .confirmationDialog(

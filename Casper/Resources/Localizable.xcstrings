@@ -63,6 +63,15 @@
     "Bad values can make Casper slower or less reliable." : {
       "comment" : "Explanation under the warning at the top of Settings > Advanced."
     },
+    "Best at instructions, but very slow and needs a lot of memory." : {
+      "comment" : "Description of the Qwen3.8 27B language model on the Language Models page."
+    },
+    "Better at instructions than Qwen3 4B 2507, but slightly slower." : {
+      "comment" : "Description of the Qwen3.5 4B language model on the Language Models page."
+    },
+    "Better at instructions than Qwen3.5 4B, but slower." : {
+      "comment" : "Description of the Qwen3.5 9B language model on the Language Models page."
+    },
     "Blocked by a device policy" : {
       "comment" : "Status in Settings > Permissions when a device management profile or parental controls block microphone access."
     },
@@ -154,6 +163,12 @@
     "Edit Persona" : {
       "comment" : "Title of the persona editor when it edits an existing persona."
     },
+    "Faster than 4B 2507, but follows instructions less reliably." : {
+      "comment" : "Description of the Qwen3 1.7B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+    },
+    "Fastest, but often ignores instructions." : {
+      "comment" : "Description of the Qwen3.5 0.8B language model on the Language Models page."
+    },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
     },
@@ -196,6 +211,9 @@
     "Language Models" : {
       "comment" : "Title of the settings page for downloading and choosing the language models that refine transcripts."
     },
+    "Least memory, but often ignores instructions." : {
+      "comment" : "Description of the Qwen3 0.6B language model on the Language Models page."
+    },
     "Listening" : {
       "comment" : "Accessibility value of the voice bubble while dictation is recording."
     },
@@ -222,6 +240,9 @@
     },
     "More languages than Parakeet, but slower. Marginally more accurate than 5-bit, but slower." : {
       "comment" : "Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 5-bit version."
+    },
+    "More languages than Qwen3 1.7B, but follows instructions less reliably." : {
+      "comment" : "Description of the Qwen3.5 2B language model on the Language Models page."
     },
     "Name" : {
       "comment" : "Field in the persona editor for the persona's name."
@@ -310,6 +331,12 @@
     "Show Voice Bubble" : {
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."
     },
+    "Slightly better at instructions than 4B 2507, but much slower." : {
+      "comment" : "Description of the Qwen3 14B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+    },
+    "Slower than 4B 2507, with similar instruction following." : {
+      "comment" : "Description of the Qwen3 8B language model on the Language Models page. 4B 2507 is the recommended Qwen3 4B 2507 model."
+    },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
     },
@@ -357,6 +384,9 @@
     },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
+    },
+    "Updated Qwen3 4B. Follows instructions as well as 8B, but faster." : {
+      "comment" : "Description of the Qwen3 4B 2507 language model, a July 2025 update of Qwen3 4B, on the Language Models page. 8B is the Qwen3 8B model."
     },
     "Use" : {
       "comment" : "Button on the Voice Models page that makes an installed speech model the one dictation uses."
