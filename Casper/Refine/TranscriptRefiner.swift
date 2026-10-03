@@ -10,8 +10,8 @@ import OSLog
 /// takes hundreds of megabytes; Casper reads the chosen persona's start as soon as the model loads and whenever the
 /// user picks or edits a persona, so dictations don't wait for it.
 ///
-/// The refiner releases MLX's buffer cache after reading a prompt and after each transcript, unless the user turned
-/// that off. The persona's cached start is still in use, so releasing never frees it.
+/// The refiner releases MLX's buffer cache after reading a prompt and after each transcript, if the user turned that
+/// on. The persona's cached start is still in use, so releasing never frees it.
 actor TranscriptRefiner {
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Refine")
 

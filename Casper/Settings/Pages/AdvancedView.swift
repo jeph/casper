@@ -6,7 +6,7 @@ struct AdvancedView: View {
   @AppStorage(PromptLookupTokenIterator.enabledStorageKey) private var promptLookupDecoding = true
   @AppStorage(PromptLookupTokenIterator.mostGuessesStorageKey) private var mostGuesses =
     PromptLookupTokenIterator.defaultMostGuesses
-  @AppStorage(BufferCache.releaseStorageKey) private var releasesBufferCache = true
+  @AppStorage(BufferCache.releaseStorageKey) private var releasesBufferCache = false
 
   var body: some View {
     Form {
