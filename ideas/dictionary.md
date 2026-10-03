@@ -128,8 +128,8 @@ Both need measuring in the eval, with dictionaries of 10, 100, 1,000 and 10,000 
   - A Parakeet model downloaded before this change has no word spotter. Casper fetches it on launch in the background, and dictation works without the dictionary until it arrives.
   - `DownloadableModel` describes one repository per model, so `SpeechModel` needs a way to list a second repository and revision to download with it.
 - **UI** (from the mockup):
-  - A Dictionary tab between History and Voice Models, laid out like History: a card with the Use Dictionary switch, then a card with a search field, the word list, and an Add Word button. The page never mentions which voice model is active or the word spotter.
-  - Each row shows the word and any "Sounds like" spellings. Selecting words brings up History's selection bar with Edit and Delete; the right-click menu has the same actions, and double-clicking edits.
+  - A Dictionary tab between Refine and History, laid out like History: a card with the Enable Dictionary switch, then a card with a search field, the word list, and an Add Word button. The page never mentions which voice model is active or the word spotter.
+  - Each row shows the word and any "Sounds like" spellings. Selecting words replaces Add Word, in the card's footer, with the number selected and Edit and Delete; the right-click menu has the same actions, and double-clicking edits. Delete asks first.
   - The Add Word and Edit Word sheets follow the persona editor, with Word and an optional Sounds Like field. Sounds Like asks for how Casper writes the word when it gets it wrong, such as "Neve" for Niamh, since that's what both the swap and Parakeet's rescoring match best. A word that's already in the dictionary (ignoring case) is an error.
   - The list keeps every word in memory, without paging; see "Large dictionaries".
 - **Later.** Adding a word from History, by picking the misheard words in a past dictation. Not in the first version; picking words one by one also doesn't scale to long dictations.

@@ -54,7 +54,7 @@ struct DictionaryView: View {
     HStack(spacing: 12) {
       Label {
         VStack(alignment: .leading, spacing: 2) {
-          Text("Use Dictionary")
+          Text("Enable Dictionary")
           Text("Help Casper recognize names, brands, and jargon.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
@@ -64,7 +64,7 @@ struct DictionaryView: View {
       }
       .labelStyle(.settings)
       Spacer(minLength: 0)
-      Toggle("Use Dictionary", isOn: $isEnabled)
+      Toggle("Enable Dictionary", isOn: $isEnabled)
         .toggleStyle(.switch)
         .labelsHidden()
     }
