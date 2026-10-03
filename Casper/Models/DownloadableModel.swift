@@ -30,10 +30,13 @@ protocol DownloadableModel: Identifiable, Sendable where ID == String {
   /// The number of parameters, such as "0.6B".
   var parameters: String { get }
   var bits: Int { get }
-  /// The languages the model works in.
-  var languages: LocalizedStringResource { get }
+  /// A sentence telling the model apart from the others on its page, or `nil` if the page doesn't describe its models.
+  var summary: LocalizedStringResource? { get }
   /// The total size of the model's own files, without its companions.
   var downloadSize: Int64 { get }
+  /// The memory the model and its companions take once they've loaded and been used, or `nil` if it hasn't been
+  /// measured.
+  var memoryUsage: Int64? { get }
   /// The Hugging Face repository, including the account that publishes it.
   var repository: String { get }
   /// The Hugging Face commit to download, fixed so the files can't change.
@@ -60,6 +63,10 @@ extension DownloadableModel {
   static var active: Self? {
     UserDefaults.standard.string(forKey: activeStorageKey).flatMap { id in all.first { $0.id == id } }
   }
+
+  var summary: LocalizedStringResource? { nil }
+
+  var memoryUsage: Int64? { nil }
 
   var files: [String]? { nil }
 

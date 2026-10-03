@@ -54,29 +54,17 @@ struct SpeechModel: LoadableModel {
       case .qwen3ASR: .gpu
       }
     }
-
-    /// The languages the model transcribes.
-    var languages: LocalizedStringResource {
-      switch self {
-      case .parakeetTDT, .parakeetUltra:
-        LocalizedStringResource(
-          "25 European languages",
-          comment: "The languages the Parakeet speech models transcribe, shown on the Voice Models page."
-        )
-      case .qwen3ASR:
-        LocalizedStringResource(
-          "30 languages and 22 Chinese dialects",
-          comment: "The languages the Qwen3-ASR speech models transcribe, shown on the Voice Models page."
-        )
-      }
-    }
   }
 
   let id: String
   let family: Family
+  // `summary` and `memoryUsage` are optional to match `DownloadableModel`: non-optional properties wouldn't satisfy
+  // it, and its `nil` defaults would be shown instead.
+  let summary: LocalizedStringResource?
   let parameters: String
   let bits: Int
   let downloadSize: Int64
+  let memoryUsage: Int64?
   let revision: String
   let isRecommended: Bool
 
@@ -88,8 +76,6 @@ struct SpeechModel: LoadableModel {
   @MainActor static let store = ModelStore<SpeechModel>()
 
   var name: String { family.name }
-
-  var languages: LocalizedStringResource { family.languages }
 
   /// The Hugging Face repository, from the account that publishes the converted models its library runs.
   var repository: String {
@@ -153,60 +139,107 @@ struct SpeechModel: LoadableModel {
 }
 
 extension SpeechModel {
+  // `memoryUsage` is what `footprint` reported for a model and its companions, Neural Engine memory included, after
+  // it transcribed 26 seconds of speech twice. Most of Qwen3-ASR's is buffers from transcribing, which MLX keeps in
+  // its cache.
   static let all = [
     SpeechModel(
       id: "parakeet-ultra-coreml",
       family: .parakeetUltra,
+      summary: LocalizedStringResource(
+        "Tuned Parakeet with better accuracy at the same speed.",
+        comment: "Description of Parakeet Ultra, a version of the Parakeet speech model, on the Voice Models page."
+      ),
       parameters: "0.6B",
       // The encoder's weights, which are almost all of the model's.
       bits: 8,
       downloadSize: 632_162_964,
+      memoryUsage: 807_403_520,
       revision: "95eaa59a39d4394f047a4dc5cce480388a60d1b6",
       isRecommended: true
     ),
     SpeechModel(
       id: "parakeet-tdt-0.6b-v3-coreml",
       family: .parakeetTDT,
+      summary: LocalizedStringResource(
+        "The original Parakeet. Ultra is usually more accurate at the same speed.",
+        comment: """
+          Description of Parakeet TDT v3, the speech model Parakeet Ultra was tuned from, on the Voice Models page.
+          """
+      ),
       parameters: "0.6B",
       // The encoder's weights, which are almost all of the model's.
       bits: 8,
       downloadSize: 632_169_729,
+      memoryUsage: 786_432_000,
       revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe",
       isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-5bit",
       family: .qwen3ASR,
+      summary: LocalizedStringResource(
+        "For languages Parakeet doesn't support, but slower. Faster than 8-bit, similar accuracy.",
+        comment: """
+          Description of the 0.6B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, \
+          another speech model, and with the 8-bit version.
+          """
+      ),
       parameters: "0.6B",
       bits: 5,
       downloadSize: 1_098_362_508,
+      memoryUsage: 3_500_000_000,
       revision: "6583c8be06b5ae19aff9d7ca3c65139306162eda",
       isRecommended: true
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-8bit",
       family: .qwen3ASR,
+      summary: LocalizedStringResource(
+        "For languages Parakeet doesn't support, but slower. Slightly more accurate than 5-bit.",
+        comment: """
+          Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, \
+          another speech model, and with the 5-bit version.
+          """
+      ),
       parameters: "0.6B",
       bits: 8,
       downloadSize: 1_010_771_234,
+      memoryUsage: 3_700_000_000,
       revision: "0bfa1071b35e137d32e5beba0ee42e2ca917b878",
       isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-5bit",
       family: .qwen3ASR,
+      summary: LocalizedStringResource(
+        "More accurate than 0.6B, but slower. Faster than 8-bit, similar accuracy.",
+        comment: """
+          Description of the 1.7B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B \
+          models and with the 8-bit version.
+          """
+      ),
       parameters: "1.7B",
       bits: 5,
       downloadSize: 2_444_929_813,
+      memoryUsage: 5_100_000_000,
       revision: "1645ca9ce8767dac9a4a047e9de835950c42596e",
       isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-8bit",
       family: .qwen3ASR,
+      summary: LocalizedStringResource(
+        "More accurate than 0.6B, but slower. 5-bit is faster with similar accuracy.",
+        comment: """
+          Description of the 1.7B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B \
+          models and with the 5-bit version.
+          """
+      ),
       parameters: "1.7B",
       bits: 8,
       downloadSize: 2_467_854_870,
+      memoryUsage: 5_550_000_000,
       revision: "e5450a26d1fd417c45fc9c405651ddc3180a27a6",
       isRecommended: false
     ),

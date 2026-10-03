@@ -20,23 +20,6 @@ struct LanguageModel: LoadableModel {
       }
     }
 
-    /// The languages the family's models understand.
-    var languages: LocalizedStringResource {
-      switch self {
-      case .qwen3:
-        LocalizedStringResource(
-          "119 languages and dialects",
-          comment: "The languages the Qwen3 language models understand, shown on the Language Models page."
-        )
-      case .qwen35, .qwen38:
-        LocalizedStringResource(
-          "201 languages and dialects",
-          comment:
-            "The languages the Qwen3.5 and Qwen3.8 language models understand, shown on the Language Models page."
-        )
-      }
-    }
-
     var models: [LanguageModel] { LanguageModel.all.filter { $0.family == self } }
   }
 
@@ -52,8 +35,6 @@ struct LanguageModel: LoadableModel {
   @MainActor static let store = ModelStore<LanguageModel>()
 
   var name: String { family.name }
-
-  var languages: LocalizedStringResource { family.languages }
 
   /// The Hugging Face repository, from the MLX community's conversions of the models.
   var repository: String { "mlx-community/\(id)" }

@@ -25,11 +25,10 @@ struct ModelRow<Model: DownloadableModel>: View {
           .background(.tint.opacity(0.15), in: .capsule)
         }
       }
-      Text(
-        "\(Text(model.languages)) · \(Text(model.totalDownloadSize, format: .byteCount(style: .file)))",
-        comment:
-          "Details of a model on the Voice Models and Language Models pages: its languages, then its download size."
-      )
+      if let summary = model.summary {
+        Text(summary)
+      }
+      size
     }
     .confirmationDialog(
       Text(
@@ -47,6 +46,19 @@ struct ModelRow<Model: DownloadableModel>: View {
         comment: "Message in the confirmation before deleting a downloaded model."
       )
     }
+  }
+
+  private var downloadSize: Text {
+    Text(model.totalDownloadSize, format: .byteCount(style: .file))
+  }
+
+  /// The memory the model takes, where it's been measured, or else its download size.
+  private var size: Text {
+    guard let memoryUsage = model.memoryUsage else { return downloadSize }
+    return Text(
+      "Memory Impact - \(Text(memoryUsage, format: .byteCount(style: .memory)))",
+      comment: "Line on the Voice Models page with how much memory a model takes once loaded, such as 770 MB."
+    )
   }
 
   @ViewBuilder
@@ -103,6 +115,9 @@ struct ModelRow<Model: DownloadableModel>: View {
         Button("Download") {
           store.download(model)
         }
+        .help(
+          Text("Downloads \(downloadSize)", comment: "Tooltip of a model's Download button, with its download size.")
+        )
       }
     }
   }

@@ -21,37 +21,14 @@
     "%@ of %@ words" : {
       "comment" : "Word count under a persona's instructions. The arguments are the count and the most allowed."
     },
-    "%@ · %@" : {
-      "comment" : "Details of a model on the Voice Models and Language Models pages: its languages, then its download size.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · %2$@"
-          }
-        }
-      }
-    },
     "1 Minute" : {
       "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
     "10 Minutes" : {
       "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
     },
-    "119 languages and dialects" : {
-      "comment" : "The languages the Qwen3 language models understand, shown on the Language Models page."
-    },
     "15 Minutes" : {
       "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
-    },
-    "201 languages and dialects" : {
-      "comment" : "The languages the Qwen3.5 and Qwen3.8 language models understand, shown on the Language Models page."
-    },
-    "25 European languages" : {
-      "comment" : "The languages the Parakeet speech models transcribe, shown on the Voice Models page."
-    },
-    "30 languages and 22 Chinese dialects" : {
-      "comment" : "The languages the Qwen3-ASR speech models transcribe, shown on the Voice Models page."
     },
     "5 Minutes" : {
       "comment" : "Option in the Keep Microphone On setting: how long the microphone stays on after a dictation."
@@ -162,6 +139,9 @@
     "Download failed" : {
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
     },
+    "Downloads %@" : {
+      "comment" : "Tooltip of a model's Download button, with its download size."
+    },
     "Duplicate" : {
       "comment" : "Menu item beside a persona on the Refine page of Settings that adds a copy of it."
     },
@@ -173,6 +153,12 @@
     },
     "Edit Persona" : {
       "comment" : "Title of the persona editor when it edits an existing persona."
+    },
+    "For languages Parakeet doesn't support, but slower. Faster than 8-bit, similar accuracy." : {
+      "comment" : "Description of the 0.6B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 8-bit version."
+    },
+    "For languages Parakeet doesn't support, but slower. Slightly more accurate than 5-bit." : {
+      "comment" : "Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 5-bit version."
     },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
@@ -222,11 +208,20 @@
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
     },
+    "Memory Impact - %@" : {
+      "comment" : "Line on the Voice Models page with how much memory a model takes once loaded, such as 770 MB."
+    },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
     },
     "More Options" : {
       "comment" : "Accessibility label and tooltip of the ellipsis menu beside a persona on the Refine page of Settings."
+    },
+    "More accurate than 0.6B, but slower. 5-bit is faster with similar accuracy." : {
+      "comment" : "Description of the 1.7B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B models and with the 5-bit version."
+    },
+    "More accurate than 0.6B, but slower. Faster than 8-bit, similar accuracy." : {
+      "comment" : "Description of the 1.7B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B models and with the 8-bit version."
     },
     "Name" : {
       "comment" : "Field in the persona editor for the persona's name."
@@ -336,6 +331,9 @@
     "The most tokens guessed at once. Higher values may improve inference speeds on higher end Macs and slow inference speeds on lower end Macs." : {
       "comment" : "Description of the Guesses per Pass picker in Settings > Advanced. Tokens are the pieces of words a language model writes."
     },
+    "The original Parakeet. Ultra is usually more accurate at the same speed." : {
+      "comment" : "Description of Parakeet TDT v3, the speech model Parakeet Ultra was tuned from, on the Voice Models page."
+    },
     "The shortcut used to start dictation." : {
       "comment" : "Explanation under the Dictation Shortcut row in Settings > General."
     },
@@ -353,6 +351,9 @@
     },
     "Try Again" : {
       "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."
+    },
+    "Tuned Parakeet with better accuracy at the same speed." : {
+      "comment" : "Description of Parakeet Ultra, a version of the Parakeet speech model, on the Voice Models page."
     },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
