@@ -4,8 +4,8 @@ import SwiftUI
 /// Shows the voice bubble in a floating panel above other windows, on every Space, while the setting is on.
 ///
 /// The panel never becomes key or activates Casper, so dictation keeps typing into the app in front, including while
-/// the bubble is dragged. Its position is saved as the ghost's center and kept on screen. Clicking the bubble while
-/// something dictation needs is missing opens the Settings page that fixes it.
+/// the bubble is dragged. Its position is saved as the ghost's center and kept on screen. Clicking the bubble opens
+/// Settings, on the page that fixes it while something dictation needs is missing.
 @MainActor
 final class VoiceBubble {
   /// The `UserDefaults` key for whether the voice bubble is shown, on unless turned off.

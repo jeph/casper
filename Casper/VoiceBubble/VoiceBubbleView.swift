@@ -8,9 +8,9 @@ import SwiftUI
 /// right. Near the right edge of the screen, the grown bubble slides left as it grows, so it stays on screen with the
 /// ghost at its leading end.
 ///
-/// Hovering over the bubble shows the dictation hotkey in a callout. While something dictation needs is missing, the
-/// ghost shows an exclamation mark instead, and the callout says what's missing when the bubble is hovered or the
-/// hotkey is pressed. Clicking the bubble then opens the Settings page that fixes it.
+/// Hovering over the bubble shows the dictation hotkey in a callout, and clicking it opens Settings. While something
+/// dictation needs is missing, the ghost shows an exclamation mark instead, the callout says what's missing when the
+/// bubble is hovered or the hotkey is pressed, and clicking opens the Settings page that fixes it.
 struct VoiceBubbleView: View {
   let status: DictationStatus
   let layout: VoiceBubbleLayout
@@ -105,12 +105,12 @@ struct VoiceBubbleView: View {
     .onChange(of: layout.clicks) {
       if let warning = readiness.warning {
         settingsNavigation.pane = warning.pane
-        NSApp.openWindowInFront { openSettings() }
-      } else if status.phase == .idle {
+      } else if isDictating {
         // Dictated text is pasted into whichever app is frontmost when it's ready, so Casper stays in the background
         // until nothing is waiting to be typed.
-        NSApp.bringForward()
+        return
       }
+      NSApp.openWindowInFront { openSettings() }
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(
