@@ -16,13 +16,14 @@ final class DictationController {
   private let microphoneKeepAlive: KeepAliveSchedule
   private let readiness: DictationReadiness
   private let personas: PersonaStore
+  private let history: DictationHistory
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
   private var nextDictation = 0
   /// The number of the earliest dictation whose text hasn't been typed yet.
   private var nextDelivery = 0
-  /// Text of dictations that finished before an earlier one, waiting to be typed in order, by dictation number.
-  private var undelivered: [Int: String] = [:]
+  /// Dictations that finished before an earlier one, waiting to be typed in order, by dictation number.
+  private var undelivered: [Int: FinishedDictation] = [:]
   /// Stops the recording shortly after the user ends it, unless the hotkey is pressed again first.
   private var pendingStop: Task<Void, Never>?
   /// The active models' IDs, compared against the stored ones when settings change.
@@ -40,9 +41,10 @@ final class DictationController {
   /// after it's spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
-  init(readiness: DictationReadiness, personas: PersonaStore) {
+  init(readiness: DictationReadiness, personas: PersonaStore, history: DictationHistory) {
     self.readiness = readiness
     self.personas = personas
+    self.history = history
     let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     self.recorder = recorder
@@ -203,6 +205,8 @@ final class DictationController {
     let dictation = nextDictation
     nextDictation += 1
     let persona = recordingPersona
+    // Dated when the recording ends, so the history lists dictations in the order they were spoken.
+    let recordedAt = Date.now
     // Each dictation is transcribed and refined as soon as it can be, alongside earlier ones still in progress. Only
     // typing waits for them.
     Task {
@@ -220,23 +224,37 @@ final class DictationController {
         Self.logger.error("Couldn't transcribe: \(error)")
         text = ""
       }
-      deliver(text, of: dictation)
+      deliver(FinishedDictation(text: text, recordedAt: recordedAt), number: dictation)
     }
   }
 
-  /// Types a dictation's text once every earlier dictation's has been typed, along with later ones already finished.
+  /// A dictation's final text, and when its recording ended.
+  private struct FinishedDictation {
+    let text: String
+    let recordedAt: Date
+  }
+
+  /// Types a dictation's text and saves it to the history once every earlier dictation's has been, along with later
+  /// ones already finished.
   ///
   /// Finished dictations are typed in one paste because each paste replaces the clipboard, possibly before the app
-  /// has read the previous one.
-  private func deliver(_ text: String, of dictation: Int) {
-    // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
-    undelivered[dictation] = text.last.map { $0.isWhitespace ? text : text + " " } ?? ""
-    let finished = (nextDelivery...).prefix { undelivered[$0] != nil }
-    let ready = finished.compactMap { undelivered[$0] }.joined()
-    nextDelivery += finished.count
+  /// has read the previous one. Saving in the same order keeps the history in the order dictations were spoken.
+  private func deliver(_ finished: FinishedDictation, number: Int) {
+    undelivered[number] = finished
+    let ready = (nextDelivery...).prefix { undelivered[$0] != nil }.compactMap { undelivered[$0] }
+    nextDelivery += ready.count
     undelivered = undelivered.filter { $0.key >= nextDelivery }
-    if !ready.isEmpty {
-      TextInserter.insert(ready)
+    for dictation in ready {
+      history.save(dictation.text, recordedAt: dictation.recordedAt)
+    }
+    // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
+    let text =
+      ready.map { dictation in
+        dictation.text.last.map { $0.isWhitespace ? dictation.text : dictation.text + " " } ?? ""
+      }
+      .joined()
+    if !text.isEmpty {
+      TextInserter.insert(text)
     }
   }
 

@@ -34,6 +34,7 @@ struct SettingsView: View {
     switch pane {
     case .general: GeneralView()
     case .refine: RefineView()
+    case .history: HistoryView()
     case .voiceModels: VoiceModelsView()
     case .languageModels: LanguageModelsView()
     case .permissions: PermissionsView()
@@ -52,6 +53,7 @@ final class SettingsNavigation {
 enum SettingsPane: CaseIterable, Identifiable {
   case general
   case refine
+  case history
   case voiceModels
   case languageModels
   case permissions
@@ -63,6 +65,7 @@ enum SettingsPane: CaseIterable, Identifiable {
     switch self {
     case .general: "General"
     case .refine: "Refine"
+    case .history: "History"
     case .voiceModels: "Voice Models"
     case .languageModels: "Language Models"
     case .permissions: "Permissions"
@@ -74,6 +77,7 @@ enum SettingsPane: CaseIterable, Identifiable {
     switch self {
     case .general: "gearshape"
     case .refine: "wand.and.sparkles"
+    case .history: "clock.arrow.circlepath"
     case .voiceModels: "waveform"
     case .languageModels: "text.bubble"
     case .permissions: "hand.raised"

@@ -97,6 +97,8 @@ targets:
       - CasperTests
       - Casper/Audio/SilenceTrimmer.swift
       - Casper/Dictation/DictationMode.swift
+      - Casper/History/HistoryDatabase.swift
+      - Casper/History/HistorySearch.swift
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift
       - Casper/Refine/RefinePrompt.swift
