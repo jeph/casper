@@ -29,7 +29,7 @@ struct HistoryView: View {
   @State private var rowWidth: CGFloat = 0
 
   private static let pageSize = 50
-  /// The page's side margin, so both cards and the selection bar share the same edges.
+  /// The page's margin around both cards.
   private static let margin: CGFloat = 16
   /// How far the search field and the list sit inside the history card.
   ///
@@ -39,14 +39,11 @@ struct HistoryView: View {
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "History")
 
   var body: some View {
-    VStack(spacing: 0) {
-      VStack(spacing: 12) {
-        enableHistoryCard
-        historyCard
-      }
-      .padding(Self.margin)
-      selectionBar
+    VStack(spacing: 12) {
+      enableHistoryCard
+      historyCard
     }
+    .padding(Self.margin)
     // A click anywhere on the page outside the list's rows and controls clears the selection.
     .background {
       Color.clear
@@ -143,6 +140,16 @@ struct HistoryView: View {
       }
       .onDeleteCommand { requestDelete(selection) }
       .onExitCommand { selection.removeAll() }
+      if !selection.isEmpty {
+        Divider()
+          .padding(.horizontal, -Self.cardInset)
+        footer
+          .padding(.top, Self.cardInset)
+          .padding(.horizontal, Self.cardInset)
+          // A click on the footer outside its buttons clears the selection, like one outside the card.
+          .contentShape(.rect)
+          .onTapGesture { selection.removeAll() }
+      }
     }
     .padding(Self.cardInset)
     .background(.quinary, in: .rect(cornerRadius: 10))
@@ -270,21 +277,15 @@ struct HistoryView: View {
     return Text(day, format: .dateTime.weekday(.wide).month(.wide).day().year())
   }
 
-  // MARK: Selection bar
+  // MARK: Footer
 
-  @ViewBuilder
-  private var selectionBar: some View {
-    if !selection.isEmpty {
-      HStack(spacing: 12) {
-        Text("\(selection.count) Selected")
-          .foregroundStyle(.secondary)
-        Spacer()
-        actions(for: selection)
-      }
-      .padding(.horizontal, Self.margin)
-      .padding(.vertical, 10)
-      .background(.bar)
-      .overlay(alignment: .top) { Divider() }
+  /// Copy and Delete for the selected dictations, under the list while there are any.
+  private var footer: some View {
+    HStack(spacing: 12) {
+      Text("\(selection.count) Selected")
+        .foregroundStyle(.secondary)
+      Spacer()
+      actions(for: selection)
     }
   }
 
@@ -331,14 +332,14 @@ struct HistoryView: View {
     }
   }
 
-  /// Copy and Delete, the same in the selection bar and the right-click menu however many dictations they act on.
+  /// Copy and Delete, the same in the footer and the right-click menu however many dictations they act on.
   @ViewBuilder
   private func actions(for ids: Set<Int64>) -> some View {
     Button {
       copy(ids)
     } label: {
       // Sized for both titles and icons, with the one shown centered, so switching to Copied doesn't resize the
-      // button or the selection bar, which would nudge the history card above it.
+      // button and shift the footer.
       ZStack {
         Label("Copy", systemImage: "doc.on.doc").hidden()
         Label("Copied", systemImage: "checkmark").hidden()
