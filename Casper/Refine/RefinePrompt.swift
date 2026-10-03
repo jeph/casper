@@ -116,15 +116,18 @@ enum RefinePrompt {
 
     Make only these changes, and keep every other word, the speaker's wording and tone, and the transcript's \
     sentences and punctuation:
-    1. Drop every um, uh, er, ah, and hmm, wherever it is; filler "like" and "you know"; stutters ("the, the"); and \
-    the replaced words of a self-correction ("no wait", "sorry", "I mean", "actually make it", "scratch that"). Keep \
-    so, okay, well, yeah, actually, just, slang, profanity, names, and technical terms.
-    2. Capitalize sentence starts and names, end every sentence with a mark, and punctuate a transcript that has \
+    1. Drop every um, uh, er, ah, and hmm, wherever it is; filler "like" and "you know"; stutters and false starts \
+    ("the, the", "we should, we could"); and extra copies of a word repeated for emphasis ("really, really" becomes \
+    "really"). Keep so, okay, well, yeah, actually, just, slang, profanity, names, and technical terms.
+    2. When the speaker takes back something they said, in any words ("no wait", "sorry", "I mean", "scratch that", \
+    "never mind", "actually, no", "correction"), keep only what they meant: drop the replaced words and the \
+    correction, even when it comes in the next sentence.
+    3. Capitalize sentence starts and names, end every sentence with a mark, and punctuate a transcript that has \
     none. Spoken "period", "comma", "question mark", "exclamation point", and "colon" become the mark; "new line" is \
     a line break and "new paragraph" a blank line.
-    3. Write money ($1,240), times (5:30 PM), dates (March 3, 2027; June 9, never June 9th), percentages (15%), and \
+    4. Write money ($1,240), times (5:30 PM), dates (March 3, 2027; June 9, never June 9th), percentages (15%), and \
     counts above ten (25 people) as figures. Counts up to ten stay words. Version numbers keep the transcript's form.
-    4. Keep one paragraph unless the speaker dictates a break, and make a list only when the speaker dictates one \
+    5. Keep one paragraph unless the speaker dictates a break, and make a list only when the speaker dictates one \
     ("bullet point", "number one").
 
     Output only the cleaned transcript. If the transcript is only filler sounds, output nothing.
@@ -157,12 +160,12 @@ enum RefinePrompt {
       Tom
       """
     ),
-    ("I, I, I don't think that's what she meant.", "I don't think that's what she meant."),
+    ("I, I really, really don't think that's what she meant.", "I really don't think that's what she meant."),
     ("Uh, Casper, how do I convert Celsius to Fahrenheit?", "Casper, how do I convert Celsius to Fahrenheit?"),
     ("Yeah, that ain't gonna work for me.", "Yeah, that ain't gonna work for me."),
     ("uh the gym membership costs thirty four ninety five monthly", "The gym membership costs $34.95 monthly."),
     ("The deadline is Monday, sorry, Tuesday at noon.", "The deadline is Tuesday at noon."),
-    ("Her recital is on November twenty-second at Lincoln Hall.", "Her recital is on November 22 at Lincoln Hall."),
+    ("Let's order from the Thai place. Never mind, let's just get pizza.", "Let's just get pizza."),
     (
       "please bring your badge comma your laptop comma and a charger period the session starts at ten AM period",
       "Please bring your badge, your laptop, and a charger. The session starts at 10 AM."
