@@ -63,6 +63,11 @@ extension DownloadableModel {
     UserDefaults.standard.string(forKey: activeStorageKey).flatMap { id in all.first { $0.id == id } }
   }
 
+  /// Whether this Mac has less than 12 GB of memory, where the model pages recommend models that take less of it.
+  ///
+  /// Casper keeps a voice model and a language model loaded together, beside macOS and the user's other apps.
+  static var isMemoryLimited: Bool { ProcessInfo.processInfo.physicalMemory < 12 << 30 }
+
   var files: [String]? { nil }
 
   var companions: [ModelRepository] { [] }

@@ -37,11 +37,9 @@ struct LanguageModel: LoadableModel {
 
   /// The model the Language Models page recommends for this Mac.
   ///
-  /// Casper keeps the language model loaded alongside the voice model, so Macs with less than 12 GB of memory get
-  /// Qwen3 1.7B, which leaves room for macOS and other apps. On Macs with more, Qwen3 4B 2507 follows instructions as
-  /// well as the larger Qwen3 models while refining faster.
-  private static let recommendedID =
-    ProcessInfo.processInfo.physicalMemory < 12 << 30 ? "Qwen3-1.7B-4bit" : "Qwen3-4B-Instruct-2507-4bit"
+  /// Qwen3 4B 2507 follows instructions as well as the larger Qwen3 models while refining faster. Qwen3 1.7B takes
+  /// about 1.3 GB less memory.
+  private static let recommendedID = isMemoryLimited ? "Qwen3-1.7B-4bit" : "Qwen3-4B-Instruct-2507-4bit"
 
   var name: String { family.name }
 

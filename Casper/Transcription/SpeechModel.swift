@@ -64,7 +64,6 @@ struct SpeechModel: LoadableModel {
   let downloadSize: Int64
   let memoryUsage: Int64
   let revision: String
-  let isRecommended: Bool
 
   /// The sample rate every model takes audio at, which Casper records at.
   ///
@@ -73,7 +72,14 @@ struct SpeechModel: LoadableModel {
   static let activeStorageKey = "activeSpeechModel"
   @MainActor static let store = ModelStore<SpeechModel>()
 
+  /// The model the Voice Models page recommends for this Mac.
+  ///
+  /// Parakeet Ultra is more accurate than Parakeet TDT v3 at the same speed, but takes a little more memory.
+  private static let recommendedID = isMemoryLimited ? "parakeet-tdt-0.6b-v3-coreml" : "parakeet-ultra-coreml"
+
   var name: String { family.name }
+
+  var isRecommended: Bool { id == Self.recommendedID }
 
   /// The Hugging Face repository, from the account that publishes the converted models its library runs.
   var repository: String {
@@ -153,8 +159,7 @@ extension SpeechModel {
       bits: 8,
       downloadSize: 632_162_964,
       memoryUsage: 807_403_520,
-      revision: "95eaa59a39d4394f047a4dc5cce480388a60d1b6",
-      isRecommended: true
+      revision: "95eaa59a39d4394f047a4dc5cce480388a60d1b6"
     ),
     SpeechModel(
       id: "parakeet-tdt-0.6b-v3-coreml",
@@ -170,8 +175,7 @@ extension SpeechModel {
       bits: 8,
       downloadSize: 632_169_729,
       memoryUsage: 786_432_000,
-      revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe",
-      isRecommended: false
+      revision: "7dd20fe6b1797d35f5e3307e8b1732d9a178edfe"
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-5bit",
@@ -187,8 +191,7 @@ extension SpeechModel {
       bits: 5,
       downloadSize: 1_098_362_508,
       memoryUsage: 3_500_000_000,
-      revision: "6583c8be06b5ae19aff9d7ca3c65139306162eda",
-      isRecommended: false
+      revision: "6583c8be06b5ae19aff9d7ca3c65139306162eda"
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-8bit",
@@ -204,8 +207,7 @@ extension SpeechModel {
       bits: 8,
       downloadSize: 1_010_771_234,
       memoryUsage: 3_700_000_000,
-      revision: "0bfa1071b35e137d32e5beba0ee42e2ca917b878",
-      isRecommended: false
+      revision: "0bfa1071b35e137d32e5beba0ee42e2ca917b878"
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-5bit",
@@ -221,8 +223,7 @@ extension SpeechModel {
       bits: 5,
       downloadSize: 2_444_929_813,
       memoryUsage: 5_100_000_000,
-      revision: "1645ca9ce8767dac9a4a047e9de835950c42596e",
-      isRecommended: false
+      revision: "1645ca9ce8767dac9a4a047e9de835950c42596e"
     ),
     SpeechModel(
       id: "Qwen3-ASR-1.7B-MLX-8bit",
@@ -238,8 +239,7 @@ extension SpeechModel {
       bits: 8,
       downloadSize: 2_467_854_870,
       memoryUsage: 5_550_000_000,
-      revision: "e5450a26d1fd417c45fc9c405651ddc3180a27a6",
-      isRecommended: false
+      revision: "e5450a26d1fd417c45fc9c405651ddc3180a27a6"
     ),
   ]
 }
