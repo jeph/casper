@@ -154,12 +154,6 @@
     "Edit Persona" : {
       "comment" : "Title of the persona editor when it edits an existing persona."
     },
-    "For languages Parakeet doesn't support, but slower. Faster than 8-bit, similar accuracy." : {
-      "comment" : "Description of the 0.6B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 8-bit version."
-    },
-    "For languages Parakeet doesn't support, but slower. Slightly more accurate than 5-bit." : {
-      "comment" : "Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 5-bit version."
-    },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
     },
@@ -217,11 +211,17 @@
     "More Options" : {
       "comment" : "Accessibility label and tooltip of the ellipsis menu beside a persona on the Refine page of Settings."
     },
-    "More accurate than 0.6B, but slower. 5-bit is faster with similar accuracy." : {
-      "comment" : "Description of the 1.7B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B models and with the 5-bit version."
-    },
     "More accurate than 0.6B, but slower. Faster than 8-bit, similar accuracy." : {
       "comment" : "Description of the 1.7B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B models and with the 8-bit version."
+    },
+    "More accurate than 0.6B, but slower. Marginally more accurate than 5-bit, but slower." : {
+      "comment" : "Description of the 1.7B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B models and with the 5-bit version."
+    },
+    "More languages than Parakeet, but slower. Faster than 8-bit, similar accuracy." : {
+      "comment" : "Description of the 0.6B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 8-bit version."
+    },
+    "More languages than Parakeet, but slower. Marginally more accurate than 5-bit, but slower." : {
+      "comment" : "Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, another speech model, and with the 5-bit version."
     },
     "Name" : {
       "comment" : "Field in the persona editor for the persona's name."

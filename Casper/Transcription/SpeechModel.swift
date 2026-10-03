@@ -179,7 +179,7 @@ extension SpeechModel {
       id: "Qwen3-ASR-0.6B-MLX-5bit",
       family: .qwen3ASR,
       summary: LocalizedStringResource(
-        "For languages Parakeet doesn't support, but slower. Faster than 8-bit, similar accuracy.",
+        "More languages than Parakeet, but slower. Faster than 8-bit, similar accuracy.",
         comment: """
           Description of the 0.6B, 5-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, \
           another speech model, and with the 8-bit version.
@@ -196,7 +196,7 @@ extension SpeechModel {
       id: "Qwen3-ASR-0.6B-MLX-8bit",
       family: .qwen3ASR,
       summary: LocalizedStringResource(
-        "For languages Parakeet doesn't support, but slower. Slightly more accurate than 5-bit.",
+        "More languages than Parakeet, but slower. Marginally more accurate than 5-bit, but slower.",
         comment: """
           Description of the 0.6B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with Parakeet, \
           another speech model, and with the 5-bit version.
@@ -230,7 +230,7 @@ extension SpeechModel {
       id: "Qwen3-ASR-1.7B-MLX-8bit",
       family: .qwen3ASR,
       summary: LocalizedStringResource(
-        "More accurate than 0.6B, but slower. 5-bit is faster with similar accuracy.",
+        "More accurate than 0.6B, but slower. Marginally more accurate than 5-bit, but slower.",
         comment: """
           Description of the 1.7B, 8-bit Qwen3-ASR speech model on the Voice Models page, compared with the 0.6B \
           models and with the 5-bit version.
