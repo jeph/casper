@@ -5,11 +5,12 @@ struct SettingsView: View {
   @Environment(DictationReadiness.self) private var readiness
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.displayScale) private var displayScale
+  @AppStorage(SettingsPane.advancedEnabledStorageKey) private var isAdvancedEnabled = false
 
   var body: some View {
     @Bindable var navigation = navigation
     TabView(selection: $navigation.pane) {
-      ForEach(SettingsPane.allCases) { pane in
+      ForEach(SettingsPane.allCases.filter { $0 != .advanced || isAdvancedEnabled }) { pane in
         Tab(value: pane) {
           page(pane)
         } label: {
@@ -62,6 +63,9 @@ enum SettingsPane: CaseIterable, Identifiable {
   case advanced
 
   var id: Self { self }
+
+  /// The `UserDefaults` key for whether the Advanced tab is shown, off unless turned on in General.
+  static let advancedEnabledStorageKey = "advancedSettingsEnabled"
 
   var title: LocalizedStringResource {
     switch self {

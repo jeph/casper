@@ -8,6 +8,7 @@ struct GeneralView: View {
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
+  @AppStorage(SettingsPane.advancedEnabledStorageKey) private var isAdvancedEnabled = false
 
   var body: some View {
     Form {
@@ -113,6 +114,14 @@ struct GeneralView: View {
           } label: {
             Text("Casper is turned off in Login Items in System Settings.")
               .foregroundStyle(.secondary)
+          }
+        }
+        Toggle(isOn: $isAdvancedEnabled) {
+          Label {
+            Text("Enable Advanced Settings")
+            Text("Show advanced settings.")
+          } icon: {
+            Image(systemName: "wrench.and.screwdriver")
           }
         }
       }

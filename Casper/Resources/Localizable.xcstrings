@@ -163,6 +163,9 @@
     "Edit Persona" : {
       "comment" : "Title of the persona editor when it edits an existing persona."
     },
+    "Enable Advanced Settings" : {
+      "comment" : "Toggle in Settings > General that shows the Advanced tab of Settings."
+    },
     "Faster than 4B 2507, but follows instructions less reliably." : {
       "comment" : "Description of the Qwen3 1.7B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
     },
@@ -339,6 +342,9 @@
     },
     "Show Voice Bubble" : {
       "comment" : "Title of the General setting that shows or hides the floating voice bubble."
+    },
+    "Show advanced settings." : {
+      "comment" : "Description of the Enable Advanced Settings toggle in Settings > General, which shows the Advanced tab of Settings."
     },
     "Slightly better at instructions than 4B 2507, but much slower." : {
       "comment" : "Description of the Qwen3 14B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
