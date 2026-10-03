@@ -188,7 +188,7 @@ extension SpeechModel {
       downloadSize: 1_098_362_508,
       memoryUsage: 3_500_000_000,
       revision: "6583c8be06b5ae19aff9d7ca3c65139306162eda",
-      isRecommended: true
+      isRecommended: false
     ),
     SpeechModel(
       id: "Qwen3-ASR-0.6B-MLX-8bit",
