@@ -146,9 +146,6 @@ struct HistoryView: View {
         footer
           .padding(.top, Self.cardInset)
           .padding(.horizontal, Self.cardInset)
-          // A click on the footer outside its buttons clears the selection, like one outside the card.
-          .contentShape(.rect)
-          .onTapGesture { selection.removeAll() }
       }
     }
     .padding(Self.cardInset)
@@ -282,9 +279,15 @@ struct HistoryView: View {
   /// Copy and Delete for the selected dictations, under the list while there are any.
   private var footer: some View {
     HStack(spacing: 12) {
-      Text("\(selection.count) Selected")
-        .foregroundStyle(.secondary)
-      Spacer()
+      // A click beside the buttons clears the selection, like one outside the card. It's kept off the buttons,
+      // since Delete asks about the selection and clearing it under the alert would leave nothing to delete.
+      HStack {
+        Text("\(selection.count) Selected")
+          .foregroundStyle(.secondary)
+        Spacer()
+      }
+      .contentShape(.rect)
+      .onTapGesture { selection.removeAll() }
       actions(for: selection)
     }
   }
