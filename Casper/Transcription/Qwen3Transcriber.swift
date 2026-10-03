@@ -23,8 +23,7 @@ actor Qwen3Transcriber: Transcriber {
   /// to the next dictation without reloading the model.
   func transcribe(_ samples: [Float], sampleRate: Double, dictionary: [DictionaryWord]) async throws -> String {
     guard let model else { throw TranscriptionError.unloaded }
-    // Arrays freed while transcribing go to MLX's cache rather than back to macOS, so they're freed once it's done.
-    defer { MLX.Memory.clearCache() }
+    defer { BufferCache.releaseIfEnabled() }
     let seconds = Double(samples.count) / sampleRate
     // A nil language lets the model detect it.
     let text = model.transcribe(

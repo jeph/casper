@@ -6,6 +6,7 @@ struct AdvancedView: View {
   @AppStorage(PromptLookupTokenIterator.enabledStorageKey) private var promptLookupDecoding = true
   @AppStorage(PromptLookupTokenIterator.mostGuessesStorageKey) private var mostGuesses =
     PromptLookupTokenIterator.defaultMostGuesses
+  @AppStorage(BufferCache.releaseStorageKey) private var releasesBufferCache = true
 
   var body: some View {
     Form {
@@ -74,6 +75,18 @@ struct AdvancedView: View {
         Text("Refining")
       }
       .disabled(!refinesTranscripts)
+      Section {
+        Toggle(isOn: $releasesBufferCache) {
+          Label {
+            Text("Release Buffer Cache")
+            Text("Reduces average memory usage at the cost of some slight latency.")
+          } icon: {
+            Image(systemName: "memorychip")
+          }
+        }
+      } header: {
+        Text("Memory")
+      }
     }
     .formStyle(.grouped)
     .labelStyle(.settings)

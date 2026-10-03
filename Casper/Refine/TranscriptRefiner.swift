@@ -10,9 +10,8 @@ import OSLog
 /// takes hundreds of megabytes; Casper reads the chosen persona's start as soon as the model loads and whenever the
 /// user picks or edits a persona, so dictations don't wait for it.
 ///
-/// Arrays MLX frees go to its cache for reuse rather than back to macOS, and a long transcript leaves gigabytes there,
-/// so the refiner clears the cache after reading a prompt and after each transcript. Clearing only frees arrays nothing
-/// uses, so the persona's cached start survives it.
+/// The refiner releases MLX's buffer cache after reading a prompt and after each transcript, unless the user turned
+/// that off. The persona's cached start is still in use, so releasing never frees it.
 actor TranscriptRefiner {
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Refine")
 
@@ -59,7 +58,7 @@ actor TranscriptRefiner {
   /// Returns the cleaned-up transcript, which is empty if the transcript was only filler words.
   func refine(_ transcript: String, persona: RefinePersona) async throws -> String {
     // Runs once `refined` has returned and released its copy of the prompt's state and everything else it allocated.
-    defer { MLX.Memory.clearCache() }
+    defer { BufferCache.releaseIfEnabled() }
     return try await refined(transcript, persona: persona)
   }
 
@@ -119,7 +118,7 @@ actor TranscriptRefiner {
       }
     }
     // The stream finishes before the task that writes it, which still holds the iterator and the arrays it allocated
-    // until it ends, so they'd return to MLX's cache after `refine` clears it.
+    // until it ends, so they'd return to the buffer cache after `refine` releases it.
     await generationTask.value
     guard stopReason == .stop else { throw RefineError.incomplete }
     return output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -143,7 +142,7 @@ actor TranscriptRefiner {
     let prompt = try Self.readPrompt(for: persona, context: loaded.context)
     self.loaded?.prompt = prompt
     Self.logger.info("Read \(prompt.tokens.count) prompt tokens in \(ContinuousClock.now - start, privacy: .public)")
-    MLX.Memory.clearCache()
+    BufferCache.releaseIfEnabled()
     return prompt
   }
 

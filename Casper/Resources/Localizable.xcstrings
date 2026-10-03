@@ -220,6 +220,9 @@
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
     },
+    "Memory" : {
+      "comment" : "Header of the section in Settings > Advanced for settings that tune how much memory Casper uses."
+    },
     "Memory Impact - %@" : {
       "comment" : "Line on the Voice Models and Language Models pages with how much memory a model takes once loaded, such as 770 MB."
     },
@@ -292,6 +295,9 @@
     "Recommended" : {
       "comment" : "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
     },
+    "Reduces average memory usage at the cost of some slight latency." : {
+      "comment" : "Description of the Release Buffer Cache toggle in Settings > Advanced."
+    },
     "Refine" : {
       "comment" : "Settings tab and window title for the settings that clean up transcripts with a language model, and the personas they're written in."
     },
@@ -306,6 +312,9 @@
     },
     "Refining needs a language model" : {
       "comment" : "Voice bubble warning when refining transcripts is on but no language model is installed."
+    },
+    "Release Buffer Cache" : {
+      "comment" : "Toggle in the Memory section of Settings > Advanced that frees the GPU memory MLX, Apple's machine learning framework, keeps for reuse after each transcription and refine. A technical term."
     },
     "Remove filler words and fix grammar and punctuation with a language model that runs on this Mac." : {
       "comment" : "Description of the Refine Transcripts setting."
