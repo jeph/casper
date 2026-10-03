@@ -50,6 +50,15 @@ struct SettingsView: View {
 @Observable
 final class SettingsNavigation {
   var pane = SettingsPane.general
+  /// Whether code outside a view asked for Settings to open, which the menu bar icon does, since opening Settings needs
+  /// a view's `openSettings` action.
+  var isOpenRequested = false
+
+  /// Opens Settings on a page from code that isn't a view, such as a notification's click.
+  func open(_ pane: SettingsPane) {
+    self.pane = pane
+    isOpenRequested = true
+  }
 }
 
 enum SettingsPane: CaseIterable, Identifiable {

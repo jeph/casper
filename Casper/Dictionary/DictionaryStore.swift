@@ -16,6 +16,8 @@ final class DictionaryStore {
   static let defaultFileURL = URL.applicationSupportDirectory.appending(path: "Casper/Dictionary.json")
   /// The `UserDefaults` key for whether dictations use the dictionary.
   static let enabledStorageKey = "dictionaryEnabled"
+  /// The `UserDefaults` key for whether words the user corrects in dictated text are added to the dictionary.
+  static let learnsCorrectionsStorageKey = "dictionaryLearnsCorrections"
 
   init(fileURL: URL = defaultFileURL, defaults: UserDefaults = .standard) {
     self.fileURL = fileURL
@@ -28,6 +30,13 @@ final class DictionaryStore {
 
   /// The words a dictation uses: all of them, or none while the dictionary is turned off.
   var wordsForDictation: [DictionaryWord] { isEnabled ? words : [] }
+
+  /// Whether words the user corrects in dictated text are added.
+  ///
+  /// The Dictionary page's second switch turns this on and off, and it only applies while the dictionary is on.
+  var learnsCorrections: Bool {
+    isEnabled && defaults.object(forKey: Self.learnsCorrectionsStorageKey) as? Bool ?? true
+  }
 
   /// Whether a word other than the one with the given ID is spelled this way, ignoring case and surrounding spaces.
   func isTaken(_ text: String, exceptBy id: DictionaryWord.ID?) -> Bool {
@@ -57,6 +66,13 @@ final class DictionaryStore {
   func delete(_ ids: Set<DictionaryWord.ID>) {
     words.removeAll { ids.contains($0.id) }
     persist()
+  }
+
+  /// Deletes the word spelled this way, ignoring case, if the dictionary still has one; otherwise does nothing.
+  func delete(spelled text: String) {
+    let matching = words.filter { $0.text.compare(text, options: .caseInsensitive) == .orderedSame }
+    guard !matching.isEmpty else { return }
+    delete(Set(matching.map(\.id)))
   }
 
   /// Sounds Like spellings with surrounding spaces trimmed and runs of spaces between words made one, leaving out

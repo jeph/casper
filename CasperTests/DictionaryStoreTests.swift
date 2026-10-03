@@ -98,6 +98,31 @@ final class DictionaryStoreTests {
     #expect(store.words == [jeph])
   }
 
+  @Test func correctionsAreLearnedOnlyWhileBothSwitchesAreOn() {
+    let store = makeStore()
+    #expect(store.learnsCorrections)
+    defaults.set(false, forKey: DictionaryStore.enabledStorageKey)
+    #expect(!store.learnsCorrections)
+    defaults.set(true, forKey: DictionaryStore.enabledStorageKey)
+    defaults.set(false, forKey: DictionaryStore.learnsCorrectionsStorageKey)
+    #expect(!store.learnsCorrections)
+  }
+
+  @Test func deletingBySpellingIgnoresCaseAndKeepsOtherWords() {
+    let store = makeStore()
+    let sinead = DictionaryWord(text: "Sinead")
+    store.save(DictionaryWord(text: "Siobhan", soundsLike: ["Shivan"]))
+    store.save(sinead)
+    store.delete(spelled: "siobhan")
+    #expect(store.words == [sinead])
+    #expect(makeStore().words == [sinead])
+    // A spelling only listed as Sounds Like, or not in the dictionary at all, deletes nothing.
+    store.save(DictionaryWord(text: "Niamh", soundsLike: ["Neve"]))
+    store.delete(spelled: "Neve")
+    store.delete(spelled: "Saoirse")
+    #expect(store.words.map(\.text) == ["Niamh", "Sinead"])
+  }
+
   @Test func anUnreadableFileStartsEmpty() throws {
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     try Data("not json".utf8).write(to: fileURL)

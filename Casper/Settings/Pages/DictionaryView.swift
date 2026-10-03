@@ -7,6 +7,7 @@ import SwiftUI
 struct DictionaryView: View {
   @Environment(DictionaryStore.self) private var dictionary
   @AppStorage(DictionaryStore.enabledStorageKey) private var isEnabled = true
+  @AppStorage(DictionaryStore.learnsCorrectionsStorageKey) private var learnsCorrections = true
 
   @State private var query = ""
   @State private var selection = Set<DictionaryWord.ID>()
@@ -51,26 +52,51 @@ struct DictionaryView: View {
   // MARK: Cards
 
   private var enableCard: some View {
-    HStack(spacing: 12) {
-      Label {
-        VStack(alignment: .leading, spacing: 2) {
-          Text("Enable Dictionary")
-          Text("Help Casper recognize names, brands, and jargon.")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-      } icon: {
-        Image(systemName: "character.book.closed")
-      }
-      .labelStyle(.settings)
-      Spacer(minLength: 0)
-      Toggle("Enable Dictionary", isOn: $isEnabled)
-        .toggleStyle(.switch)
-        .labelsHidden()
+    VStack(spacing: 10) {
+      settingRow(
+        title: "Enable Dictionary",
+        description: "Help Casper recognize names, brands, and jargon.",
+        systemImage: "character.book.closed",
+        isOn: $isEnabled
+      )
+      Divider()
+      settingRow(
+        title: "Automatically Add to Dictionary",
+        description: "Automatically add words to the dictionary when a manual correction is detected.",
+        systemImage: "text.badge.plus",
+        isOn: $learnsCorrections
+      )
+      // Corrections are only added while the dictionary is on.
+      .disabled(!isEnabled)
     }
     .padding(.horizontal, Self.cardInset * 2)
     .padding(.vertical, 10)
     .background(.quinary, in: .rect(cornerRadius: 10))
+  }
+
+  private func settingRow(
+    title: LocalizedStringKey,
+    description: LocalizedStringKey,
+    systemImage: String,
+    isOn: Binding<Bool>
+  ) -> some View {
+    HStack(spacing: 12) {
+      Label {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(title)
+          Text(description)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      } icon: {
+        Image(systemName: systemImage)
+      }
+      .labelStyle(.settings)
+      Spacer(minLength: 0)
+      Toggle(title, isOn: isOn)
+        .toggleStyle(.switch)
+        .labelsHidden()
+    }
   }
 
   private var wordsCard: some View {

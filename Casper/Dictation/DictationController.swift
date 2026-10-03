@@ -18,6 +18,7 @@ final class DictationController {
   private let personas: PersonaStore
   private let history: DictationHistory
   private let dictionary: DictionaryStore
+  private let correctionLearner: CorrectionLearner
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
   private var nextDictation = 0
@@ -44,7 +45,13 @@ final class DictationController {
   /// after it's spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
-  init(readiness: DictationReadiness, personas: PersonaStore, history: DictationHistory, dictionary: DictionaryStore) {
+  init(
+    readiness: DictationReadiness,
+    personas: PersonaStore,
+    history: DictationHistory,
+    dictionary: DictionaryStore,
+    learnedWordNotifier: LearnedWordNotifier
+  ) {
     self.readiness = readiness
     self.personas = personas
     self.history = history
@@ -53,9 +60,17 @@ final class DictationController {
     let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     self.recorder = recorder
-    speechModel = ModelLoader()
+    let speechModel = ModelLoader<SpeechModel>()
+    self.speechModel = speechModel
     languageModel = ModelLoader()
-    status = DictationStatus(meter: recorder.meter)
+    let status = DictationStatus(meter: recorder.meter)
+    self.status = status
+    correctionLearner = CorrectionLearner(
+      dictionary: dictionary,
+      speechModel: speechModel,
+      notifier: learnedWordNotifier,
+      isDictating: { status.isRecording || status.transcriptionsInProgress > 0 }
+    )
     microphoneKeepAlive = KeepAliveSchedule(
       storageKey: KeepAlive.microphoneStorageKey,
       isInUse: { recorder.isRecording },
@@ -215,6 +230,7 @@ final class DictationController {
     microphoneKeepAlive.useStarted()
     recorder.start()
     status.isRecording = true
+    correctionLearner.dictationStarted()
     speechModel.beginUse()
     recordingPersona = TranscriptRefiner.isEnabled && LanguageModel.active != nil ? personas.selected : nil
     guard let persona = recordingPersona else { return }
@@ -240,6 +256,7 @@ final class DictationController {
         languageModel.endUse()
       }
       speechModel.endUse()
+      correctionLearner.dictationEnded()
       return
     }
     let dictation = nextDictation
@@ -255,23 +272,26 @@ final class DictationController {
         if persona != nil {
           languageModel.endUse()
         }
+        correctionLearner.dictationEnded()
       }
-      let text: String
+      var finished = FinishedDictation(text: "", recordedAt: recordedAt, evidence: nil)
       do {
-        let transcript = try await transcribe(samples)
-        text = if let persona { await refine(transcript, persona: persona) } else { transcript }
+        let transcribed = try await transcribe(samples)
+        finished.text = if let persona { await refine(transcribed.text, persona: persona) } else { transcribed.text }
+        finished.evidence = transcribed.evidence
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
-        text = ""
       }
-      deliver(FinishedDictation(text: text, recordedAt: recordedAt), number: dictation)
+      deliver(finished, number: dictation)
     }
   }
 
-  /// A dictation's final text, and when its recording ended.
+  /// A dictation's final text, when its recording ended, and what checking the user's corrections to it needs.
   private struct FinishedDictation {
-    let text: String
+    var text: String
     let recordedAt: Date
+    /// `nil` unless corrections are added to the dictionary.
+    var evidence: CorrectionLearner.Dictation?
   }
 
   /// Types a dictation's text and saves it to the history once every earlier dictation's has been, along with later
@@ -293,22 +313,24 @@ final class DictationController {
         dictation.text.last.map { $0.isWhitespace ? dictation.text : dictation.text + " " } ?? ""
       }
       .joined()
-    if !text.isEmpty {
-      TextInserter.insert(text)
-    }
+    guard !text.isEmpty, TextInserter.insert(text) else { return }
+    correctionLearner.pasted(text, from: ready.compactMap(\.evidence))
   }
 
   /// Transcribes a recording, with its silence shortened unless that's turned off, then ends its use of the speech
   /// model.
   ///
+  /// What a replay needs is kept only while corrections are added to the dictionary.
+  ///
   /// The dictionary is read as the recording goes to the speech model, so a change made while recording applies.
   /// Sounds Like spellings are swapped for their words afterward, whatever the model did with them.
-  private func transcribe(_ recording: [Float]) async throws -> String {
+  private func transcribe(_ recording: [Float]) async throws -> (text: String, evidence: CorrectionLearner.Dictation?) {
     defer { speechModel.endUse() }
     let start = ContinuousClock.now
     let speech = await Self.shortenSilence(in: recording)
     let trimmed = ContinuousClock.now
     let words = dictionary.wordsForDictation
+    let modelID = SpeechModel.active?.id
     let transcript = try await speechModel.model().value
       .transcribe(
         speech,
@@ -325,7 +347,8 @@ final class DictationController {
       with \(words.count) dictionary words in \(ContinuousClock.now - trimmed, privacy: .public)
       """
     )
-    return text
+    guard dictionary.learnsCorrections, let modelID else { return (text, nil) }
+    return (text, CorrectionLearner.Dictation(speech: speech, transcript: text, modelID: modelID))
   }
 
   /// Runs off the main actor, since the work grows with the transcript and the dictionary.

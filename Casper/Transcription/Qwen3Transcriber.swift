@@ -21,17 +21,21 @@ actor Qwen3Transcriber: Transcriber {
   ///
   /// speech-swift builds the prompt afresh for every call, with no cache carried over, so a changed dictionary applies
   /// to the next dictation without reloading the model.
+  ///
+  /// Cancelling the task stops the transcription between tokens, so a dictation doesn't wait for a replay of an
+  /// earlier one.
   func transcribe(_ samples: [Float], sampleRate: Double, dictionary: [DictionaryWord]) async throws -> String {
     guard let model else { throw TranscriptionError.unloaded }
     defer { BufferCache.releaseIfEnabled() }
     let seconds = Double(samples.count) / sampleRate
     // A nil language lets the model detect it.
-    let text = model.transcribe(
+    let text = try model.transcribeCheckingCancellation(
       audio: samples,
       sampleRate: Int(sampleRate),
-      language: nil,
-      maxTokens: Self.maximumTokens(forSeconds: seconds),
-      context: dictionary.isEmpty ? nil : dictionary.map(\.text).joined(separator: "\n")
+      options: Qwen3DecodingOptions(
+        maxTokens: Self.maximumTokens(forSeconds: seconds),
+        context: dictionary.isEmpty ? nil : dictionary.map(\.text).joined(separator: "\n")
+      )
     )
     return text.trimmingCharacters(in: .whitespacesAndNewlines)
   }

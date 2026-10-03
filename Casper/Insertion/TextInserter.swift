@@ -31,7 +31,8 @@ enum TextInserter {
 
   private static var pendingRestore: PendingRestore?
 
-  static func insert(_ text: String) {
+  /// Pastes the text, returning whether it did, which it can't without Accessibility access.
+  static func insert(_ text: String) -> Bool {
     let pasteboard = NSPasteboard.general
     // A paste that starts before the previous one is restored keeps the clipboard saved by the previous one, unless
     // the user copied something since, which then becomes the clipboard to restore.
@@ -54,7 +55,7 @@ enum TextInserter {
 
     guard AXIsProcessTrusted() else {
       logger.error("Accessibility access is off, so the dictated text was left on the clipboard.")
-      return
+      return false
     }
     postCommandV()
 
@@ -68,6 +69,7 @@ enum TextInserter {
       }
     }
     pendingRestore = PendingRestore(savedItems: savedItems, changeCount: changeCount, task: task)
+    return true
   }
 
   private static func copies(of items: [NSPasteboardItem]) -> [NSPasteboardItem] {

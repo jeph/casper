@@ -12,8 +12,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let personas = PersonaStore()
   let history = DictationHistory()
   let dictionary = DictionaryStore()
+  private lazy var learnedWordNotifier = LearnedWordNotifier(
+    dictionary: dictionary,
+    settingsNavigation: settingsNavigation
+  )
   private var dictation: DictationController?
   private var voiceBubble: VoiceBubble?
+
+  func applicationWillFinishLaunching(_ notification: Notification) {
+    // The notifier becomes the notification center's delegate before launch finishes, so a click on a notification
+    // that launched Casper reaches it.
+    _ = learnedWordNotifier
+  }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Before any download starts, since a download's folder looks unfinished until it's done.
@@ -23,7 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       readiness: readiness,
       personas: personas,
       history: history,
-      dictionary: dictionary
+      dictionary: dictionary,
+      learnedWordNotifier: learnedWordNotifier
     )
     self.dictation = dictation
     voiceBubble = VoiceBubble(status: dictation.status, readiness: readiness, settingsNavigation: settingsNavigation)

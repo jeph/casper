@@ -9,6 +9,7 @@ struct CasperApp: App {
       MenuBarMenu()
     } label: {
       MenuBarIcon()
+        .environment(appDelegate.settingsNavigation)
     }
     Settings {
       SettingsView()

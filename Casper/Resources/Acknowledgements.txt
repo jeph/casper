@@ -5,7 +5,7 @@ and notices are reproduced below.
 
 Contents
 
-  OpenWhispr (dictation cleanup prompt)
+  OpenWhispr (dictation cleanup prompt, correction learner)
   MLX Swift
   MLX Swift LM
   MLX
@@ -33,7 +33,7 @@ Contents
   yyjson
 
 ================================================================================
-OpenWhispr (dictation cleanup prompt)
+OpenWhispr (dictation cleanup prompt, correction learner)
 https://github.com/OpenWhispr/openwhispr
 ================================================================================
 
