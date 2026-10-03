@@ -52,12 +52,9 @@ struct PersonaEditor: View {
         } header: {
           Text("Instructions")
         } footer: {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Each transcript is sent after these instructions, between <transcript> and </transcript>.")
-            Text("\(wordCount.formatted()) of \(RefinePersona.instructionWordLimit.formatted()) words")
-              .foregroundStyle(isOverWordLimit ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-              .monospacedDigit()
-          }
+          Text("\(wordCount.formatted()) of \(RefinePersona.instructionWordLimit.formatted()) words")
+            .foregroundStyle(isOverWordLimit ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+            .monospacedDigit()
         }
       }
       .formStyle(.grouped)

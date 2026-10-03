@@ -26,9 +26,9 @@ struct RefinePersona: Codable, Hashable, Identifiable, Sendable {
   /// The most words instructions can have.
   ///
   /// Words rather than tokens, because the token count depends on the language model and needs one installed. The
-  /// casual persona, the longest built-in one, uses about half of it, and the model keeps every word it has read in
+  /// casual persona, the longest built-in one, uses nearly all of it, and the model keeps every word it has read in
   /// memory.
-  static let instructionWordLimit = 10_000
+  static let instructionWordLimit = 5_000
 
   static let formal = RefinePersona(
     id: RefinePrompt.BuiltIn.formal.rawValue,
