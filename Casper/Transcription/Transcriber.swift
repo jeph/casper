@@ -8,7 +8,18 @@ protocol Transcriber: Sendable {
   /// The transcript's length is bounded by the length of the audio, so a model that gets stuck can't run on. A model
   /// that writes text one token at a time has nothing stopping it, so its transcriber limits it to
   /// `maximumTokens(forSeconds:)`. One whose library already bounds its output by the audio relies on that instead.
-  func transcribe(_ samples: [Float], sampleRate: Double) async throws -> String
+  ///
+  /// The transcriber uses whatever of the dictionary its model or library can: a model that takes a list of words gets
+  /// the words, and a library that corrects misheard words itself also gets their Sounds Like spellings. One that can
+  /// do neither ignores it. Casper swaps Sounds Like spellings for their words afterward whatever the model, so a
+  /// transcriber doesn't need to.
+  func transcribe(_ samples: [Float], sampleRate: Double, dictionary: [DictionaryWord]) async throws -> String
+
+  /// Builds whatever the transcriber makes from the dictionary ahead of the next dictation, so it doesn't wait for it.
+  ///
+  /// Nothing a transcriber builds from the dictionary may need the model reloaded: a change applies to the next
+  /// dictation either way.
+  func prepare(for dictionary: [DictionaryWord]) async
 
   /// Frees the memory the model uses. The transcriber can't be used afterward.
   func unload() async
@@ -23,4 +34,6 @@ extension Transcriber {
   static func maximumTokens(forSeconds seconds: Double) -> Int {
     16 + Int((seconds * 10).rounded(.up))
   }
+
+  func prepare(for dictionary: [DictionaryWord]) async {}
 }

@@ -17,6 +17,7 @@ final class DictationController {
   private let readiness: DictationReadiness
   private let personas: PersonaStore
   private let history: DictationHistory
+  private let dictionary: DictionaryStore
   private var hotkey: GlobalHotkey?
   /// The number the next finished recording gets, counting up in the order recordings were made.
   private var nextDictation = 0
@@ -31,6 +32,8 @@ final class DictationController {
   private var activeLanguageModelID = LanguageModel.active?.id
   /// The refine setting in effect, compared against the stored one when settings change.
   private var refinesTranscripts = TranscriptRefiner.isEnabled
+  /// The dictionary setting in effect, compared against the stored one when settings change.
+  private var usesDictionary: Bool
   /// The persona the recording in progress is refined with, or `nil` if it isn't refined, decided when it starts so its
   /// model loads while the user speaks, and so editing the persona meanwhile doesn't change how it's refined.
   private var recordingPersona: RefinePersona?
@@ -41,10 +44,12 @@ final class DictationController {
   /// after it's spoken.
   private static let recordingTail = Duration.milliseconds(150)
 
-  init(readiness: DictationReadiness, personas: PersonaStore, history: DictationHistory) {
+  init(readiness: DictationReadiness, personas: PersonaStore, history: DictationHistory, dictionary: DictionaryStore) {
     self.readiness = readiness
     self.personas = personas
     self.history = history
+    self.dictionary = dictionary
+    usesDictionary = dictionary.isEnabled
     let permissions = readiness.permissions
     let recorder = AudioRecorder(sampleRate: SpeechModel.sampleRate)
     self.recorder = recorder
@@ -78,9 +83,11 @@ final class DictationController {
         // The refine setting comes first, so a model chosen at the same time loads only if refining is on.
         self?.refineSettingMayHaveChanged()
         self?.activeModelsMayHaveChanged()
+        self?.dictionarySettingMayHaveChanged()
       }
     }
     cacheChosenPersonaPromptOnChange()
+    prepareDictionaryOnChange()
   }
 
   /// Loads the language model if refining was turned on, and unloads it once nothing is using it if it was turned off.
@@ -104,9 +111,42 @@ final class DictationController {
     activeSpeechModelID = speechModelID
     activeLanguageModelID = languageModelID
     speechModel.keepLoaded()
+    prepareDictionary()
     if refinesTranscripts {
       languageModel.keepLoaded()
       cacheChosenPersonaPrompt()
+    }
+  }
+
+  /// Has the speech model build what it needs from the dictionary if it was turned on.
+  ///
+  /// Turned off, dictations pass no words, which needs nothing built.
+  private func dictionarySettingMayHaveChanged() {
+    let enabled = dictionary.isEnabled
+    guard enabled != usesDictionary else { return }
+    usesDictionary = enabled
+    prepareDictionary()
+  }
+
+  /// Prepares the speech model for the dictionary now and again whenever the user changes its words.
+  private func prepareDictionaryOnChange() {
+    withObservationTracking {
+      _ = dictionary.words
+    } onChange: { [weak self] in
+      // Tracking ends with the first change, which is reported before it's made, so tracking starts over after it.
+      Task { @MainActor in self?.prepareDictionaryOnChange() }
+    }
+    prepareDictionary()
+  }
+
+  /// Has the speech model build what it makes from the dictionary in the background, so dictations don't wait for it.
+  ///
+  /// The model stays loaded; only what it built from the old words is replaced.
+  private func prepareDictionary() {
+    guard let loading = try? speechModel.model() else { return }
+    let words = dictionary.wordsForDictation
+    Task {
+      try? await loading.value.prepare(for: words)
     }
   }
 
@@ -260,22 +300,38 @@ final class DictationController {
 
   /// Transcribes a recording, with its silence shortened unless that's turned off, then ends its use of the speech
   /// model.
+  ///
+  /// The dictionary is read as the recording goes to the speech model, so a change made while recording applies.
+  /// Sounds Like spellings are swapped for their words afterward, whatever the model did with them.
   private func transcribe(_ recording: [Float]) async throws -> String {
     defer { speechModel.endUse() }
     let start = ContinuousClock.now
     let speech = await Self.shortenSilence(in: recording)
     let trimmed = ContinuousClock.now
-    let text = try await speechModel.model().value.transcribe(speech, sampleRate: SpeechModel.sampleRate)
+    let words = dictionary.wordsForDictation
+    let transcript = try await speechModel.model().value
+      .transcribe(
+        speech,
+        sampleRate: SpeechModel.sampleRate,
+        dictionary: words
+      )
+    let text = await Self.swapSoundsLike(in: transcript, dictionary: words)
     let recordingSeconds = Double(recording.count) / SpeechModel.sampleRate
     let speechSeconds = Double(speech.count) / SpeechModel.sampleRate
     Self.logger.info(
       """
       Trimmed \(recordingSeconds, format: .fixed(precision: 1)) s of audio to \
       \(speechSeconds, format: .fixed(precision: 1)) s in \(trimmed - start, privacy: .public), and transcribed it \
-      in \(ContinuousClock.now - trimmed, privacy: .public)
+      with \(words.count) dictionary words in \(ContinuousClock.now - trimmed, privacy: .public)
       """
     )
     return text
+  }
+
+  /// Runs off the main actor, since the work grows with the transcript and the dictionary.
+  @concurrent
+  nonisolated private static func swapSoundsLike(in transcript: String, dictionary: [DictionaryWord]) async -> String {
+    DictionaryCorrection.swapSoundsLike(in: transcript, dictionary: dictionary)
   }
 
   /// Returns the recording with its silence shortened, unless that's turned off.

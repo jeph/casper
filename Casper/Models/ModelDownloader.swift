@@ -2,54 +2,96 @@ import CryptoKit
 import Foundation
 import Synchronization
 
-/// Downloads a model's files from Hugging Face, checking each against the checksum Hugging Face lists for it.
+/// Downloads models' files from Hugging Face, checking each against the checksum Hugging Face lists for it.
 enum ModelDownloader {
   enum DownloadError: Error {
     case badResponse(URL, statusCode: Int)
     case checksumMismatch(String)
   }
 
-  /// Downloads `model` and installs it in its directory, calling `progress` with the fraction downloaded so far.
+  /// Downloads `model` and the companions it doesn't have yet, calling `progress` with the fraction of all their
+  /// files downloaded so far.
   ///
-  /// The files download into a separate folder that's moved into place once all of them are verified, so a model's
-  /// directory only exists when it's complete.
+  /// The model's own files install last, so it only counts as installed once its companions are.
   @concurrent
   static func install(_ model: some DownloadableModel, progress: @escaping @Sendable (Double) -> Void) async throws {
+    try await install(model.companions.filter { !$0.isInstalled } + [model.ownFiles], progress: progress)
+  }
+
+  /// Downloads repositories in order and installs each in its directory, calling `progress` with the fraction of all
+  /// their files downloaded so far.
+  ///
+  /// Each repository's files download into a separate folder that's moved into place once all of them are verified, so
+  /// a repository's directory only exists when it's complete. One already installed by another download in the
+  /// meantime is kept, and this download of it dropped.
+  @concurrent
+  static func install(
+    _ repositories: [ModelRepository],
+    progress: @escaping @Sendable (Double) -> Void
+  ) async throws {
+    var downloads: [(repository: ModelRepository, files: [RemoteFile])] = []
+    for repository in repositories {
+      downloads.append((repository, try await remoteFiles(of: repository)))
+    }
+    let totalBytes = downloads.reduce(0) { total, download in total + download.files.reduce(0) { $0 + $1.size } }
+    let transfer = Transfer(totalBytes: totalBytes, progress: progress)
+    let session = URLSession(configuration: .ephemeral, delegate: transfer, delegateQueue: nil)
+    defer { session.invalidateAndCancel() }
     let fileManager = FileManager.default
-    let partial = model.directory.deletingLastPathComponent()
-      .appending(
-        path: "\(model.id).download",
+    for (repository, files) in downloads {
+      // Named for this download alone, since two models downloading at once can share a companion.
+      let partial = modelsDirectory.appending(
+        path: "\(repository.id)\(partialSuffix)-\(UUID().uuidString)",
         directoryHint: .isDirectory
       )
-    try? fileManager.removeItem(at: partial)
-    try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
-    do {
-      try await download(model, to: partial, progress: progress)
-      // Cancelling after the last file arrives would otherwise still install the model.
-      try Task.checkCancellation()
-      try fileManager.moveItem(at: partial, to: model.directory)
-    } catch {
-      try? fileManager.removeItem(at: partial)
-      throw error
+      try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
+      do {
+        try await download(files, of: repository, to: partial, using: session, transfer: transfer)
+        // Cancelling after the last file arrives would otherwise still install the model.
+        try Task.checkCancellation()
+        if repository.isInstalled {
+          try? fileManager.removeItem(at: partial)
+        } else {
+          try fileManager.moveItem(at: partial, to: repository.directory)
+        }
+      } catch {
+        try? fileManager.removeItem(at: partial)
+        throw error
+      }
     }
   }
 
+  /// Deletes the folders of downloads that never finished, such as ones Casper quit during.
+  ///
+  /// Only safe before any download starts.
+  static func removeUnfinishedDownloads() {
+    let fileManager = FileManager.default
+    let contents = (try? fileManager.contentsOfDirectory(at: modelsDirectory, includingPropertiesForKeys: nil)) ?? []
+    for url in contents where url.lastPathComponent.contains(partialSuffix) {
+      try? fileManager.removeItem(at: url)
+    }
+  }
+
+  private static let modelsDirectory = URL.applicationSupportDirectory.appending(
+    path: "Casper/Models",
+    directoryHint: .isDirectory
+  )
+  private static let partialSuffix = ".download"
+
   private static func download(
-    _ model: some DownloadableModel,
+    _ files: [RemoteFile],
+    of repository: ModelRepository,
     to directory: URL,
-    progress: @escaping @Sendable (Double) -> Void
+    using session: URLSession,
+    transfer: Transfer
   ) async throws {
-    let files = try await remoteFiles(of: model)
-    let transfer = Transfer(totalBytes: files.reduce(0) { $0 + $1.size }, progress: progress)
-    let session = URLSession(configuration: .ephemeral, delegate: transfer, delegateQueue: nil)
-    defer { session.invalidateAndCancel() }
     for file in files {
       let destination = directory.appending(path: file.path, directoryHint: .notDirectory)
       try FileManager.default.createDirectory(
         at: destination.deletingLastPathComponent(),
         withIntermediateDirectories: true
       )
-      try await transfer.download(url(of: file, in: model), to: destination, using: session)
+      try await transfer.download(url(of: file, in: repository), to: destination, using: session)
       try verify(destination, against: file)
     }
   }
@@ -70,8 +112,8 @@ enum ModelDownloader {
     let lfs: LargeFile?
   }
 
-  private static func remoteFiles(of model: some DownloadableModel) async throws -> [RemoteFile] {
-    let url = URL(string: "https://huggingface.co/api/models/\(model.repository)/tree/\(model.revision)")?
+  private static func remoteFiles(of repository: ModelRepository) async throws -> [RemoteFile] {
+    let url = URL(string: "https://huggingface.co/api/models/\(repository.repository)/tree/\(repository.revision)")?
       .appending(queryItems: [URLQueryItem(name: "recursive", value: "true")])
     guard let url else { throw URLError(.badURL) }
     let (data, response) = try await URLSession.shared.data(from: url)
@@ -79,14 +121,14 @@ enum ModelDownloader {
     return try JSONDecoder().decode([RemoteFile].self, from: data)
       .filter { file in
         guard file.type == "file" else { return false }
-        guard let needed = model.files else { return !["README.md", ".gitattributes"].contains(file.path) }
+        guard let needed = repository.files else { return !["README.md", ".gitattributes"].contains(file.path) }
         return needed.contains { file.path == $0 || file.path.hasPrefix("\($0)/") }
       }
   }
 
-  private static func url(of file: RemoteFile, in model: some DownloadableModel) throws -> URL {
+  private static func url(of file: RemoteFile, in repository: ModelRepository) throws -> URL {
     guard
-      let url = URL(string: "https://huggingface.co/\(model.repository)/resolve/\(model.revision)")?
+      let url = URL(string: "https://huggingface.co/\(repository.repository)/resolve/\(repository.revision)")?
         .appending(path: file.path, directoryHint: .notDirectory)
     else { throw URLError(.badURL) }
     return url

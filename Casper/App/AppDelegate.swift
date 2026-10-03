@@ -11,11 +11,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let settingsNavigation = SettingsNavigation()
   let personas = PersonaStore()
   let history = DictationHistory()
+  let dictionary = DictionaryStore()
   private var dictation: DictationController?
   private var voiceBubble: VoiceBubble?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    let dictation = DictationController(readiness: readiness, personas: personas, history: history)
+    // Before any download starts, since a download's folder looks unfinished until it's done.
+    ModelDownloader.removeUnfinishedDownloads()
+    SpeechModel.store.installMissingCompanions()
+    let dictation = DictationController(
+      readiness: readiness,
+      personas: personas,
+      history: history,
+      dictionary: dictionary
+    )
     self.dictation = dictation
     voiceBubble = VoiceBubble(status: dictation.status, readiness: readiness, settingsNavigation: settingsNavigation)
     LaunchAtLogin.applyDefaultOnFirstLaunch()

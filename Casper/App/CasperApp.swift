@@ -17,6 +17,7 @@ struct CasperApp: App {
         .environment(appDelegate.settingsNavigation)
         .environment(appDelegate.personas)
         .environment(appDelegate.history)
+        .environment(appDelegate.dictionary)
     }
   }
 }

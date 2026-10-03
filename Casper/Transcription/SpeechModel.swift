@@ -114,14 +114,28 @@ struct SpeechModel: LoadableModel {
     ]
   }
 
+  /// FluidAudio's word spotter for Parakeet, whose decoder can't be steered toward dictionary words.
+  ///
+  /// Qwen3-ASR reads the words in its prompt and needs nothing more.
+  var companions: [ModelRepository] {
+    switch family {
+    case .parakeetTDT, .parakeetUltra: [WordSpotter.files]
+    case .qwen3ASR: []
+    }
+  }
+
   func load() async throws -> any Transcriber {
     switch family {
     case .parakeetTDT:
       return try await ParakeetTranscriber(
-        models: AsrModels.loadLocal(from: directory, version: .v3, encoderPrecision: Self.parakeetEncoderPrecision)
+        models: AsrModels.loadLocal(from: directory, version: .v3, encoderPrecision: Self.parakeetEncoderPrecision),
+        wordSpotterDirectory: WordSpotter.files.directory
       )
     case .parakeetUltra:
-      return try await ParakeetTranscriber(models: AsrModels.loadLocal(from: directory, version: .ultra))
+      return try await ParakeetTranscriber(
+        models: AsrModels.loadLocal(from: directory, version: .ultra),
+        wordSpotterDirectory: WordSpotter.files.directory
+      )
     case .qwen3ASR:
       // speech-swift reads the model size and bit width from the Hugging Face ID. Offline mode only reads the folder.
       return Qwen3Transcriber(

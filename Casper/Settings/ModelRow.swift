@@ -26,7 +26,7 @@ struct ModelRow<Model: DownloadableModel>: View {
         }
       }
       Text(
-        "\(Text(model.languages)) · \(Text(model.downloadSize, format: .byteCount(style: .file)))",
+        "\(Text(model.languages)) · \(Text(model.totalDownloadSize, format: .byteCount(style: .file)))",
         comment:
           "Details of a model on the Voice Models and Language Models pages: its languages, then its download size."
       )

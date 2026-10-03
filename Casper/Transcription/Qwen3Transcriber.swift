@@ -14,7 +14,14 @@ actor Qwen3Transcriber: Transcriber {
     self.model = model
   }
 
-  func transcribe(_ samples: [Float], sampleRate: Double) async throws -> String {
+  /// Puts the dictionary's words in the system prompt, one per line, which Qwen3-ASR was trained to read as background
+  /// knowledge.
+  ///
+  /// Sounds Like spellings stay out: with them in the prompt, the model writes them.
+  ///
+  /// speech-swift builds the prompt afresh for every call, with no cache carried over, so a changed dictionary applies
+  /// to the next dictation without reloading the model.
+  func transcribe(_ samples: [Float], sampleRate: Double, dictionary: [DictionaryWord]) async throws -> String {
     guard let model else { throw TranscriptionError.unloaded }
     let seconds = Double(samples.count) / sampleRate
     // A nil language lets the model detect it.
@@ -22,7 +29,8 @@ actor Qwen3Transcriber: Transcriber {
       audio: samples,
       sampleRate: Int(sampleRate),
       language: nil,
-      maxTokens: Self.maximumTokens(forSeconds: seconds)
+      maxTokens: Self.maximumTokens(forSeconds: seconds),
+      context: dictionary.isEmpty ? nil : dictionary.map(\.text).joined(separator: "\n")
     )
     return text.trimmingCharacters(in: .whitespacesAndNewlines)
   }
