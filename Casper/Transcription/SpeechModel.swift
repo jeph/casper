@@ -58,13 +58,13 @@ struct SpeechModel: LoadableModel {
 
   let id: String
   let family: Family
-  // `summary` and `memoryUsage` are optional to match `DownloadableModel`: non-optional properties wouldn't satisfy
-  // it, and its `nil` defaults would be shown instead.
+  // Optional to match `DownloadableModel`: a non-optional property wouldn't satisfy it, and its `nil` default would be
+  // shown instead.
   let summary: LocalizedStringResource?
   let parameters: String
   let bits: Int
   let downloadSize: Int64
-  let memoryUsage: Int64?
+  let memoryUsage: Int64
   let revision: String
   let isRecommended: Bool
 

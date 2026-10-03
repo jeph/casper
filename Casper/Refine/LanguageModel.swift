@@ -28,6 +28,7 @@ struct LanguageModel: LoadableModel {
   let parameters: String
   let bits = 4
   let downloadSize: Int64
+  let memoryUsage: Int64
   let revision: String
   let isRecommended: Bool
 
@@ -50,12 +51,16 @@ struct LanguageModel: LoadableModel {
 }
 
 extension LanguageModel {
+  // `memoryUsage` is what a model's process footprint grew by once it read the Formal persona's prompt and refined a
+  // 26-second dictation twice. About 1 GB of it, and up to 3 GB for the largest model, is buffers from refining,
+  // which MLX keeps in its cache.
   static let all = [
     LanguageModel(
       id: "Qwen3-0.6B-4bit",
       family: .qwen3,
       parameters: "0.6B",
       downloadSize: 351_383_618,
+      memoryUsage: 1_562_378_240,
       revision: "73e3e38d981303bc594367cd910ea6eb48349da8",
       isRecommended: false
     ),
@@ -64,6 +69,7 @@ extension LanguageModel {
       family: .qwen3,
       parameters: "1.7B",
       downloadSize: 984_013_244,
+      memoryUsage: 2_243_952_640,
       revision: "3b1b1768f8f8cf8351c712464f906e86c2b8269e",
       isRecommended: false
     ),
@@ -72,6 +78,7 @@ extension LanguageModel {
       family: .qwen3,
       parameters: "4B 2507",
       downloadSize: 2_278_969_697,
+      memoryUsage: 3_670_016_000,
       revision: "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
       isRecommended: true
     ),
@@ -80,6 +87,7 @@ extension LanguageModel {
       family: .qwen3,
       parameters: "8B",
       downloadSize: 4_623_782_544,
+      memoryUsage: 5_872_025_600,
       revision: "545dc4251c05440727734bcd94334791f6ab0192",
       isRecommended: false
     ),
@@ -88,6 +96,7 @@ extension LanguageModel {
       family: .qwen3,
       parameters: "14B",
       downloadSize: 8_323_868_085,
+      memoryUsage: 9_678_356_480,
       revision: "a4d9b2df59d2c150bef02fcbe0d91046b7ca33a4",
       isRecommended: false
     ),
@@ -96,6 +105,7 @@ extension LanguageModel {
       family: .qwen35,
       parameters: "0.8B",
       downloadSize: 652_027_143,
+      memoryUsage: 2_034_237_440,
       revision: "da28692b5f139cb0ec58a356b437486b7dac7462",
       isRecommended: false
     ),
@@ -104,6 +114,7 @@ extension LanguageModel {
       family: .qwen35,
       parameters: "2B",
       downloadSize: 1_749_079_691,
+      memoryUsage: 2_684_354_560,
       revision: "674aaa7240b91e8012fcad5d791b7dfe5ba90207",
       isRecommended: false
     ),
@@ -112,6 +123,7 @@ extension LanguageModel {
       family: .qwen35,
       parameters: "4B",
       downloadSize: 3_061_129_077,
+      memoryUsage: 4_456_448_000,
       revision: "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
       isRecommended: false
     ),
@@ -120,6 +132,7 @@ extension LanguageModel {
       family: .qwen35,
       parameters: "9B",
       downloadSize: 5_977_071_067,
+      memoryUsage: 7_035_944_960,
       revision: "8b2b98c00a6b4d291155e4890773ca8f769aee53",
       isRecommended: false
     ),
@@ -128,6 +141,7 @@ extension LanguageModel {
       family: .qwen38,
       parameters: "27B",
       downloadSize: 16_081_488_731,
+      memoryUsage: 18_517_852_160,
       revision: "10c35caafbb80f7dc6a7a432cdd11af10a6d4818",
       isRecommended: false
     ),

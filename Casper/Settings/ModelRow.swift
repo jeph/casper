@@ -28,7 +28,7 @@ struct ModelRow<Model: DownloadableModel>: View {
       if let summary = model.summary {
         Text(summary)
       }
-      size
+      memoryImpact
     }
     .confirmationDialog(
       Text(
@@ -48,16 +48,13 @@ struct ModelRow<Model: DownloadableModel>: View {
     }
   }
 
-  private var downloadSize: Text {
-    Text(model.totalDownloadSize, format: .byteCount(style: .file))
-  }
-
-  /// The memory the model takes, where it's been measured, or else its download size.
-  private var size: Text {
-    guard let memoryUsage = model.memoryUsage else { return downloadSize }
-    return Text(
-      "Memory Impact - \(Text(memoryUsage, format: .byteCount(style: .memory)))",
-      comment: "Line on the Voice Models page with how much memory a model takes once loaded, such as 770 MB."
+  private var memoryImpact: Text {
+    Text(
+      "Memory Impact - \(Text(model.memoryUsage, format: .byteCount(style: .memory)))",
+      comment: """
+        Line on the Voice Models and Language Models pages with how much memory a model takes once loaded, such as \
+        770 MB.
+        """
     )
   }
 
@@ -116,7 +113,10 @@ struct ModelRow<Model: DownloadableModel>: View {
           store.download(model)
         }
         .help(
-          Text("Downloads \(downloadSize)", comment: "Tooltip of a model's Download button, with its download size.")
+          Text(
+            "Downloads \(Text(model.totalDownloadSize, format: .byteCount(style: .file)))",
+            comment: "Tooltip of a model's Download button, with its download size."
+          )
         )
       }
     }

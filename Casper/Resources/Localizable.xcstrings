@@ -203,7 +203,7 @@
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
     },
     "Memory Impact - %@" : {
-      "comment" : "Line on the Voice Models page with how much memory a model takes once loaded, such as 770 MB."
+      "comment" : "Line on the Voice Models and Language Models pages with how much memory a model takes once loaded, such as 770 MB."
     },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."

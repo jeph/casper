@@ -34,9 +34,8 @@ protocol DownloadableModel: Identifiable, Sendable where ID == String {
   var summary: LocalizedStringResource? { get }
   /// The total size of the model's own files, without its companions.
   var downloadSize: Int64 { get }
-  /// The memory the model and its companions take once they've loaded and been used, or `nil` if it hasn't been
-  /// measured.
-  var memoryUsage: Int64? { get }
+  /// The memory the model and its companions take once they've loaded and been used.
+  var memoryUsage: Int64 { get }
   /// The Hugging Face repository, including the account that publishes it.
   var repository: String { get }
   /// The Hugging Face commit to download, fixed so the files can't change.
@@ -65,8 +64,6 @@ extension DownloadableModel {
   }
 
   var summary: LocalizedStringResource? { nil }
-
-  var memoryUsage: Int64? { nil }
 
   var files: [String]? { nil }
 
