@@ -8,7 +8,7 @@ struct GeneralView: View {
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
-  @AppStorage(SettingsPane.advancedEnabledStorageKey) private var isAdvancedEnabled = false
+  @AppStorage(SettingsPane.advancedEnabledStorageKey) private var showsAdvancedSettings = false
 
   var body: some View {
     Form {
@@ -116,10 +116,9 @@ struct GeneralView: View {
               .foregroundStyle(.secondary)
           }
         }
-        Toggle(isOn: $isAdvancedEnabled) {
+        Toggle(isOn: $showsAdvancedSettings) {
           Label {
-            Text("Enable Advanced Settings")
-            Text("Show advanced settings.")
+            Text("Show Advanced Settings")
           } icon: {
             Image(systemName: "wrench.and.screwdriver")
           }
