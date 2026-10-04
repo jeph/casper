@@ -164,12 +164,6 @@ h3 {
   box-shadow: 0 6px 0 #d4961b;
 }
 
-.btn-blue {
-  color: white;
-  background: var(--blue);
-  box-shadow: 0 6px 0 #2f56b0;
-}
-
 .btn:hover {
   transform: translateY(-2px);
 }
@@ -178,13 +172,8 @@ h3 {
   box-shadow: 0 8px 0 #d4961b;
 }
 
-.btn-blue:hover {
-  box-shadow: 0 8px 0 #2f56b0;
-}
-
 .btn:active {
   transform: translateY(5px);
-  box-shadow: 0 1px 0 #2f56b0;
 }
 
 .btn-sun:active {
@@ -847,135 +836,6 @@ h3 {
     padding: 12px 12px;
     font-size: 0.9rem;
   }
-}
-
-/* Install */
-
-.install-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
-  max-width: 920px;
-  margin: 0 auto;
-}
-
-@media (max-width: 760px) {
-  .install-options {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.install-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 30px 28px;
-  border-radius: 26px;
-  background: white;
-  box-shadow:
-    0 0 0 1px rgb(21 30 45 / 6%),
-    0 18px 40px -26px rgb(21 30 45 / 40%);
-}
-
-.install-card h3 {
-  margin: 0;
-  font-size: 1.45rem;
-}
-
-.install-card p {
-  margin: 0;
-  color: var(--ink-3);
-}
-
-.install-card .command {
-  width: 100%;
-  color: #e9e7ff;
-  background: var(--ink);
-}
-
-.install-card .copy {
-  color: white;
-  background: rgb(255 255 255 / 12%);
-}
-
-.install-card .copy:hover {
-  background: rgb(255 255 255 / 22%);
-}
-
-.badge {
-  position: absolute;
-  top: -13px;
-  right: 22px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--ink);
-  background: var(--sun);
-  transform: rotate(4deg);
-}
-
-.first-launch {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  max-width: 1000px;
-  margin: 56px auto 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: launch;
-}
-
-@media (max-width: 860px) {
-  .first-launch {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .first-launch {
-    grid-template-columns: 1fr;
-  }
-}
-
-.first-launch li {
-  padding: 20px;
-  border: 2px dashed color-mix(in srgb, var(--c) 45%, transparent);
-  border-radius: 20px;
-  counter-increment: launch;
-}
-
-.first-launch li::before {
-  content: counter(launch);
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-bottom: 10px;
-  border-radius: 50%;
-  font-weight: 850;
-  color: white;
-  background: var(--c);
-}
-
-.first-launch strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.first-launch span {
-  color: var(--ink-3);
-  font-size: 0.95rem;
-}
-
-.fine-print {
-  max-width: 640px;
-  margin: 36px auto 0;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--ink-3);
 }
 
 /* Love note */

@@ -139,21 +139,6 @@ const comparison = [
   { question: "Account", casper: "Not needed", cloud: "Usually required" },
   { question: "Price", casper: "Free", cloud: "Often a subscription" },
 ];
-
-const launchSteps = [
-  { color: "var(--blue)", title: "Open Casper", body: "Settings opens on first launch." },
-  {
-    color: "var(--mint)",
-    title: "Say yes twice",
-    body: "Allow the microphone, to hear you, and Accessibility, to paste.",
-  },
-  {
-    color: "var(--grape)",
-    title: "Grab a model",
-    body: "Download a speech model, plus a cleanup model for tidy text.",
-  },
-  { color: "var(--pink)", title: "Hold ⌥ Space", body: "And start talking. That's it!" },
-];
 ---
 
 <Landing
@@ -172,9 +157,6 @@ const launchSteps = [
         </a>
         <a class="section-link" href="#why">
           Why Casper
-        </a>
-        <a class="section-link" href="#install">
-          Install
         </a>
         <a href="/docs/">Docs</a>
         <a class="pill-link" href={github}>
@@ -388,61 +370,6 @@ const launchSteps = [
             </tbody>
           </table>
         </div>
-      </div>
-    </section>
-
-    <section class="section" id="install">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <span class="kicker" style="--c: var(--mint)">
-            Install
-          </span>
-          <h2>
-            Get Casper in a <span class="squiggle">minute</span>
-          </h2>
-          <p>You need a Mac with Apple silicon, running macOS 15 or later.</p>
-        </div>
-
-        <div class="install-options">
-          <article class="install-card reveal">
-            <span class="badge">Easiest</span>
-            <h3>Homebrew</h3>
-            <p>
-              One command installs Casper, and <code>brew upgrade</code> keeps it current.
-            </p>
-            <div class="command">
-              <code>
-                <span class="prompt">$ </span>
-                {brewCommand}
-              </code>
-              <button class="copy" type="button" data-copy={brewCommand} aria-label="Copy the Homebrew command">
-                <Icon name="copy" />
-              </button>
-            </div>
-          </article>
-          <article class="install-card reveal" style="--delay: 0.1s">
-            <h3>Download</h3>
-            <p>Grab the latest disk image, open it, and drag Casper to Applications.</p>
-            <a class="btn btn-blue" href={latestRelease}>
-              <Icon name="download" />
-              Download Casper
-            </a>
-          </article>
-        </div>
-
-        <ol class="first-launch">
-          {launchSteps.map((step, index) => (
-            <li class="reveal" style={`--c: ${step.color}; --delay: ${index * 0.08}s`}>
-              <strong>{step.title}</strong>
-              <span>{step.body}</span>
-            </li>
-          ))}
-        </ol>
-
-        <p class="fine-print reveal">
-          Casper is alpha software, so new versions ship often. Every release is signed with a Developer ID certificate
-          and notarized by Apple.
-        </p>
       </div>
     </section>
 
