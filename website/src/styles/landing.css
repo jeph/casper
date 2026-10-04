@@ -337,29 +337,6 @@ h3 {
   }
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 22px;
-  padding: 6px 14px 6px 8px;
-  border: 1px solid rgb(255 255 255 / 16%);
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  background: rgb(255 255 255 / 7%);
-}
-
-.eyebrow .dot {
-  width: 10px;
-  height: 10px;
-  margin-left: 4px;
-  border-radius: 50%;
-  background: var(--mint);
-  box-shadow: 0 0 0 0 var(--mint);
-  animation: ping 2s ease-out infinite;
-}
-
 .hero h1 {
   margin: 0 0 22px;
   font-size: clamp(2.7rem, 6.4vw, 4.7rem);
@@ -1263,15 +1240,6 @@ h3 {
 @keyframes shimmer {
   to {
     background-position: 200% center;
-  }
-}
-
-@keyframes ping {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint) 70%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 10px transparent;
   }
 }
 
