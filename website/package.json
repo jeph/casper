@@ -1,0 +1,28 @@
+{
+  "name": "casper-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check && oxlint --deny-warnings --report-unused-disable-directives && oxfmt --check && prettier --check \"src/**/*.astro\"",
+    "format": "oxfmt && prettier --write \"src/**/*.astro\""
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.5",
+    "astro": "7.3.5",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "prettier": "3.9.9",
+    "prettier-plugin-astro": "1.1.0",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

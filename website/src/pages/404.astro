@@ -1,0 +1,47 @@
+---
+import Ghost from "../components/Ghost.astro";
+import Landing from "../layouts/Landing.astro";
+---
+
+<Landing title="Page not found · Casper" description="This page vanished into thin air.">
+  <main class="lost">
+    <Ghost id="lost-ghost" class="lost-ghost" />
+    <h1>Boo! Nothing here.</h1>
+    <p>This page vanished into thin air. Casper swears it wasn't him.</p>
+    <a class="btn btn-sun" href="/">
+      Back home
+    </a>
+  </main>
+</Landing>
+
+<style>
+  .lost {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 6px;
+    min-height: 100vh;
+    padding: 40px 20px;
+    text-align: center;
+    color: white;
+    background: linear-gradient(160deg, var(--ink-2), var(--ink));
+  }
+
+  .lost :global(.lost-ghost) {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 12px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+  }
+
+  p {
+    margin: 0 0 22px;
+    font-size: 1.15rem;
+    color: rgb(255 255 255 / 75%);
+  }
+</style>

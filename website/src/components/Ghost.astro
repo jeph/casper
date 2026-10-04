@@ -1,0 +1,45 @@
+---
+interface Props {
+  /** Prefixes the gradient's id, which has to be unique on the page. */
+  id: string;
+  class?: string;
+  label?: string;
+}
+
+const { id, class: className, label } = Astro.props;
+const gradientId = `${id}-body`;
+---
+
+<svg
+  class:list={["ghost", className]}
+  viewBox="56 52 144 144"
+  role={label ? "img" : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : "true"}
+>
+  <defs>
+    <linearGradient id={gradientId} x2=".3" y2="1">
+      <stop stop-color="#ffffff"></stop>
+      <stop offset="1" stop-color="#e9e7ff"></stop>
+    </linearGradient>
+  </defs>
+  <path
+    d="M76 117 C76 88 98 67 128 67 C158 67 180 88 180 117 L180 164 C180 175 177 181 170 181 C163 181 161 169 154 169 C145 169 143 181 128 181 C113 181 111 169 102 169 C95 169 93 181 86 181 C79 181 76 175 76 164 L76 117 Z"
+    fill={`url(#${gradientId})`}
+  ></path>
+  <rect class="bar bar-1" x="102" y="110" width="12" height="28" rx="6" fill="#4875d6"></rect>
+  <rect class="bar bar-2" x="122" y="97.5" width="12" height="53" rx="6" fill="#4875d6"></rect>
+  <rect class="bar bar-3" x="142" y="106" width="12" height="36" rx="6" fill="#4875d6"></rect>
+</svg>
+
+<style>
+  .ghost {
+    display: block;
+    overflow: visible;
+  }
+
+  .bar {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+</style>

@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "jsx-a11y", "promise", "node"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    // Stylesheets are imported for their side effect of being bundled into the page.
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }]
+  },
+  "overrides": [
+    {
+      // The demo plays its steps one after another on purpose, so each wait has to finish before the next step.
+      "files": ["src/components/Demo.astro"],
+      "rules": { "no-await-in-loop": "off" }
+    }
+  ],
+  "ignorePatterns": ["dist", ".astro"]
+}

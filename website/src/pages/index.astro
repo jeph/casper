@@ -1,0 +1,509 @@
+---
+import Demo from "../components/Demo.astro";
+import Ghost from "../components/Ghost.astro";
+import Icon, { type IconName } from "../components/Icon.astro";
+import Landing from "../layouts/Landing.astro";
+
+const github = "https://github.com/jeph/casper";
+const latestRelease = `${github}/releases/latest`;
+const brewCommand = "brew install --cask jeph/tap/casper";
+
+const messyLetters = [
+  { letter: "m", tilt: "-12deg", lift: "0.04em" },
+  { letter: "e", tilt: "9deg", lift: "-0.06em" },
+  { letter: "s", tilt: "-6deg", lift: "0.05em" },
+  { letter: "s", tilt: "14deg", lift: "-0.03em" },
+  { letter: "y", tilt: "-9deg", lift: "0.02em" },
+];
+
+const sparkles = [
+  { top: "14%", left: "6%", delay: "0s" },
+  { top: "72%", left: "3%", delay: "-1.2s" },
+  { top: "9%", left: "54%", delay: "-2.1s" },
+  { top: "84%", left: "48%", delay: "-0.6s" },
+  { top: "22%", left: "93%", delay: "-1.7s" },
+];
+
+const talkingBars = [0.5, 0.9, 0.65, 1, 0.55, 0.8, 0.45];
+
+const apps = [
+  { name: "Mail", color: "var(--blue)" },
+  { name: "Messages", color: "var(--mint)" },
+  { name: "Slack", color: "var(--grape)" },
+  { name: "Notes", color: "var(--sun)" },
+  { name: "Safari", color: "var(--sky)" },
+  { name: "Terminal", color: "var(--ink-2)" },
+  { name: "VS Code", color: "var(--blue)" },
+  { name: "Notion", color: "var(--pink)" },
+  { name: "Xcode", color: "var(--sky)" },
+  { name: "Discord", color: "var(--grape)" },
+  { name: "Pages", color: "var(--peach)" },
+  { name: "Chrome", color: "var(--mint)" },
+  { name: "Obsidian", color: "var(--grape)" },
+  { name: "Linear", color: "var(--pink)" },
+];
+
+interface Feature {
+  icon: IconName | "ghost";
+  color: string;
+  title: string;
+  body: string;
+}
+
+const features: Feature[] = [
+  {
+    icon: "sparkles",
+    color: "var(--sun)",
+    title: "Cleanup that keeps your words",
+    body: "A local language model drops the ums, false starts and self-corrections, fixes punctuation, and writes out numbers, dates and prices. Questions stay questions. Prefer the raw transcript? Switch cleanup off.",
+  },
+  {
+    icon: "lock",
+    color: "var(--mint)",
+    title: "Private by design",
+    body: "Speech recognition and cleanup both run on your Mac. No account, no cloud. The only downloads are the models you pick, each checked against its published checksum.",
+  },
+  {
+    icon: "pen",
+    color: "var(--pink)",
+    title: "Personas",
+    body: "Formal for polished writing, Casual for texting, or make your own with up to 5,000 words of instructions.",
+  },
+  {
+    icon: "book",
+    color: "var(--grape)",
+    title: "Dictionary",
+    body: "Teach Casper names, brands and jargon. Fix a word it got wrong and it can add your spelling to the dictionary for next time.",
+  },
+  {
+    icon: "ghost",
+    color: "var(--sky)",
+    title: "The voice bubble",
+    body: "A little floating ghost shows a live waveform while you talk. It stays above your windows on every Space, never steals focus, and remembers where you put it.",
+  },
+  {
+    icon: "clock",
+    color: "var(--peach)",
+    title: "History",
+    body: "Every dictation, newest first and searchable, kept in a database on your Mac and never sent anywhere.",
+  },
+  {
+    icon: "zap",
+    color: "var(--blue)",
+    title: "Never wait",
+    body: "Start the next dictation while the last one is still being processed. Your text still lands in the order you said it.",
+  },
+  {
+    icon: "cursor",
+    color: "var(--mint)",
+    title: "Works wherever you type",
+    body: "Casper pastes, so it works in browsers, Electron apps and terminals, then puts your clipboard back the way it was.",
+  },
+  {
+    icon: "chip",
+    color: "var(--grape)",
+    title: "Pick your models",
+    body: "Parakeet on the Neural Engine or Qwen3-ASR on the GPU, in up to 30 languages, plus cleanup models from 0.6B to 27B to suit your Mac.",
+  },
+];
+
+interface Reason {
+  icon: IconName;
+  color: string;
+  title: string;
+  body: string;
+}
+
+const reasons: Reason[] = [
+  {
+    icon: "house",
+    color: "var(--mint)",
+    title: "Your voice stays home",
+    body: "Cloud dictation apps send your audio to a server. Casper does everything on your Mac, works offline once your models are downloaded, and never asks you to sign in.",
+  },
+  {
+    icon: "heart",
+    color: "var(--pink)",
+    title: "A real Mac app",
+    body: "Written in Swift with SwiftUI and AppKit. No Electron, no bundled browser, no Python runtime. It lives in your menu bar, launches at login and respects Reduce Motion.",
+  },
+  {
+    icon: "zap",
+    color: "var(--sun)",
+    title: "Fast on Apple silicon",
+    body: "Models stay loaded, and the Neural Engine and GPU work side by side, transcribing your latest dictation while cleaning up the one before it.",
+  },
+  {
+    icon: "star",
+    color: "var(--sky)",
+    title: "Free and open source",
+    body: "MIT licensed, with no subscription. Read the code, build it yourself, or just enjoy it.",
+  },
+];
+
+const comparison = [
+  { question: "Where your voice goes", casper: "Stays on your Mac", cloud: "Their servers" },
+  { question: "Works offline", casper: "Yes", cloud: "No" },
+  { question: "Account", casper: "Not needed", cloud: "Usually required" },
+  { question: "Price", casper: "Free", cloud: "Often a subscription" },
+];
+
+const launchSteps = [
+  { color: "var(--blue)", title: "Open Casper", body: "Settings opens on first launch." },
+  {
+    color: "var(--mint)",
+    title: "Say yes twice",
+    body: "Allow the microphone, to hear you, and Accessibility, to paste.",
+  },
+  {
+    color: "var(--grape)",
+    title: "Grab a model",
+    body: "Download a speech model, plus a cleanup model for tidy text.",
+  },
+  { color: "var(--pink)", title: "Hold ⌥ Space", body: "And start talking. That's it!" },
+];
+---
+
+<Landing
+  title="Casper: private, on-device dictation for your Mac"
+  description="Hold a shortcut, say what you mean, and clean, punctuated text appears wherever you're typing. Speech recognition and cleanup both run on your Mac."
+>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/">
+        <Ghost id="nav-ghost" />
+        Casper
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="section-link" href="#features">
+          Features
+        </a>
+        <a class="section-link" href="#why">
+          Why Casper
+        </a>
+        <a class="section-link" href="#install">
+          Install
+        </a>
+        <a href="/docs/">Docs</a>
+        <a class="pill-link" href={github}>
+          <Icon name="star" />
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <span class="blob blob-3"></span>
+      {sparkles.map((sparkle) => (
+        <span class="sparkle" style={`top: ${sparkle.top}; left: ${sparkle.left}; animation-delay: ${sparkle.delay}`}>
+          <Icon name="sparkles" />
+        </span>
+      ))}
+
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">
+            <span class="dot"></span>On-device dictation for macOS
+          </p>
+          <h1>
+            Say it{" "}
+            <span class="messy">
+              <span class="visually-hidden">messy</span>
+              {messyLetters.map(({ letter, tilt, lift }) => (
+                <span aria-hidden="true" style={`--r: ${tilt}; --lift: ${lift}`}>
+                  {letter}
+                </span>
+              ))}
+            </span>
+            .<br />
+            <span class="clean">Casper types it clean.</span>
+          </h1>
+          <p class="lede">
+            Hold <kbd>⌥ Space</kbd>, talk like a human, and tidy, punctuated text lands wherever you're typing. Your
+            voice never leaves your Mac.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-sun" href={latestRelease}>
+              <Icon name="download" />
+              Download for Mac
+            </a>
+            <div class="command">
+              <code>
+                <span class="prompt">$ </span>
+                {brewCommand}
+              </code>
+              <button class="copy" type="button" data-copy={brewCommand} aria-label="Copy the Homebrew command">
+                <Icon name="copy" />
+              </button>
+            </div>
+          </div>
+          <ul class="meta">
+            <li>
+              <Icon name="check" />
+              Free and open source
+            </li>
+            <li>
+              <Icon name="check" />
+              Apple silicon
+            </li>
+            <li>
+              <Icon name="check" />
+              macOS 15 or later
+            </li>
+          </ul>
+        </div>
+        <Demo />
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker" style="--c: var(--blue)">
+            How it works
+          </span>
+          <h2>
+            Hold. Talk. <span class="squiggle">Done.</span>
+          </h2>
+          <p>No app to switch to and no window to dictate into. Casper waits in your menu bar until you need it.</p>
+        </div>
+
+        <div class="steps">
+          <article class="step reveal" style="--c: var(--sun)">
+            <span class="step-number">1</span>
+            <div class="step-art">
+              <div class="press-keys" aria-hidden="true">
+                <kbd>⌥</kbd>
+                <kbd>Space</kbd>
+              </div>
+            </div>
+            <h3>Hold the shortcut</h3>
+            <p>Or tap it once to start and again to stop. Pick any shortcut you like.</p>
+          </article>
+          <article class="step reveal" style="--c: var(--sky); --delay: 0.1s">
+            <span class="step-number">2</span>
+            <div class="step-art">
+              <div class="talking" aria-hidden="true">
+                <Ghost id="step-ghost" />
+                <span class="lines">
+                  {talkingBars.map((height, index) => (
+                    <i style={`--h: ${height}; --d: ${index * -0.15}s`} />
+                  ))}
+                </span>
+              </div>
+            </div>
+            <h3>Say what you mean</h3>
+            <p>Ramble, backtrack, change your mind halfway. Casper keeps up.</p>
+          </article>
+          <article class="step reveal" style="--c: var(--pink); --delay: 0.2s">
+            <span class="step-number">3</span>
+            <div class="step-art">
+              <div class="typing-line" aria-hidden="true">
+                <span class="text">Send it Friday.</span>
+                <span class="caret"></span>
+              </div>
+            </div>
+            <h3>Clean text appears</h3>
+            <p>Right where your cursor is, in nearly any app, with your clipboard left as it was.</p>
+          </article>
+        </div>
+
+        <div class="marquee reveal">
+          <p class="marquee-label">Works in the apps you already use</p>
+          <div class="marquee-track">
+            {[false, true].map((duplicate) => (
+              <ul aria-hidden={duplicate ? "true" : undefined}>
+                {apps.map((app) => (
+                  <li style={`--c: ${app.color}`}>{app.name}</li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section features" id="features">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker" style="--c: var(--grape)">
+            Features
+          </span>
+          <h2>
+            Small app, lots of <span class="squiggle">heart</span>
+          </h2>
+          <p>Every corner of Casper got the same care, from the cleanup model down to the little ghost.</p>
+        </div>
+        <div class="feature-grid">
+          {features.map((feature, index) => (
+            <article class="feature reveal" style={`--c: ${feature.color}; --delay: ${(index % 3) * 0.08}s`}>
+              <span class="feature-icon">
+                {feature.icon === "ghost" ? <Ghost id="feature-ghost" /> : <Icon name={feature.icon} />}
+              </span>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="section why" id="why">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">Why Casper</span>
+          <h2>Why not just use another dictation app?</h2>
+          <p>There are plenty out there. Here's what makes this one different.</p>
+        </div>
+        <div class="reasons">
+          {reasons.map((reason, index) => (
+            <article class="reason reveal" style={`--c: ${reason.color}; --delay: ${(index % 2) * 0.1}s`}>
+              <span class="feature-icon">
+                <Icon name={reason.icon} />
+              </span>
+              <div>
+                <h3>{reason.title}</h3>
+                <p>{reason.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div class="compare reveal">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">
+                  <span class="visually-hidden">Question</span>
+                </th>
+                <th scope="col">Casper</th>
+                <th scope="col">Cloud dictation apps</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.map((row) => (
+                <tr>
+                  <th scope="row">{row.question}</th>
+                  <td class="yes">
+                    <span>
+                      <Icon name="check" />
+                      {row.casper}
+                    </span>
+                  </td>
+                  <td class="no">
+                    <span>
+                      <Icon name="cross" />
+                      {row.cloud}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="install">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker" style="--c: var(--mint)">
+            Install
+          </span>
+          <h2>
+            Get Casper in a <span class="squiggle">minute</span>
+          </h2>
+          <p>You need a Mac with Apple silicon, running macOS 15 or later.</p>
+        </div>
+
+        <div class="install-options">
+          <article class="install-card reveal">
+            <span class="badge">Easiest</span>
+            <h3>Homebrew</h3>
+            <p>
+              One command installs Casper, and <code>brew upgrade</code> keeps it current.
+            </p>
+            <div class="command">
+              <code>
+                <span class="prompt">$ </span>
+                {brewCommand}
+              </code>
+              <button class="copy" type="button" data-copy={brewCommand} aria-label="Copy the Homebrew command">
+                <Icon name="copy" />
+              </button>
+            </div>
+          </article>
+          <article class="install-card reveal" style="--delay: 0.1s">
+            <h3>Download</h3>
+            <p>Grab the latest disk image, open it, and drag Casper to Applications.</p>
+            <a class="btn btn-blue" href={latestRelease}>
+              <Icon name="download" />
+              Download Casper
+            </a>
+          </article>
+        </div>
+
+        <ol class="first-launch">
+          {launchSteps.map((step, index) => (
+            <li class="reveal" style={`--c: ${step.color}; --delay: ${index * 0.08}s`}>
+              <strong>{step.title}</strong>
+              <span>{step.body}</span>
+            </li>
+          ))}
+        </ol>
+
+        <p class="fine-print reveal">
+          Casper is alpha software, so new versions ship often. Every release is signed with a Developer ID certificate
+          and notarized by Apple.
+        </p>
+      </div>
+    </section>
+
+    <section class="section love">
+      <div class="wrap">
+        <div class="note reveal">
+          <h2>
+            Made with love <Icon name="heart" class="heart" />
+          </h2>
+          <p>
+            Casper is a small indie project, built with a lot of care by someone who wanted dictation that's private,
+            fast, and feels like it belongs on a Mac.
+          </p>
+          <p>
+            There's no account, no tracking and no subscription. Just a friendly little ghost that types for you. If it
+            makes your day a bit easier, star it on GitHub or tell a friend. It means a lot.
+          </p>
+          <p class="signature">— jeph</p>
+          <div class="note-actions">
+            <a class="btn btn-sun" href={github}>
+              <Icon name="star" />
+              Star on GitHub
+            </a>
+          </div>
+          <Ghost id="note-ghost" class="note-ghost" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <a class="brand" href="/">
+        <Ghost id="footer-ghost" />
+        Casper
+      </a>
+      <nav aria-label="Footer">
+        <a href="/docs/">Docs</a>
+        <a href={github}>GitHub</a>
+        <a href={`${github}/blob/main/LICENSE`}>MIT License</a>
+      </nav>
+      <p class="made">
+        Made with <Icon name="heart" /> on a Mac
+      </p>
+    </div>
+  </footer>
+</Landing>

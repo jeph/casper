@@ -1,0 +1,384 @@
+---
+import { examples } from "../data/demo";
+import Ghost from "./Ghost.astro";
+
+const [first] = examples;
+const waveBars = [0.45, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.85, 0.65, 0.95, 0.55, 0.75];
+const description = `Demo: you say "${first.heard.map((word) => word.text).join(" ")}", and Casper types "${first.typed}"`;
+---
+
+<div class="demo" data-state="done" data-examples={JSON.stringify(examples)} role="img" aria-label={description}>
+  <div class="window">
+    <div class="titlebar">
+      <span class="lights">
+        <i></i>
+        <i></i>
+        <i></i>
+      </span>
+      <span class="app-name" data-app>
+        {first.app}
+      </span>
+      <span class="persona" data-persona={first.persona}>
+        {first.persona}
+      </span>
+    </div>
+    <div class="field">
+      <span class="typed" data-typed>
+        {first.typed}
+      </span>
+      <span class="caret"></span>
+    </div>
+  </div>
+
+  <div class="heard">
+    <span class="heard-label">Casper heard</span>
+    <p class="heard-text" data-heard>
+      {first.heard.map((word) => (
+        <>
+          <span class:list={["word", word.kind && `is-${word.kind}`]}>{word.text}</span>{" "}
+        </>
+      ))}
+    </p>
+  </div>
+
+  <div class="keys" aria-hidden="true">
+    <kbd>⌥</kbd>
+    <kbd>Space</kbd>
+  </div>
+
+  <div class="bubble">
+    <Ghost id="demo-ghost" class="bubble-ghost" />
+    <span class="wave">
+      {waveBars.map((height, index) => (
+        <i style={`--h: ${height}; --d: ${index * -0.13}s`}></i>
+      ))}
+    </span>
+  </div>
+</div>
+
+<script>
+  import type { Example } from "../data/demo";
+
+  const demo = document.querySelector<HTMLElement>(".demo");
+  const motionAllowed = matchMedia("(prefers-reduced-motion: no-preference)").matches;
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  if (demo && motionAllowed) {
+    const examples: Example[] = JSON.parse(demo.dataset.examples ?? "[]");
+    const app = demo.querySelector<HTMLElement>("[data-app]")!;
+    const persona = demo.querySelector<HTMLElement>("[data-persona]")!;
+    const typed = demo.querySelector<HTMLElement>("[data-typed]")!;
+    const heard = demo.querySelector<HTMLElement>("[data-heard]")!;
+
+    const play = async (example: Example) => {
+      demo.dataset.state = "idle";
+      app.textContent = example.app;
+      persona.textContent = example.persona;
+      persona.dataset.persona = example.persona;
+      typed.textContent = "";
+      typed.classList.remove("is-pasted");
+      heard.replaceChildren();
+      await sleep(900);
+
+      demo.dataset.state = "recording";
+      const spoken = example.heard.map((word) => {
+        const span = document.createElement("span");
+        span.className = "word is-new";
+        span.textContent = word.text;
+        return { span, kind: word.kind };
+      });
+      for (const { span } of spoken) {
+        heard.append(span, " ");
+        await sleep(210);
+      }
+      await sleep(500);
+
+      demo.dataset.state = "transcribing";
+      await sleep(500);
+      for (const { span, kind } of spoken) {
+        if (!kind) continue;
+        span.classList.add(`is-${kind}`);
+        await sleep(220);
+      }
+      await sleep(450);
+
+      demo.dataset.state = "done";
+      typed.textContent = example.typed;
+      typed.classList.add("is-pasted");
+      await sleep(3200);
+    };
+
+    const loop = async () => {
+      for (;;) {
+        for (const example of examples) await play(example);
+      }
+    };
+    loop();
+  }
+</script>
+
+<style>
+  .demo {
+    position: relative;
+    padding: 12px 12px 84px;
+  }
+
+  .window {
+    background: #fdfcff;
+    color: var(--ink);
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 12%),
+      0 40px 70px -30px rgb(0 0 0 / 70%);
+    overflow: hidden;
+    transform: rotate(-1.5deg);
+  }
+
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    background: #f1effa;
+    border-bottom: 1px solid #e4e1f3;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-3);
+  }
+
+  .lights {
+    display: flex;
+    gap: 7px;
+  }
+
+  .lights i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff5f57;
+  }
+
+  .lights i:nth-child(2) {
+    background: #febc2e;
+  }
+
+  .lights i:nth-child(3) {
+    background: #28c840;
+  }
+
+  .app-name {
+    flex: 1;
+    text-align: center;
+  }
+
+  .persona {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: white;
+    background: var(--blue);
+    transition: background 0.3s;
+  }
+
+  .persona[data-persona="Casual"] {
+    background: var(--pink);
+  }
+
+  .field {
+    min-height: 128px;
+    padding: 24px 22px;
+    font-size: clamp(1.15rem, 2.4vw, 1.4rem);
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .typed {
+    border-radius: 6px;
+  }
+
+  .typed.is-pasted {
+    animation: pasted 1.2s ease-out;
+  }
+
+  .caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.25em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--blue);
+    animation: blink 1.05s steps(1) infinite;
+  }
+
+  .heard {
+    margin: 22px 36px 0 18px;
+    padding: 12px 16px 14px;
+    border: 2px dashed rgb(255 255 255 / 22%);
+    border-radius: 16px;
+    background: rgb(255 255 255 / 6%);
+    transform: rotate(1deg);
+  }
+
+  .heard-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sun);
+  }
+
+  .heard-text {
+    min-height: 3em;
+    margin: 0;
+    font-size: 1.05rem;
+    color: rgb(255 255 255 / 88%);
+  }
+
+  .heard-text :global(.word) {
+    display: inline-block;
+    border-radius: 6px;
+    transition:
+      opacity 0.3s,
+      color 0.3s,
+      background 0.3s;
+  }
+
+  .heard-text :global(.is-new) {
+    animation: pop-in 0.28s ease-out;
+  }
+
+  .heard-text :global(.is-cut) {
+    opacity: 0.45;
+    text-decoration: line-through 3px var(--pink);
+  }
+
+  .heard-text :global(.is-swap) {
+    padding: 0 3px;
+    color: var(--sun);
+    background: rgb(255 201 77 / 16%);
+  }
+
+  .keys {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    display: flex;
+    gap: 6px;
+  }
+
+  kbd {
+    padding: 8px 12px 6px;
+    border: 1px solid #d9d5ee;
+    border-bottom-width: 5px;
+    border-radius: 10px;
+    background: white;
+    color: var(--ink);
+    font: 800 0.95rem var(--font);
+    transition:
+      transform 0.12s,
+      border-bottom-width 0.12s,
+      background 0.2s;
+  }
+
+  .demo[data-state="recording"] kbd {
+    transform: translateY(4px);
+    border-bottom-width: 1px;
+    background: var(--sun);
+  }
+
+  .bubble {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    align-items: center;
+    padding: 9px;
+    border: 1px solid rgb(255 255 255 / 30%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 14%);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 16px 30px -12px rgb(0 0 0 / 50%);
+    transition: background 0.35s ease;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .demo:is([data-state="recording"], [data-state="transcribing"]) .bubble {
+    background: rgb(72 117 214 / 88%);
+  }
+
+  .bubble :global(.bubble-ghost) {
+    width: 48px;
+    height: 48px;
+  }
+
+  .demo[data-state="transcribing"] .bubble :global(.bar) {
+    animation: bar-bounce 0.7s ease-in-out infinite;
+  }
+
+  .demo[data-state="recording"] .bubble :global(.bar) {
+    animation: bar-bounce 1.3s ease-in-out infinite;
+  }
+
+  .bubble :global(.bar-2) {
+    animation-delay: -0.23s !important;
+  }
+
+  .bubble :global(.bar-3) {
+    animation-delay: -0.46s !important;
+  }
+
+  .wave {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    width: 0;
+    height: 34px;
+    overflow: hidden;
+    transition:
+      width 0.35s ease,
+      margin 0.35s ease;
+  }
+
+  .demo[data-state="recording"] .wave {
+    width: 104px;
+    margin: 0 10px 0 6px;
+  }
+
+  .wave i {
+    flex: none;
+    width: 5px;
+    height: calc(var(--h) * 100%);
+    border-radius: 3px;
+    background: white;
+    animation: wave 0.9s ease-in-out infinite alternate;
+    animation-delay: var(--d);
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.9);
+    }
+  }
+
+  @keyframes pasted {
+    from {
+      background: rgb(143 124 247 / 35%);
+    }
+    to {
+      background: transparent;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .heard {
+      margin-inline: 0;
+    }
+
+    .keys {
+      left: 4px;
+    }
+  }
+</style>
