@@ -309,20 +309,6 @@ h3 {
   animation-delay: -14s;
 }
 
-.sparkle {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  color: var(--sun);
-  animation: twinkle 3.2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.sparkle svg {
-  width: 100%;
-  height: 100%;
-}
-
 .hero-grid {
   position: relative;
   display: grid;
@@ -1212,18 +1198,6 @@ h3 {
   }
   100% {
     transform: translate(-40px, 70px) scale(0.95);
-  }
-}
-
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(0.6) rotate(0);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1) rotate(45deg);
   }
 }
 
