@@ -4,10 +4,11 @@ import OSLog
 /// Adds the words a user corrects in dictated text to the dictionary, when transcribing the dictation again with the
 /// word in the dictionary shows the speech model misheard it.
 ///
-/// After a paste it watches the field Casper pasted into, compares the text there with what was typed, and replays each
-/// dictation with a correction while Casper is otherwise idle, one at a time. A dictation that starts cancels the
-/// replay in progress, which runs again once Casper is idle. Recordings and transcripts are only held in memory, and
-/// only until their dictation is checked.
+/// After each paste it watches the field Casper pasted into, compares the text there with what was typed each time the
+/// user pauses, and replays each dictation with a correction while Casper is otherwise idle, one at a time. Each paste
+/// has its own watch, so a later paste doesn't end an earlier one. A dictation that starts cancels the replay in
+/// progress, which runs again once Casper is idle. Recordings and transcripts are only held in memory, and only until
+/// their paste's watch ends and their dictation is checked.
 @MainActor
 final class CorrectionLearner {
   /// What a replay needs from one dictation.
@@ -28,8 +29,10 @@ final class CorrectionLearner {
 
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "CorrectionLearner")
 
-  /// How long the user has to correct a paste before the field is compared with what was typed.
-  private static let watchLimit = Duration.seconds(30)
+  /// How long the user stops changing the field before it's compared with what was typed.
+  private static let editPause = Duration.seconds(3)
+  /// How long after a paste the field is watched at most.
+  private static let watchLimit = Duration.seconds(60)
   /// How long the pasted text takes to reach the field, which the app does after Casper's ⌘V.
   private static let pasteDelay = Duration.milliseconds(500)
 
@@ -39,8 +42,6 @@ final class CorrectionLearner {
   /// Whether dictation is recording, transcribing or refining, which replays wait for.
   private let isDictating: () -> Bool
 
-  /// Watches the field the last paste went into, then queues its checks.
-  private var watch: Task<Void, Never>?
   /// Dictations waiting for a replay, oldest first.
   private var checks: [Check] = []
   /// The replay in progress.
@@ -58,26 +59,29 @@ final class CorrectionLearner {
     self.isDictating = isDictating
   }
 
-  /// Starts watching for corrections to text Casper just pasted into the frontmost app, ending the watch of the
-  /// previous paste.
+  /// Starts watching for corrections to text Casper just pasted into the frontmost app, alongside the watches of
+  /// earlier pastes.
   func pasted(_ text: String, from dictations: [Dictation]) {
-    watch?.cancel()
     guard dictionary.learnsCorrections, !dictations.isEmpty,
       let app = NSWorkspace.shared.frontmostApplication,
       // Casper's own fields, such as the dictionary's search, would have Casper wait on itself for every read.
       app.processIdentifier != ProcessInfo.processInfo.processIdentifier
     else { return }
-    let previous = watch
-    watch = Task {
-      // The previous watch queues its checks first, so they keep the order of the pastes.
-      await previous?.value
+    Task {
       try? await Task.sleep(for: Self.pasteDelay)
-      guard !Task.isCancelled,
-        let field = PastedFieldWatch(processID: app.processIdentifier, pasted: text)
-      else { return }
-      let edited = await field.edited(within: Self.watchLimit)
-      checks += await Self.checks(typed: text, field: edited, dictations: dictations)
-      replayNext()
+      guard let field = PastedFieldWatch(processID: app.processIdentifier, pasted: text) else { return }
+      // Each edit is checked once, though the field is compared again at every pause.
+      var queued: Set<Correction> = []
+      for await edited in field.edits(pause: Self.editPause, limit: Self.watchLimit) {
+        let found = await Self.checks(typed: text, field: edited, dictations: dictations)
+        let new = found.compactMap { check in
+          let corrections = check.corrections.filter { !queued.contains($0) }
+          return corrections.isEmpty ? nil : Check(dictation: check.dictation, corrections: corrections)
+        }
+        queued.formUnion(new.flatMap(\.corrections))
+        checks += new
+        replayNext()
+      }
     }
   }
 

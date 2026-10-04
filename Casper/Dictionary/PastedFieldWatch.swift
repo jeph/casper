@@ -1,34 +1,39 @@
 import ApplicationServices
 
-/// Follows the text field Casper pasted into, through Accessibility, until the user is done editing it.
+/// Follows the text field Casper pasted into, through Accessibility, reporting its text each time the user pauses
+/// after changing it.
 ///
 /// The watch only reads: it never sets an attribute of the other app's elements, so it can't change how that app
-/// behaves. It ends when focus leaves the field, the field is emptied (a sent message) or closed, its time is up, or
-/// the task waiting on it is cancelled, such as by the next paste.
+/// behaves. It carries on when focus moves elsewhere, so a fix made after the user comes back to the field still
+/// counts. It ends when the field changes while it doesn't have focus, which is the app reusing it for other content,
+/// such as Notes showing another note, rather than the user typing. It also ends when the field is emptied (a sent
+/// message) or closed, or when its time is up.
 @MainActor
 final class PastedFieldWatch {
   /// How long a slow app may take to answer an Accessibility request before the watch gives up on it, so a hung app
   /// can't hold up Casper's main thread.
   private static let messagingTimeout: Float = 0.5
 
+  private let app: AXUIElement
   private let field: AXUIElement
   private let observer: AXObserver
   /// The field's text when last read while it still held text.
   private var latestText: String
+  /// Whether `latestText` changed since it was last reported.
+  private var hasUnreportedChange = false
   private var isEnded = false
-  private var waiting: CheckedContinuation<String, Never>?
+  private var reports: AsyncStream<String>.Continuation?
+  /// Reports the text once the user has paused for long enough, restarted by every change.
+  private var pauseTimer: Task<Void, Never>?
+  private var limitTimer: Task<Void, Never>?
+  private var pause = Duration.zero
 
   /// Starts watching the focused element of the app with this process ID, if it's a text field that holds the pasted
   /// text.
   init?(processID: pid_t, pasted: String) {
     let app = AXUIElementCreateApplication(processID)
     AXUIElementSetMessagingTimeout(app, Self.messagingTimeout)
-    var focused: AnyObject?
-    guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
-      let focused, CFGetTypeID(focused) == AXUIElementGetTypeID()
-    else { return nil }
-    // The type ID check makes the cast safe; Core Foundation types can't be cast conditionally.
-    let field = unsafeDowncast(focused, to: AXUIElement.self)
+    guard let field = Self.focusedElement(of: app) else { return nil }
     AXUIElementSetMessagingTimeout(field, Self.messagingTimeout)
     let pasted = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let text = Self.text(of: field), text.contains(pasted) else { return nil }
@@ -42,6 +47,7 @@ final class PastedFieldWatch {
       }
     }
     guard AXObserverCreate(processID, callback, &observer) == .success, let observer else { return nil }
+    self.app = app
     self.field = field
     self.observer = observer
     latestText = text
@@ -50,60 +56,85 @@ final class PastedFieldWatch {
     for notification in [kAXValueChangedNotification, kAXUIElementDestroyedNotification] {
       AXObserverAddNotification(observer, field, notification as CFString, refcon)
     }
-    AXObserverAddNotification(observer, app, kAXFocusedUIElementChangedNotification as CFString, refcon)
     CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
   }
 
-  /// Waits for the watch to end and returns the field's last text.
+  /// The field's text each time the user pauses after changing it.
   ///
-  /// Cancelling the waiting task ends the watch.
-  func edited(within limit: Duration) async -> String {
-    let timeout = Task { [weak self] in
-      try? await Task.sleep(for: limit)
+  /// A report comes once the field has gone `pause` without changing, and once more as the watch ends if the text
+  /// changed since the last report. The watch ends after `limit` at most.
+  ///
+  /// Call it once per watch.
+  func edits(pause: Duration, limit: Duration) -> AsyncStream<String> {
+    self.pause = pause
+    let (stream, continuation) = AsyncStream.makeStream(of: String.self)
+    reports = continuation
+    limitTimer = Task { [weak self] in
+      guard (try? await Task.sleep(for: limit)) != nil else { return }
       self?.end(readingAgain: true)
     }
-    defer { timeout.cancel() }
-    return await withTaskCancellationHandler {
-      await withCheckedContinuation { continuation in
-        guard !isEnded else {
-          continuation.resume(returning: latestText)
-          return
-        }
-        waiting = continuation
-      }
-    } onCancel: {
-      Task { @MainActor [weak self] in self?.end(readingAgain: true) }
-    }
+    return stream
   }
 
   private func handle(_ notification: String) {
-    switch notification {
-    case kAXValueChangedNotification:
-      guard let text = Self.text(of: field) else { return }
-      // An emptied field, such as a chat message that was sent, is done with.
-      guard !text.isEmpty else {
-        end(readingAgain: false)
-        return
-      }
-      latestText = text
-    case kAXUIElementDestroyedNotification:
+    // A field that changes while it doesn't have focus wasn't typed in by the user, but reused by the app.
+    guard notification == kAXValueChangedNotification, let focused = Self.focusedElement(of: app),
+      CFEqual(focused, field)
+    else {
       end(readingAgain: false)
-    default:
-      end(readingAgain: true)
+      return
+    }
+    guard let text = Self.text(of: field) else { return }
+    // An emptied field, such as a chat message that was sent, is done with.
+    guard !text.isEmpty else {
+      end(readingAgain: false)
+      return
+    }
+    changed(to: text)
+  }
+
+  private func changed(to text: String) {
+    guard text != latestText else { return }
+    latestText = text
+    hasUnreportedChange = true
+    pauseTimer?.cancel()
+    pauseTimer = Task { [weak self, pause] in
+      guard (try? await Task.sleep(for: pause)) != nil else { return }
+      self?.report()
     }
   }
 
-  /// Stops observing, reading the field once more unless it's gone or empty, since some apps don't report every
-  /// change.
+  private func report() {
+    guard hasUnreportedChange else { return }
+    hasUnreportedChange = false
+    reports?.yield(latestText)
+  }
+
+  /// Stops observing and reports the last change, reading the field once more unless it's gone or empty, since some
+  /// apps don't report every change.
   private func end(readingAgain: Bool) {
     guard !isEnded else { return }
     isEnded = true
     CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
-    if readingAgain, let text = Self.text(of: field), !text.isEmpty {
+    pauseTimer?.cancel()
+    limitTimer?.cancel()
+    if readingAgain, let text = Self.text(of: field), !text.isEmpty, text != latestText {
       latestText = text
+      hasUnreportedChange = true
     }
-    waiting?.resume(returning: latestText)
-    waiting = nil
+    report()
+    reports?.finish()
+    reports = nil
+  }
+
+  /// The app's focused element, the one keystrokes go to even while the app is in the background.
+  private static func focusedElement(of app: AXUIElement) -> AXUIElement? {
+    var focused: AnyObject?
+    guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+      let focused, CFGetTypeID(focused) == AXUIElementGetTypeID()
+    else { return nil }
+    // The type ID check makes the cast safe; Core Foundation types can't be cast conditionally.
+    return unsafeDowncast(focused, to: AXUIElement.self)
   }
 
   /// The element's text, or `nil` if it has none Accessibility can read, as with password fields.

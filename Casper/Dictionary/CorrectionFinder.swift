@@ -1,7 +1,7 @@
 import Foundation
 
 /// Words the user typed over words Casper typed, which may belong in the dictionary.
-struct Correction: Equatable, Sendable {
+struct Correction: Hashable, Sendable {
   /// What Casper typed, without punctuation at either end, such as "tail scale".
   let original: String
   /// What the user typed in its place, such as "Tailscale".

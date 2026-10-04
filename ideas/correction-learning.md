@@ -4,7 +4,9 @@ Status: built, in `feat(dictionary)` (f14fa48). This records the experiments beh
 
 ## What it does
 
-After Casper pastes a dictation, it watches the field it pasted into through Accessibility (read-only), compares the field with what it typed once the user moves on, and finds words the user replaced. Each candidate is checked by transcribing the same recording again with the candidate in the dictionary (a "replay"). The word is added only if the replay writes it where the transcript had the replaced words. Added words get a silent notification with Undo.
+After Casper pastes a dictation, it watches the field it pasted into through Accessibility (read-only), compares the field with what it typed each time the user stops typing for 3 seconds, and finds words the user replaced. Each paste has its own watch, lasting a minute; moving focus elsewhere or pasting another dictation doesn't end it, so a fix made after coming back still counts. A watch ends sooner when the field is emptied or closed, or when it changes while it doesn't have focus: the user can only type into the focused field, so that change is the app reusing the field for other content, such as Notes showing another note. Each candidate is checked once per paste by transcribing the same recording again with the candidate in the dictionary (a "replay"). The word is added only if the replay writes it where the transcript had the replaced words. Added words get a silent notification with Undo.
+
+The first version compared the field only once, when the watch ended, which was 30 seconds after the paste unless focus moved within the same app; switching to another app doesn't end the watch. In use, words took 10 to 30 seconds to be added, though the replay itself takes under half a second. Checking after a 3-second pause risks checking a half-typed word; the replay rejects those with Qwen, but Parakeet's word spotter can accept them, as it accepted "Sine" in the tests below.
 
 ## OpenWhispr's approach, and why it isn't enough
 
