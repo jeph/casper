@@ -1,42 +1,42 @@
 ---
-import Demo from "../components/Demo.astro"
-import Ghost from "../components/Ghost.astro"
-import Icon, { type IconName } from "../components/Icon.astro"
-import Landing from "../layouts/Landing.astro"
+import Demo from '../components/Demo.astro'
+import Ghost from '../components/Ghost.astro'
+import Icon, { type IconName } from '../components/Icon.astro'
+import Landing from '../layouts/Landing.astro'
 
-const github = "https://github.com/jeph/casper"
+const github = 'https://github.com/jeph/casper'
 const latestRelease = `${github}/releases/latest`
-const brewCommand = "brew install --cask jeph/tap/casper"
+const brewCommand = 'brew install --cask jeph/tap/casper'
 
 const messyLetters = [
-  { letter: "m", tilt: "-12deg", lift: "0.04em" },
-  { letter: "e", tilt: "9deg", lift: "-0.06em" },
-  { letter: "s", tilt: "-6deg", lift: "0.05em" },
-  { letter: "s", tilt: "14deg", lift: "-0.03em" },
-  { letter: "y", tilt: "-9deg", lift: "0.02em" },
+  { letter: 'm', tilt: '-12deg', lift: '0.04em' },
+  { letter: 'e', tilt: '9deg', lift: '-0.06em' },
+  { letter: 's', tilt: '-6deg', lift: '0.05em' },
+  { letter: 's', tilt: '14deg', lift: '-0.03em' },
+  { letter: 'y', tilt: '-9deg', lift: '0.02em' },
 ]
 
 const talkingBars = [0.5, 0.9, 0.65, 1, 0.55, 0.8, 0.45]
 
 const apps = [
-  { name: "Mail", color: "var(--blue)" },
-  { name: "Messages", color: "var(--mint)" },
-  { name: "Slack", color: "var(--grape)" },
-  { name: "Notes", color: "var(--sun)" },
-  { name: "Safari", color: "var(--sky)" },
-  { name: "Terminal", color: "var(--ink-2)" },
-  { name: "VS Code", color: "var(--blue)" },
-  { name: "Notion", color: "var(--pink)" },
-  { name: "Xcode", color: "var(--sky)" },
-  { name: "Discord", color: "var(--grape)" },
-  { name: "Pages", color: "var(--peach)" },
-  { name: "Chrome", color: "var(--mint)" },
-  { name: "Obsidian", color: "var(--grape)" },
-  { name: "Linear", color: "var(--pink)" },
+  { name: 'Mail', color: 'var(--blue)' },
+  { name: 'Messages', color: 'var(--mint)' },
+  { name: 'Slack', color: 'var(--grape)' },
+  { name: 'Notes', color: 'var(--sun)' },
+  { name: 'Safari', color: 'var(--sky)' },
+  { name: 'Terminal', color: 'var(--ink-2)' },
+  { name: 'VS Code', color: 'var(--blue)' },
+  { name: 'Notion', color: 'var(--pink)' },
+  { name: 'Xcode', color: 'var(--sky)' },
+  { name: 'Discord', color: 'var(--grape)' },
+  { name: 'Pages', color: 'var(--peach)' },
+  { name: 'Chrome', color: 'var(--mint)' },
+  { name: 'Obsidian', color: 'var(--grape)' },
+  { name: 'Linear', color: 'var(--pink)' },
 ]
 
 interface Feature {
-  icon: IconName | "ghost"
+  icon: IconName | 'ghost'
   color: string
   title: string
   body: string
@@ -44,58 +44,58 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: "sparkles",
-    color: "var(--sun)",
-    title: "Cleanup that keeps your words",
-    body: "A local language model drops the ums, false starts and self-corrections, fixes punctuation, and writes out numbers, dates and prices. Questions stay questions. Prefer the raw transcript? Switch cleanup off.",
+    icon: 'sparkles',
+    color: 'var(--sun)',
+    title: 'Cleanup that keeps your words',
+    body: 'A local language model drops the ums, false starts and self-corrections, fixes punctuation, and writes out numbers, dates and prices. Questions stay questions. Prefer the raw transcript? Switch cleanup off.',
   },
   {
-    icon: "lock",
-    color: "var(--mint)",
-    title: "Private by design",
-    body: "Speech recognition and cleanup both run on your Mac. No account, no cloud. The only downloads are the models you pick, each checked against its published checksum.",
+    icon: 'lock',
+    color: 'var(--mint)',
+    title: 'Private by design',
+    body: 'Speech recognition and cleanup both run on your Mac. No account, no cloud. The only downloads are the models you pick, each checked against its published checksum.',
   },
   {
-    icon: "pen",
-    color: "var(--pink)",
-    title: "Personas",
-    body: "Formal for polished writing, Casual for texting, or make your own with up to 5,000 words of instructions.",
+    icon: 'pen',
+    color: 'var(--pink)',
+    title: 'Personas',
+    body: 'Formal for polished writing, Casual for texting, or make your own with up to 5,000 words of instructions.',
   },
   {
-    icon: "book",
-    color: "var(--grape)",
-    title: "Dictionary",
-    body: "Teach Casper names, brands and jargon. Fix a word it got wrong and it can add your spelling to the dictionary for next time.",
+    icon: 'book',
+    color: 'var(--grape)',
+    title: 'Dictionary',
+    body: 'Teach Casper names, brands and jargon. Fix a word it got wrong and it can add your spelling to the dictionary for next time.',
   },
   {
-    icon: "ghost",
-    color: "var(--sky)",
-    title: "The voice bubble",
-    body: "A little floating ghost shows a live waveform while you talk. It stays above your windows on every Space, never steals focus, and remembers where you put it.",
+    icon: 'ghost',
+    color: 'var(--sky)',
+    title: 'The voice bubble',
+    body: 'A little floating ghost shows a live waveform while you talk. It stays above your windows on every Space, never steals focus, and remembers where you put it.',
   },
   {
-    icon: "clock",
-    color: "var(--peach)",
-    title: "History",
-    body: "Every dictation, newest first and searchable, kept in a database on your Mac and never sent anywhere.",
+    icon: 'clock',
+    color: 'var(--peach)',
+    title: 'History',
+    body: 'Every dictation, newest first and searchable, kept in a database on your Mac and never sent anywhere.',
   },
   {
-    icon: "zap",
-    color: "var(--blue)",
-    title: "Never wait",
-    body: "Start the next dictation while the last one is still being processed. Your text still lands in the order you said it.",
+    icon: 'zap',
+    color: 'var(--blue)',
+    title: 'Never wait',
+    body: 'Start the next dictation while the last one is still being processed. Your text still lands in the order you said it.',
   },
   {
-    icon: "cursor",
-    color: "var(--mint)",
-    title: "Works wherever you type",
-    body: "Casper pastes, so it works in browsers, Electron apps and terminals, then puts your clipboard back the way it was.",
+    icon: 'cursor',
+    color: 'var(--mint)',
+    title: 'Works wherever you type',
+    body: 'Casper pastes, so it works in browsers, Electron apps and terminals, then puts your clipboard back the way it was.',
   },
   {
-    icon: "chip",
-    color: "var(--grape)",
-    title: "Pick your models",
-    body: "Parakeet on the Neural Engine or Qwen3-ASR on the GPU, in up to 30 languages, plus cleanup models from 0.6B to 27B to suit your Mac.",
+    icon: 'chip',
+    color: 'var(--grape)',
+    title: 'Pick your models',
+    body: 'Parakeet on the Neural Engine or Qwen3-ASR on the GPU, in up to 30 languages, plus cleanup models from 0.6B to 27B to suit your Mac.',
   },
 ]
 
@@ -108,36 +108,36 @@ interface Reason {
 
 const reasons: Reason[] = [
   {
-    icon: "house",
-    color: "var(--mint)",
-    title: "Your voice stays home",
-    body: "Cloud dictation apps send your audio to a server. Casper does everything on your Mac, works offline once your models are downloaded, and never asks you to sign in.",
+    icon: 'house',
+    color: 'var(--mint)',
+    title: 'Your voice stays home',
+    body: 'Cloud dictation apps send your audio to a server. Casper does everything on your Mac, works offline once your models are downloaded, and never asks you to sign in.',
   },
   {
-    icon: "heart",
-    color: "var(--pink)",
-    title: "A real Mac app",
-    body: "Written in Swift with SwiftUI and AppKit. No Electron, no bundled browser, no Python runtime. It lives in your menu bar, launches at login and respects Reduce Motion.",
+    icon: 'heart',
+    color: 'var(--pink)',
+    title: 'A real Mac app',
+    body: 'Written in Swift with SwiftUI and AppKit. No Electron, no bundled browser, no Python runtime. It lives in your menu bar, launches at login and respects Reduce Motion.',
   },
   {
-    icon: "zap",
-    color: "var(--sun)",
-    title: "Fast on Apple silicon",
-    body: "Models stay loaded, and the Neural Engine and GPU work side by side, transcribing your latest dictation while cleaning up the one before it.",
+    icon: 'zap',
+    color: 'var(--sun)',
+    title: 'Fast on Apple silicon',
+    body: 'Models stay loaded, and the Neural Engine and GPU work side by side, transcribing your latest dictation while cleaning up the one before it.',
   },
   {
-    icon: "star",
-    color: "var(--sky)",
-    title: "Free and open source",
-    body: "MIT licensed, with no subscription. Read the code, build it yourself, or just enjoy it.",
+    icon: 'star',
+    color: 'var(--sky)',
+    title: 'Free and open source',
+    body: 'MIT licensed, with no subscription. Read the code, build it yourself, or just enjoy it.',
   },
 ]
 
 const comparison = [
-  { question: "Where your voice goes", casper: "Stays on your Mac", cloud: "Their servers" },
-  { question: "Works offline", casper: "Yes", cloud: "No" },
-  { question: "Account", casper: "Not needed", cloud: "Usually required" },
-  { question: "Price", casper: "Free", cloud: "Often a subscription" },
+  { question: 'Where your voice goes', casper: 'Stays on your Mac', cloud: 'Their servers' },
+  { question: 'Works offline', casper: 'Yes', cloud: 'No' },
+  { question: 'Account', casper: 'Not needed', cloud: 'Usually required' },
+  { question: 'Price', casper: 'Free', cloud: 'Often a subscription' },
 ]
 ---
 
@@ -169,7 +169,7 @@ const comparison = [
       <div class="wrap hero-grid">
         <div>
           <h1>
-            Say it{" "}
+            Say it{' '}
             <span class="messy">
               <span class="visually-hidden">messy</span>
               {messyLetters.map(({ letter, tilt, lift }) => (
@@ -277,7 +277,7 @@ const comparison = [
           <p class="marquee-label">Works in the apps you already use</p>
           <div class="marquee-track">
             {[false, true].map((duplicate) => (
-              <ul aria-hidden={duplicate ? "true" : undefined}>
+              <ul aria-hidden={duplicate ? 'true' : undefined}>
                 {apps.map((app) => (
                   <li style={`--c: ${app.color}`}>{app.name}</li>
                 ))}
@@ -303,7 +303,7 @@ const comparison = [
           {features.map((feature, index) => (
             <article class="feature reveal" style={`--c: ${feature.color}; --delay: ${(index % 3) * 0.08}s`}>
               <span class="feature-icon">
-                {feature.icon === "ghost" ? <Ghost id="feature-ghost" /> : <Icon name={feature.icon} />}
+                {feature.icon === 'ghost' ? <Ghost id="feature-ghost" /> : <Icon name={feature.icon} />}
               </span>
               <h3>{feature.title}</h3>
               <p>{feature.body}</p>

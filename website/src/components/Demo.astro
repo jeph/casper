@@ -1,10 +1,10 @@
 ---
-import { examples } from "../data/demo"
-import Ghost from "./Ghost.astro"
+import { examples } from '../data/demo'
+import Ghost from './Ghost.astro'
 
 const [first] = examples
 const waveBars = [0.45, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.85, 0.65, 0.95, 0.55, 0.75]
-const description = `Demo: you say "${first.heard.map((word) => word.text).join(" ")}", and Casper types "${first.typed}"`
+const description = `Demo: you say "${first.heard.map((word) => word.text).join(' ')}", and Casper types "${first.typed}"`
 ---
 
 <div class="demo" data-state="done" data-examples={JSON.stringify(examples)} role="img" aria-label={description}>
@@ -35,7 +35,7 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
     <p class="heard-text" data-heard>
       {first.heard.map((word) => (
         <>
-          <span class:list={["word", word.kind && `is-${word.kind}`]}>{word.text}</span>{" "}
+          <span class:list={['word', word.kind && `is-${word.kind}`]}>{word.text}</span>{' '}
         </>
       ))}
     </p>
@@ -57,43 +57,43 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
 </div>
 
 <script>
-  import type { Example } from "../data/demo"
+  import type { Example } from '../data/demo'
 
-  const demo = document.querySelector<HTMLElement>(".demo")
-  const motionAllowed = matchMedia("(prefers-reduced-motion: no-preference)").matches
+  const demo = document.querySelector<HTMLElement>('.demo')
+  const motionAllowed = matchMedia('(prefers-reduced-motion: no-preference)').matches
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
   if (demo && motionAllowed) {
-    const examples: Example[] = JSON.parse(demo.dataset.examples ?? "[]")
-    const app = demo.querySelector<HTMLElement>("[data-app]")!
-    const persona = demo.querySelector<HTMLElement>("[data-persona]")!
-    const typed = demo.querySelector<HTMLElement>("[data-typed]")!
-    const heard = demo.querySelector<HTMLElement>("[data-heard]")!
+    const examples: Example[] = JSON.parse(demo.dataset.examples ?? '[]')
+    const app = demo.querySelector<HTMLElement>('[data-app]')!
+    const persona = demo.querySelector<HTMLElement>('[data-persona]')!
+    const typed = demo.querySelector<HTMLElement>('[data-typed]')!
+    const heard = demo.querySelector<HTMLElement>('[data-heard]')!
 
     const play = async (example: Example) => {
-      demo.dataset.state = "idle"
+      demo.dataset.state = 'idle'
       app.textContent = example.app
       persona.textContent = example.persona
       persona.dataset.persona = example.persona
-      typed.textContent = ""
-      typed.classList.remove("is-pasted")
+      typed.textContent = ''
+      typed.classList.remove('is-pasted')
       heard.replaceChildren()
       await sleep(900)
 
-      demo.dataset.state = "recording"
+      demo.dataset.state = 'recording'
       const spoken = example.heard.map((word) => {
-        const span = document.createElement("span")
-        span.className = "word is-new"
+        const span = document.createElement('span')
+        span.className = 'word is-new'
         span.textContent = word.text
         return { span, kind: word.kind }
       })
       for (const { span } of spoken) {
-        heard.append(span, " ")
+        heard.append(span, ' ')
         await sleep(210)
       }
       await sleep(500)
 
-      demo.dataset.state = "transcribing"
+      demo.dataset.state = 'transcribing'
       await sleep(500)
       for (const { span, kind } of spoken) {
         if (!kind) continue
@@ -102,9 +102,9 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
       }
       await sleep(450)
 
-      demo.dataset.state = "done"
+      demo.dataset.state = 'done'
       typed.textContent = example.typed
-      typed.classList.add("is-pasted")
+      typed.classList.add('is-pasted')
       await sleep(3200)
     }
 
@@ -180,7 +180,7 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
     transition: background 0.3s;
   }
 
-  .persona[data-persona="Casual"] {
+  .persona[data-persona='Casual'] {
     background: var(--pink);
   }
 
@@ -282,7 +282,7 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
       background 0.2s;
   }
 
-  .demo[data-state="recording"] kbd {
+  .demo[data-state='recording'] kbd {
     transform: translateY(4px);
     border-bottom-width: 1px;
     background: var(--sun);
@@ -304,7 +304,7 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
     animation: float 4s ease-in-out infinite;
   }
 
-  .demo:is([data-state="recording"], [data-state="transcribing"]) .bubble {
+  .demo:is([data-state='recording'], [data-state='transcribing']) .bubble {
     background: rgb(72 117 214 / 88%);
   }
 
@@ -313,11 +313,11 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
     height: 48px;
   }
 
-  .demo[data-state="transcribing"] .bubble :global(.bar) {
+  .demo[data-state='transcribing'] .bubble :global(.bar) {
     animation: bar-bounce 0.7s ease-in-out infinite;
   }
 
-  .demo[data-state="recording"] .bubble :global(.bar) {
+  .demo[data-state='recording'] .bubble :global(.bar) {
     animation: bar-bounce 1.3s ease-in-out infinite;
   }
 
@@ -341,7 +341,7 @@ const description = `Demo: you say "${first.heard.map((word) => word.text).join(
       margin 0.35s ease;
   }
 
-  .demo[data-state="recording"] .wave {
+  .demo[data-state='recording'] .wave {
     width: 104px;
     margin: 0 10px 0 6px;
   }

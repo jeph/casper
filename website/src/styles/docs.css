@@ -1,12 +1,12 @@
 :root {
-  --sl-font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sl-font: ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --sl-color-accent-low: #1d2a52;
   --sl-color-accent: #4875d6;
   --sl-color-accent-high: #c9d6ff;
   --sl-color-black: #151e2d;
 }
 
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   --sl-color-accent-low: #dfe6fb;
   --sl-color-accent: #3f68c4;
   --sl-color-accent-high: #1d2a52;

@@ -11,8 +11,8 @@
   --peach: #ff9a62;
   --grape: #8f7cf7;
   --sky: #4fc3f0;
-  --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font: ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   color-scheme: light;
 }
 
@@ -209,7 +209,7 @@ h3 {
 }
 
 .copy::after {
-  content: "Copied!";
+  content: 'Copied!';
   position: absolute;
   bottom: calc(100% + 8px);
   padding: 4px 9px;
@@ -241,7 +241,7 @@ h3 {
 }
 
 .hero::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: auto 0 -1px;
   height: 60px;
@@ -417,7 +417,7 @@ h3 {
 }
 
 .squiggle::after {
-  content: "";
+  content: '';
   position: absolute;
   left: -2%;
   right: -2%;
