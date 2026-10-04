@@ -2,17 +2,23 @@ import AVFoundation
 import AppKit
 import ApplicationServices
 import Observation
+import UserNotifications
 
 /// Whether Casper has the access dictation needs: the microphone to hear the user, and Accessibility to type.
 ///
-/// macOS doesn't tell Casper when access changes in System Settings, so while anything is missing this checks every
-/// second. Once everything is allowed, it checks again when Casper becomes active or the dictation hotkey is pressed,
-/// which is when access turned off since would matter, and every second while a view showing access runs `watch()`.
+/// It also follows whether Casper may post notifications, which dictation doesn't need.
+///
+/// macOS doesn't tell Casper when access changes in System Settings, so while anything dictation needs is missing this
+/// checks every second. Once everything is allowed, it checks again when Casper becomes active or the dictation hotkey
+/// is pressed, which is when access turned off since would matter, and every second while a view showing access runs
+/// `watch()`.
 @MainActor
 @Observable
 final class Permissions {
   private(set) var microphone = AVCaptureDevice.authorizationStatus(for: .audio)
   private(set) var isAccessibilityTrusted = AXIsProcessTrusted()
+  /// Whether Casper may post notifications, or `nil` until macOS, which only answers asynchronously, has said.
+  private(set) var notifications: UNAuthorizationStatus?
   @ObservationIgnored private var polling: Task<Void, Never>?
 
   init() {
@@ -42,11 +48,20 @@ final class Permissions {
     pollWhileMissing()
   }
 
+  /// Reads whether Casper may post notifications.
+  func refreshNotifications() async {
+    let notifications = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    if notifications != self.notifications {
+      self.notifications = notifications
+    }
+  }
+
   /// Checks every second until cancelled, so a view showing access follows it being turned off in System Settings while
   /// Casper stays in the background.
   func watch() async {
     repeat {
       refresh()
+      await refreshNotifications()
     } while (try? await Task.sleep(for: .seconds(1))) != nil
   }
 

@@ -55,6 +55,7 @@ All cleanup models are 4-bit MLX conversions. Downloads range from about 350 MB 
 - A Mac with Apple silicon, running macOS 15 or later
 - Microphone access, to hear you
 - Accessibility access, to paste the text into the app you're using
+- Optionally, notifications, to tell you when a word is added to the dictionary from your corrections. Allow them on the Permissions page.
 
 ## Install
 

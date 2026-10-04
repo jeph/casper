@@ -2,6 +2,7 @@ import AVFoundation
 import AppKit
 import ApplicationServices
 import SwiftUI
+import UserNotifications
 
 struct PermissionsView: View {
   @Environment(Permissions.self) private var permissions
@@ -41,6 +42,24 @@ struct PermissionsView: View {
           .labelStyle(.settings)
         }
       }
+      // Dictation works without notifications, so they're apart from the access it needs.
+      Section {
+        LabeledContent {
+          ZStack(alignment: .trailing) {
+            notificationsControl
+              .transition(Self.statusTransition)
+          }
+          .animation(.easeInOut(duration: 0.2), value: permissions.notifications)
+        } label: {
+          Label {
+            Text("Notifications")
+            Text("Casper tells you when it adds a word to the dictionary from your corrections.")
+          } icon: {
+            Image(systemName: "bell")
+          }
+          .labelStyle(.settings)
+        }
+      }
     }
     .formStyle(.grouped)
     .task { await permissions.watch() }
@@ -70,9 +89,9 @@ struct PermissionsView: View {
       Text("Blocked by a device policy")
         .foregroundStyle(.secondary)
     case .denied:
-      openSystemSettingsButton
+      openSystemSettingsButton(pane: "com.apple.preference.security?Privacy_Microphone")
     @unknown default:
-      openSystemSettingsButton
+      openSystemSettingsButton(pane: "com.apple.preference.security?Privacy_Microphone")
     }
   }
 
@@ -90,9 +109,40 @@ struct PermissionsView: View {
     }
   }
 
-  private var openSystemSettingsButton: some View {
+  /// Nothing until macOS has said whether notifications are allowed, since a button that turns into "Allowed" a moment
+  /// later would flicker.
+  @ViewBuilder
+  private var notificationsControl: some View {
+    if let status = permissions.notifications {
+      switch status {
+      case .authorized, .provisional:
+        Label("Allowed", systemImage: "checkmark.circle.fill")
+          .foregroundStyle(.green)
+      case .notDetermined:
+        Button("Allow Notifications") {
+          Task {
+            // Banners only, as `LearnedWordNotifier` asks: Casper never plays a sound.
+            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert])
+            await permissions.refreshNotifications()
+          }
+        }
+      case .denied:
+        openSystemSettingsButton(pane: Self.notificationsPane)
+      @unknown default:
+        openSystemSettingsButton(pane: Self.notificationsPane)
+      }
+    }
+  }
+
+  /// Casper's own pane in System Settings > Notifications.
+  private static var notificationsPane: String {
+    "com.apple.Notifications-Settings.extension?id=\(Bundle.main.bundleIdentifier ?? "")"
+  }
+
+  /// Opens a pane of System Settings, such as `com.apple.preference.security?Privacy_Microphone`.
+  private func openSystemSettingsButton(pane: String) -> some View {
     Button("Open System Settings") {
-      if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+      if let url = URL(string: "x-apple.systempreferences:\(pane)") {
         NSWorkspace.shared.open(url)
       }
     }
