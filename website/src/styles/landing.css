@@ -445,6 +445,29 @@ h3 {
     repeat-x 0 0 / 40px 100%;
 }
 
+.done-check {
+  display: inline-grid;
+  place-items: center;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.18em;
+  border-radius: 50%;
+  vertical-align: -0.04em;
+  color: white;
+  background: var(--mint);
+  box-shadow: 0 0.06em 0 color-mix(in srgb, var(--mint) 70%, black);
+}
+
+.done-check .icon {
+  width: 0.55em;
+  height: 0.55em;
+  stroke-width: 3.5;
+}
+
+.js .reveal.is-visible .done-check {
+  animation: check-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.45s backwards;
+}
+
 /* How it works */
 
 .steps {
@@ -1155,5 +1178,11 @@ h3 {
   }
   50% {
     transform: rotate(4deg) translateY(-10px);
+  }
+}
+
+@keyframes check-pop {
+  from {
+    transform: scale(0) rotate(-30deg);
   }
 }
