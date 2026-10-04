@@ -1,13 +1,13 @@
 ---
 interface Props {
   /** Prefixes the gradient's id, which has to be unique on the page. */
-  id: string;
-  class?: string;
-  label?: string;
+  id: string
+  class?: string
+  label?: string
 }
 
-const { id, class: className, label } = Astro.props;
-const gradientId = `${id}-body`;
+const { id, class: className, label } = Astro.props
+const gradientId = `${id}-body`
 ---
 
 <svg

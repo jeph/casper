@@ -1,12 +1,12 @@
 ---
-import Demo from "../components/Demo.astro";
-import Ghost from "../components/Ghost.astro";
-import Icon, { type IconName } from "../components/Icon.astro";
-import Landing from "../layouts/Landing.astro";
+import Demo from "../components/Demo.astro"
+import Ghost from "../components/Ghost.astro"
+import Icon, { type IconName } from "../components/Icon.astro"
+import Landing from "../layouts/Landing.astro"
 
-const github = "https://github.com/jeph/casper";
-const latestRelease = `${github}/releases/latest`;
-const brewCommand = "brew install --cask jeph/tap/casper";
+const github = "https://github.com/jeph/casper"
+const latestRelease = `${github}/releases/latest`
+const brewCommand = "brew install --cask jeph/tap/casper"
 
 const messyLetters = [
   { letter: "m", tilt: "-12deg", lift: "0.04em" },
@@ -14,9 +14,9 @@ const messyLetters = [
   { letter: "s", tilt: "-6deg", lift: "0.05em" },
   { letter: "s", tilt: "14deg", lift: "-0.03em" },
   { letter: "y", tilt: "-9deg", lift: "0.02em" },
-];
+]
 
-const talkingBars = [0.5, 0.9, 0.65, 1, 0.55, 0.8, 0.45];
+const talkingBars = [0.5, 0.9, 0.65, 1, 0.55, 0.8, 0.45]
 
 const apps = [
   { name: "Mail", color: "var(--blue)" },
@@ -33,13 +33,13 @@ const apps = [
   { name: "Chrome", color: "var(--mint)" },
   { name: "Obsidian", color: "var(--grape)" },
   { name: "Linear", color: "var(--pink)" },
-];
+]
 
 interface Feature {
-  icon: IconName | "ghost";
-  color: string;
-  title: string;
-  body: string;
+  icon: IconName | "ghost"
+  color: string
+  title: string
+  body: string
 }
 
 const features: Feature[] = [
@@ -97,13 +97,13 @@ const features: Feature[] = [
     title: "Pick your models",
     body: "Parakeet on the Neural Engine or Qwen3-ASR on the GPU, in up to 30 languages, plus cleanup models from 0.6B to 27B to suit your Mac.",
   },
-];
+]
 
 interface Reason {
-  icon: IconName;
-  color: string;
-  title: string;
-  body: string;
+  icon: IconName
+  color: string
+  title: string
+  body: string
 }
 
 const reasons: Reason[] = [
@@ -131,14 +131,14 @@ const reasons: Reason[] = [
     title: "Free and open source",
     body: "MIT licensed, with no subscription. Read the code, build it yourself, or just enjoy it.",
   },
-];
+]
 
 const comparison = [
   { question: "Where your voice goes", casper: "Stays on your Mac", cloud: "Their servers" },
   { question: "Works offline", casper: "Yes", cloud: "No" },
   { question: "Account", casper: "Not needed", cloud: "Usually required" },
   { question: "Price", casper: "Free", cloud: "Often a subscription" },
-];
+]
 ---
 
 <Landing

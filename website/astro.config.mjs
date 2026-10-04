@@ -1,9 +1,9 @@
-import starlight from "@astrojs/starlight";
-import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight"
+import { defineConfig } from "astro/config"
 
 // Vercel sets this to the production domain during its builds. Local builds are served by `astro dev` and
 // `astro preview` on Astro's default port.
-const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export default defineConfig({
   site: vercelHost ? `https://${vercelHost}` : "http://localhost:4321",
@@ -19,4 +19,4 @@ export default defineConfig({
       disable404Route: true,
     }),
   ],
-});
+})

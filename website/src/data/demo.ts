@@ -1,23 +1,23 @@
 export interface Word {
-  text: string;
+  text: string
   /** `cut` for a word cleanup drops, `swap` for one it writes another way. */
-  kind?: "cut" | "swap";
+  kind?: "cut" | "swap"
 }
 
 export interface Example {
-  app: string;
-  persona: "Formal" | "Casual";
-  heard: Word[];
-  typed: string;
+  app: string
+  persona: "Formal" | "Casual"
+  heard: Word[]
+  typed: string
 }
 
 /** Splits what was said into words, where a leading `-` marks a word cleanup drops and `~` one it rewrites. */
 const words = (spoken: string): Word[] =>
   spoken.split(" ").map((word) => {
-    if (word.startsWith("-")) return { text: word.slice(1), kind: "cut" };
-    if (word.startsWith("~")) return { text: word.slice(1), kind: "swap" };
-    return { text: word };
-  });
+    if (word.startsWith("-")) return { text: word.slice(1), kind: "cut" }
+    if (word.startsWith("~")) return { text: word.slice(1), kind: "swap" }
+    return { text: word }
+  })
 
 export const examples: [Example, ...Example[]] = [
   {
@@ -38,4 +38,4 @@ export const examples: [Example, ...Example[]] = [
     heard: words("-uh hey are we still on for tacos tonight ~question ~mark"),
     typed: "hey are we still on for tacos tonight?",
   },
-];
+]
