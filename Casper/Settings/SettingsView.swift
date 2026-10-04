@@ -27,7 +27,7 @@ struct SettingsView: View {
         }
       }
     }
-    .frame(width: 680, height: 490)
+    .frame(width: 680, height: 475)
   }
 
   @ViewBuilder
