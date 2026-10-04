@@ -100,20 +100,8 @@ h3 {
 
 .nav-links {
   display: flex;
-  align-items: center;
-  gap: 22px;
   margin-left: auto;
   font-weight: 650;
-}
-
-.nav-links a {
-  text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
-
-.nav-links a:hover {
-  opacity: 1;
 }
 
 .nav-links .pill-link {
@@ -123,7 +111,7 @@ h3 {
   padding: 7px 14px;
   border: 1px solid rgb(255 255 255 / 22%);
   border-radius: 999px;
-  opacity: 1;
+  text-decoration: none;
 }
 
 .nav-links .pill-link:hover {
@@ -133,12 +121,6 @@ h3 {
 .nav-links .pill-link:hover .icon {
   color: var(--sun);
   animation: spin-pop 0.6s ease;
-}
-
-@media (max-width: 760px) {
-  .nav-links .section-link {
-    display: none;
-  }
 }
 
 /* Buttons */
