@@ -848,102 +848,10 @@ h3 {
   }
 }
 
-/* Love note */
-
-.love {
-  padding-top: 40px;
-}
-
-.note {
-  position: relative;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 44px 44px 36px;
-  border-radius: 6px;
-  background:
-    radial-gradient(circle, rgb(72 117 214 / 18%) 1.2px, transparent 1.6px) 0 0 / 22px 22px,
-    #fffdf3;
-  box-shadow: 0 24px 50px -28px rgb(21 30 45 / 45%);
-  transform: rotate(-1.2deg);
-}
-
-.note::before {
-  content: "";
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  width: 120px;
-  height: 30px;
-  background: color-mix(in srgb, var(--pink) 45%, transparent);
-  transform: translateX(-50%) rotate(-3deg);
-}
-
-.note h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 14px;
-  font-size: 2rem;
-}
-
-.note p {
-  margin: 0 0 14px;
-  font-size: 1.1rem;
-  line-height: 1.7;
-}
-
-.note .signature {
-  margin: 18px 0 0;
-  font-size: 1.3rem;
-  font-weight: 800;
-  font-style: italic;
-  color: var(--blue);
-}
-
-.note .heart {
-  color: var(--pink);
-  animation: beat 1.4s ease-in-out infinite;
-}
-
-.note .heart path {
-  fill: currentColor;
-}
-
-.note-ghost {
-  position: absolute;
-  right: -34px;
-  bottom: -30px;
-  width: 92px;
-  height: 92px;
-  filter: drop-shadow(0 10px 12px rgb(21 30 45 / 22%));
-  transform: rotate(10deg);
-  animation: peek 5s ease-in-out infinite;
-}
-
-.note-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 26px;
-}
-
-@media (max-width: 560px) {
-  .note {
-    padding: 36px 24px 30px;
-  }
-
-  .note-ghost {
-    right: -8px;
-    bottom: -40px;
-    width: 72px;
-    height: 72px;
-  }
-}
-
 /* Footer */
 
 .footer {
-  margin-top: 100px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
   padding: 48px 0;
   color: rgb(255 255 255 / 70%);
   background: var(--ink);
@@ -973,22 +881,6 @@ h3 {
 
 .footer nav a:hover {
   color: white;
-}
-
-.footer .made {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-}
-
-.footer .made .icon {
-  color: var(--pink);
-  animation: beat 1.4s ease-in-out infinite;
-}
-
-.footer .made .icon path {
-  fill: currentColor;
 }
 
 /* Scroll reveal, only when scripts run and motion is welcome */
@@ -1139,32 +1031,6 @@ h3 {
 @keyframes marquee {
   to {
     transform: translateX(-50%);
-  }
-}
-
-@keyframes beat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  15% {
-    transform: scale(1.25);
-  }
-  30% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.15);
-  }
-}
-
-@keyframes peek {
-  0%,
-  100% {
-    transform: rotate(10deg) translateY(0);
-  }
-  50% {
-    transform: rotate(4deg) translateY(-10px);
   }
 }
 
