@@ -9,7 +9,8 @@ import OSLog
 ///
 /// After each paste it watches the field Casper pasted into, compares the text there with what was typed each time the
 /// user pauses, and replays each dictation with a correction while Casper is otherwise idle, one at a time. Each paste
-/// has its own watch, so a later paste doesn't end an earlier one. A dictation that starts cancels the replay in
+/// has its own watch, so a paste into another field doesn't end an earlier one, but a paste into the same field does:
+/// the earlier watch would take the pasted text for the user's edit. A dictation that starts cancels the replay in
 /// progress, which runs again once Casper is idle. Recordings and transcripts are only held in memory, and only until
 /// their paste's watch ends and their dictation is checked.
 @MainActor
@@ -49,6 +50,10 @@ final class CorrectionLearner {
   private var checks: [Check] = []
   /// The replay in progress.
   private var replay: Task<Void, Never>?
+  /// The watches still following fields Casper pasted into.
+  private var watches: [PastedFieldWatch] = []
+  /// The fields of pastes whose watches start once the pasted text has reached the field, by paste.
+  private var pendingFields: [UUID: AXUIElement] = [:]
 
   init(
     dictionary: DictionaryStore,
@@ -63,19 +68,34 @@ final class CorrectionLearner {
   }
 
   /// Starts watching for corrections to text Casper just pasted into the frontmost app, alongside the watches of
-  /// earlier pastes.
+  /// earlier pastes into other fields, and ends the watch of an earlier paste into the same field.
+  ///
+  /// Call it right after the paste keystroke, before the app reports the pasted text to the earlier watch.
   func pasted(_ text: String, from dictations: [Dictation]) {
-    guard dictionary.learnsCorrections, !dictations.isEmpty,
-      let app = NSWorkspace.shared.frontmostApplication,
+    guard let app = NSWorkspace.shared.frontmostApplication,
       // Casper's own fields, such as the dictionary's search, would have Casper wait on itself for every read.
       app.processIdentifier != ProcessInfo.processInfo.processIdentifier
     else { return }
+    let watchesPaste = dictionary.learnsCorrections && !dictations.isEmpty
+    // With no watch to end or start, the app isn't asked over Accessibility for its field.
+    guard watchesPaste || !watches.isEmpty || !pendingFields.isEmpty,
+      let field = PastedFieldWatch.focusedField(ofProcess: app.processIdentifier)
+    else { return }
+    endWatches(following: field)
+    guard watchesPaste else { return }
+    let paste = UUID()
+    pendingFields[paste] = field
     Task {
       try? await Task.sleep(for: Self.pasteDelay)
-      guard let field = PastedFieldWatch(processID: app.processIdentifier, pasted: text) else { return }
+      // A later paste into the same field took this one's place before its watch started.
+      guard pendingFields.removeValue(forKey: paste) != nil,
+        let watch = PastedFieldWatch(field: field, processID: app.processIdentifier, pasted: text)
+      else { return }
+      watches.append(watch)
+      defer { watches.removeAll { $0 === watch } }
       // Each edit is checked once, though the field is compared again at every pause.
       var queued: Set<Correction> = []
-      for await edited in field.edits(pause: Self.editPause, limit: Self.watchLimit) {
+      for await edited in watch.edits(pause: Self.editPause, limit: Self.watchLimit) {
         let found = await Self.checks(typed: text, field: edited, dictations: dictations)
         let new = found.compactMap { check in
           let corrections = check.corrections.filter { !queued.contains($0) }
@@ -86,6 +106,17 @@ final class CorrectionLearner {
         replayNext()
       }
     }
+  }
+
+  /// Ends the watches of earlier pastes into the field, including those that haven't started yet.
+  private func endWatches(following field: AXUIElement) {
+    let unstarted = pendingFields.filter { CFEqual($0.value, field) }.keys
+    for paste in unstarted {
+      pendingFields[paste] = nil
+    }
+    let ended = watches.count { $0.endBeforePaste(into: field) } + unstarted.count
+    guard ended > 0 else { return }
+    Self.logger.info("Ended the watches of \(ended) earlier pastes into the field Casper pasted into")
   }
 
   /// Cancels the replay in progress, which runs again once dictation is done, so a new dictation never waits for it.

@@ -7,7 +7,7 @@ import ApplicationServices
 /// behaves. It carries on when focus moves elsewhere, so a fix made after the user comes back to the field still
 /// counts. It ends when the field changes while it doesn't have focus, which is the app reusing it for other content,
 /// such as Notes showing another note, rather than the user typing. It also ends when the field is emptied (a sent
-/// message) or closed, or when its time is up.
+/// message) or closed, when Casper pastes into it again, or when its time is up.
 @MainActor
 final class PastedFieldWatch {
   /// How long a slow app may take to answer an Accessibility request before the watch gives up on it, so a hung app
@@ -28,12 +28,17 @@ final class PastedFieldWatch {
   private var limitTimer: Task<Void, Never>?
   private var pause = Duration.zero
 
-  /// Starts watching the focused element of the app with this process ID, if it's a text field that holds the pasted
-  /// text.
-  init?(processID: pid_t, pasted: String) {
+  /// The focused element of the app with this process ID, the field a paste into the app goes to.
+  static func focusedField(ofProcess processID: pid_t) -> AXUIElement? {
+    let app = AXUIElementCreateApplication(processID)
+    AXUIElementSetMessagingTimeout(app, messagingTimeout)
+    return focusedElement(of: app)
+  }
+
+  /// Starts watching the field Casper pasted into in the app with this process ID, if it holds the pasted text.
+  init?(field: AXUIElement, processID: pid_t, pasted: String) {
     let app = AXUIElementCreateApplication(processID)
     AXUIElementSetMessagingTimeout(app, Self.messagingTimeout)
-    guard let field = Self.focusedElement(of: app) else { return nil }
     AXUIElementSetMessagingTimeout(field, Self.messagingTimeout)
     let pasted = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let text = Self.text(of: field), text.contains(pasted) else { return nil }
@@ -74,6 +79,16 @@ final class PastedFieldWatch {
       self?.end(readingAgain: true)
     }
     return stream
+  }
+
+  /// Ends the watch if Casper is pasting into the field it follows, reporting the field as it was before the paste.
+  ///
+  /// The field isn't read again, since the app may show the pasted text already, which would read as the user's edit.
+  /// Returns whether the watch ended.
+  func endBeforePaste(into field: AXUIElement) -> Bool {
+    guard !isEnded, CFEqual(field, self.field) else { return false }
+    end(readingAgain: false)
+    return true
   }
 
   private func handle(_ notification: String) {
