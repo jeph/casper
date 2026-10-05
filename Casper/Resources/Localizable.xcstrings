@@ -13,7 +13,7 @@
       }
     },
     "%@ (Not Connected)" : {
-      "comment" : "Input device option for the chosen microphone while it's unplugged. The placeholder is the device name."
+      "comment" : "Disabled input device option for the chosen microphone while it's unplugged, when Casper records from the system default instead. The placeholder is the device name."
     },
     "%@ Copy" : {
       "comment" : "Name of a duplicated persona. The argument is the original's name."
