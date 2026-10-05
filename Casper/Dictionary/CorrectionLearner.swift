@@ -34,7 +34,7 @@ final class CorrectionLearner {
   nonisolated private static let logger = Logger(subsystem: "io.jeph.Casper", category: "CorrectionLearner")
 
   /// How long the user stops changing the field before it's compared with what was typed.
-  private static let editPause = Duration.seconds(3)
+  private static let editPause = Duration.seconds(5)
   /// How long after a paste the field is watched at most.
   private static let watchLimit = Duration.seconds(60)
   /// How long the pasted text takes to reach the field, which the app does after Casper's ⌘V.
