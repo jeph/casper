@@ -4,6 +4,9 @@ import OSLog
 /// Adds the words a user corrects in dictated text to the dictionary, when transcribing the dictation again with the
 /// word in the dictionary shows the speech model misheard it.
 ///
+/// Each word is saved with what the speech model wrote as its Sounds Like spelling, so later dictations put the word in
+/// its place.
+///
 /// After each paste it watches the field Casper pasted into, compares the text there with what was typed each time the
 /// user pauses, and replays each dictation with a correction while Casper is otherwise idle, one at a time. Each paste
 /// has its own watch, so a later paste doesn't end an earlier one. A dictation that starts cancels the replay in
@@ -134,6 +137,8 @@ final class CorrectionLearner {
     guard dictionary.learnsCorrections, !corrections.isEmpty, SpeechModel.active?.id == check.dictation.modelID else {
       return []
     }
+    // Without the Sounds Like spellings `add(_:)` saves: `confirmed` swaps those as text, so with them the replay would
+    // confirm every correction whatever the audio says.
     let words = dictionary.wordsForDictation + corrections.map { DictionaryWord(text: $0.replacement) }
     speechModel.beginUse()
     defer { speechModel.endUse() }
@@ -186,7 +191,7 @@ final class CorrectionLearner {
   private func add(_ corrections: [Correction]) {
     // Checked again, since the user may have changed the dictionary during the replay.
     for correction in corrections where dictionary.learnsCorrections && isNew(correction) {
-      dictionary.save(DictionaryWord(text: correction.replacement))
+      dictionary.save(DictionaryWord(text: correction.replacement, soundsLike: [correction.original]))
       notifier.notify(added: correction.replacement)
     }
   }
