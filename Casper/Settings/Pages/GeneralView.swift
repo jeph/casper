@@ -4,7 +4,6 @@ import SwiftUI
 
 struct GeneralView: View {
   @State private var launchAtLoginStatus = LaunchAtLogin.status
-  @AppStorage(Hotkey.dictationStorageKey) private var dictationHotkey = Hotkey.dictationDefault
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
@@ -21,26 +20,7 @@ struct GeneralView: View {
             Image(systemName: "mic")
           }
         }
-        LabeledContent {
-          HStack {
-            if dictationHotkey != .dictationDefault {
-              Button("Reset to Default", systemImage: "arrow.counterclockwise") {
-                dictationHotkey = .dictationDefault
-              }
-              .labelStyle(.iconOnly)
-              .buttonStyle(.borderless)
-              .help(Text("Reset to Default"))
-            }
-            HotkeyRecorder(hotkey: $dictationHotkey)
-          }
-        } label: {
-          Label {
-            Text("Dictation Shortcut")
-            Text("The shortcut used to start dictation.")
-          } icon: {
-            Image(systemName: "keyboard")
-          }
-        }
+        DictationShortcutRow()
         Picker(selection: $dictationMode) {
           ForEach(DictationMode.allCases) { mode in
             Text(mode.title).tag(mode)

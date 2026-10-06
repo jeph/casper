@@ -69,7 +69,7 @@ brew install --cask jeph/tap/casper
 
 Or download `Casper-<version>.dmg` from the [latest release](https://github.com/jeph/casper/releases/latest), open it, and drag Casper to Applications.
 
-Settings opens the first time Casper launches. Grant microphone and Accessibility access, download a speech model, and download a cleanup model or turn off **Refine Transcripts** on the Refine page. Then hold ⌥Space and start talking.
+The first time Casper launches, a short setup walks you through it: choose a voice model and a language model, which start downloading right away, allow microphone, Accessibility and notification access, and learn to dictate with ⌥Space or a shortcut of your own. Finishing setup opens Settings. Until you finish, setup starts over each time Casper launches.
 
 ## Build from source
 

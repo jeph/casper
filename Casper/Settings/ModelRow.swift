@@ -14,19 +14,11 @@ struct ModelRow<Model: DownloadableModel>: View {
       HStack {
         Text(model.title)
         if model.isRecommended {
-          Text(
-            "Recommended",
-            comment: "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
-          )
-          .font(.caption)
-          .foregroundStyle(.tint)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 1)
-          .background(.tint.opacity(0.15), in: .capsule)
+          RecommendedBadge()
         }
       }
       Text(model.summary)
-      memoryImpact
+      model.memoryImpact
     }
     .confirmationDialog(
       Text(
@@ -46,16 +38,6 @@ struct ModelRow<Model: DownloadableModel>: View {
     }
   }
 
-  private var memoryImpact: Text {
-    Text(
-      "Memory Impact - \(Text(model.memoryUsage, format: .byteCount(style: .memory)))",
-      comment: """
-        Line on the Voice Models and Language Models pages with how much memory a model takes once loaded, such as \
-        770 MB.
-        """
-    )
-  }
-
   @ViewBuilder
   private var control: some View {
     if store.installed.contains(model.id) {
@@ -68,7 +50,7 @@ struct ModelRow<Model: DownloadableModel>: View {
             .opacity(isActive ? 1 : 0)
             .accessibilityHidden(!isActive)
           Button("Use") {
-            activeModelID = model.id
+            store.use(model)
           }
           .opacity(isActive ? 0 : 1)
           .disabled(isActive)
@@ -118,5 +100,33 @@ struct ModelRow<Model: DownloadableModel>: View {
         )
       }
     }
+  }
+}
+
+/// Marks a model Casper suggests for this Mac.
+struct RecommendedBadge: View {
+  var body: some View {
+    Text(
+      "Recommended",
+      comment: "Badge marking the models Casper suggests, on the Voice Models and Language Models pages and in setup."
+    )
+    .font(.caption)
+    .foregroundStyle(.tint)
+    .padding(.horizontal, 6)
+    .padding(.vertical, 1)
+    .background(.tint.opacity(0.15), in: .capsule)
+  }
+}
+
+extension DownloadableModel {
+  /// How much memory the model takes once loaded, as the model pages and setup show it under the model.
+  var memoryImpact: Text {
+    Text(
+      "Memory Impact - \(Text(memoryUsage, format: .byteCount(style: .memory)))",
+      comment: """
+        Line on the Voice Models and Language Models pages and in setup with how much memory a model takes once \
+        loaded, such as 770 MB.
+        """
+    )
   }
 }

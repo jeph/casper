@@ -30,6 +30,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Before any download starts, since a download's folder looks unfinished until it's done.
     ModelDownloader.removeUnfinishedDownloads()
     SpeechModel.store.installMissingCompanions()
+    SpeechModel.store.resumeAwaitedDownload()
+    LanguageModel.store.resumeAwaitedDownload()
     let dictation = DictationController(
       readiness: readiness,
       personas: personas,

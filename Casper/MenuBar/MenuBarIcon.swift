@@ -1,16 +1,15 @@
 import AppKit
 import SwiftUI
 
-/// Casper's icon in the menu bar, which also opens Settings the first time Casper runs so new users can set it up, and
+/// Casper's icon in the menu bar, which also opens setup at launch until the user has finished it, and Settings
 /// whenever code that isn't a view asks for it through `SettingsNavigation`.
 ///
-/// Later launches start in the menu bar only. The icon is the one view SwiftUI creates on every launch, and opening
-/// Settings needs a view's `openSettings` action.
+/// Once setup is finished, launches start in the menu bar only. The icon is the one view SwiftUI creates on every
+/// launch, and opening a window needs a view's `openWindow` or `openSettings` action.
 struct MenuBarIcon: View {
   @Environment(\.openSettings) private var openSettings
+  @Environment(\.openWindow) private var openWindow
   @Environment(SettingsNavigation.self) private var settingsNavigation
-
-  private static let hasLaunchedKey = "hasLaunched"
 
   var body: some View {
     Image("CasperMenuBar")
@@ -18,9 +17,8 @@ struct MenuBarIcon: View {
         Text("Casper", comment: "App name, used as the accessibility label of the menu bar icon and the voice bubble.")
       )
       .onAppear {
-        guard !UserDefaults.standard.bool(forKey: Self.hasLaunchedKey) else { return }
-        UserDefaults.standard.set(true, forKey: Self.hasLaunchedKey)
-        NSApp.openWindowInFront { openSettings() }
+        guard !UserDefaults.standard.bool(forKey: OnboardingView.completedStorageKey) else { return }
+        NSApp.openWindowInFront { openWindow(id: OnboardingView.windowID) }
       }
       // Initially too, for a request made as Casper launched, such as by clicking one of its notifications.
       .onChange(of: settingsNavigation.isOpenRequested, initial: true) {

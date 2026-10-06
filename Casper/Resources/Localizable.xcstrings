@@ -36,6 +36,9 @@
     "A bubble on screen that shows when Casper is listening. Drag it to move it." : {
       "comment" : "Description of the General setting that shows or hides the floating voice bubble."
     },
+    "A voice model on this Mac turns your speech into text, so your voice never leaves it. Choose one to download. You can change it later in Settings." : {
+      "comment" : "Explanation on the setup step for choosing a voice model."
+    },
     "About Casper" : {
       "comment" : "Menu bar item that opens the About window."
     },
@@ -60,11 +63,20 @@
     "Always" : {
       "comment" : "Option in the Keep Microphone On setting: the microphone stays on the whole time Casper runs."
     },
+    "An animation of dictating: pressing the shortcut, speaking, and Casper typing what was said into a text field." : {
+      "comment" : "Accessibility label of setup's animation of how to dictate."
+    },
+    "And types it where your cursor is" : {
+      "comment" : "Caption of setup's dictation animation once the sentence appears in a text field."
+    },
     "Another persona is already named “%@”." : {
       "comment" : "Shown in the persona editor when the name entered is taken. The argument is the name."
     },
     "App Personas" : {
       "comment" : "Header of the list of apps with their own persona, on the Options tab of the Refine page of Settings."
+    },
+    "Back" : {
+      "comment" : "Button in setup that returns to the previous step."
     },
     "Bad values can make Casper slower or less reliable." : {
       "comment" : "Explanation under the warning at the top of Settings > Advanced."
@@ -103,11 +115,32 @@
     "Casper needs a voice model" : {
       "comment" : "Voice bubble warning when no voice model is installed."
     },
+    "Casper needs each of these to hear you, type for you, and tell you when it learns a word." : {
+      "comment" : "Explanation on the setup step for allowing the microphone, Accessibility and notifications."
+    },
     "Casper needs microphone access" : {
       "comment" : "Voice bubble warning when microphone access is missing."
     },
     "Casper needs microphone and Accessibility access" : {
       "comment" : "Voice bubble warning when both permissions are missing. Accessibility is the System Settings pane."
+    },
+    "Casper recognizes your voice" : {
+      "comment" : "Title of the setup step for choosing a voice model."
+    },
+    "Casper refines what you dictate with a language model on this Mac, removing filler words and fixing grammar and punctuation. Choose one to download." : {
+      "comment" : "Explanation on the setup step for choosing a language model."
+    },
+    "Casper switches to each new model once it's downloaded. Downloads continue after setup." : {
+      "comment" : "Note on setup's last step while models download and Casper can already dictate."
+    },
+    "Casper transcribes and refines it" : {
+      "comment" : "Caption of setup's dictation animation while it transcribes."
+    },
+    "Casper types" : {
+      "comment" : "Label in setup above the sentence Casper types from what was said."
+    },
+    "Casper types what you said wherever your cursor is, in any app. The voice bubble on your screen shows when it's listening." : {
+      "comment" : "Explanation on setup's last step, which shows how to dictate."
     },
     "Casper uses accessibility to type what you dictate into other apps." : {
       "comment" : "Explanation under the Accessibility row in Settings > Permissions."
@@ -121,6 +154,9 @@
     "Choose Other App…" : {
       "comment" : "Item of the Add App menu on the Refine page of Settings that opens a panel to choose an app that isn't running."
     },
+    "Click here, then dictate to try it" : {
+      "comment" : "Placeholder of the text field in setup."
+    },
     "Click to open Language Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Language Models page of Settings."
     },
@@ -129,6 +165,9 @@
     },
     "Click to open Voice Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Voice Models page of Settings."
+    },
+    "Continue" : {
+      "comment" : "Button in setup that goes to the next step."
     },
     "Create" : {
       "comment" : "Button that saves a new persona in the persona editor."
@@ -151,6 +190,9 @@
     "Description" : {
       "comment" : "Field in the persona editor for a short description of what the persona does, shown under its name in Settings."
     },
+    "Dictate into any app on your Mac. Casper turns what you say into clean, polished text, and everything runs locally for maximum privacy." : {
+      "comment" : "Explanation on the first step of setup."
+    },
     "Dictation Shortcut" : {
       "comment" : "Row title in Settings > General for the keyboard shortcut that starts dictation."
     },
@@ -159,6 +201,9 @@
     },
     "Download failed" : {
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
+    },
+    "Downloaded" : {
+      "comment" : "Shown in setup beside a model that's already on this Mac."
     },
     "Downloads %@" : {
       "comment" : "Tooltip of a model's Download button, with its download size."
@@ -181,8 +226,17 @@
     "Fastest, but often ignores instructions." : {
       "comment" : "Description of the Qwen3.5 0.8B language model on the Language Models page."
     },
+    "Finish" : {
+      "comment" : "Button on the last step of setup that ends it and opens Settings."
+    },
     "General" : {
       "comment" : "Settings tab and window title for general app settings."
+    },
+    "Get Started" : {
+      "comment" : "Button on the first step of setup that starts it."
+    },
+    "Give Casper access" : {
+      "comment" : "Title of the setup step for allowing permissions."
     },
     "Guesses per Pass" : {
       "comment" : "Picker in Settings > Advanced for the most tokens speculative decoding guesses at once, from 1 to 5."
@@ -190,8 +244,14 @@
     "Hold" : {
       "comment" : "Option in the Shortcut Mode setting: dictation records while the shortcut is held and stops when it's released."
     },
+    "Hold %@ and speak" : {
+      "comment" : "Title of setup's last step in hold mode."
+    },
     "Hold %@ to dictate" : {
       "comment" : "Voice bubble hover text in hold mode. The argument is the dictation shortcut, such as ⌥Space."
+    },
+    "Hold the shortcut" : {
+      "comment" : "Caption of setup's dictation animation as the shortcut is about to be held."
     },
     "Hold the shortcut to dictate." : {
       "comment" : "Explanation under the Shortcut Mode row in Settings > General when Hold is chosen."
@@ -201,6 +261,9 @@
     },
     "How long the mic stays on after your last dictation. Mic reactivation adds a recording delay." : {
       "comment" : "Description of the Keep Microphone On setting, whose options are Never, a number of minutes, or Always. Mic is short for microphone."
+    },
+    "I think we should push the meeting to Thursday." : {
+      "comment" : "The spoken sentence in setup as Casper types it, without its filler words and with punctuation."
     },
     "Icon" : {
       "comment" : "Row in the persona editor with a button that chooses the persona's icon, and that button's accessibility label."
@@ -223,6 +286,9 @@
     "Key %u" : {
       "comment" : "Fallback name for a key with no printable character."
     },
+    "Language Model" : {
+      "comment" : "Row on setup's last step showing whether the language model is ready."
+    },
     "Language Models" : {
       "comment" : "Title of the settings page for downloading and choosing the language models that refine transcripts."
     },
@@ -239,7 +305,7 @@
       "comment" : "Header of the section in Settings > Advanced for settings that tune how much memory Casper uses."
     },
     "Memory Impact - %@" : {
-      "comment" : "Line on the Voice Models and Language Models pages with how much memory a model takes once loaded, such as 770 MB."
+      "comment" : "Line on the Voice Models and Language Models pages and in setup with how much memory a model takes once loaded, such as 770 MB."
     },
     "Microphone" : {
       "comment" : "Row title in Settings > Permissions."
@@ -304,8 +370,14 @@
     "Personas" : {
       "comment" : "Tab of the Refine page of Settings that lists the personas. A persona is a style transcripts are rewritten in, with the instructions the language model follows."
     },
+    "Press %@ and speak" : {
+      "comment" : "Title of setup's last step in toggle mode."
+    },
     "Press %@ to dictate" : {
       "comment" : "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
+    },
+    "Press the shortcut" : {
+      "comment" : "Caption of setup's dictation animation as the shortcut is about to be pressed."
     },
     "Press to start dictation, press again to stop." : {
       "comment" : "Explanation under the Shortcut Mode row in Settings > General when Toggle is chosen."
@@ -317,7 +389,7 @@
       "comment" : "Accessibility value of the voice bubble when Casper isn't dictating."
     },
     "Recommended" : {
-      "comment" : "Badge on the Voice Models and Language Models pages marking the models Casper suggests."
+      "comment" : "Badge marking the models Casper suggests, on the Voice Models and Language Models pages and in setup."
     },
     "Reduces average memory usage at the cost of some slight latency." : {
       "comment" : "Description of the Release Buffer Cache toggle in Settings > Advanced."
@@ -379,14 +451,34 @@
     "Slower than 4B 2507, with similar instruction following." : {
       "comment" : "Description of the Qwen3 8B language model on the Language Models page. 4B 2507 is the Qwen3 4B 2507 model."
     },
+    "So um I think we should uh push the meeting to like Thursday" : {
+      "comment" : "A sentence as someone might say it, with filler words, shown in setup turning into the sentence Casper types. Words it shares with that sentence glide into place, so keep them the same where the language allows."
+    },
     "Space" : {
       "comment" : "Name of the Space bar in a keyboard shortcut, as in ⌥Space."
+    },
+    "Speak while you hold it" : {
+      "comment" : "Caption of setup's dictation animation while it records."
+    },
+    "Speak, then press it again" : {
+      "comment" : "Caption of setup's dictation animation while it records."
     },
     "Speculative Decoding" : {
       "comment" : "Toggle in Settings > Advanced for a technique that refines transcripts faster by guessing the next tokens from the transcript and having the language model check them together. A technical term."
     },
     "Start at Login" : {
       "comment" : "Toggle in Settings > General that opens the app automatically when the user logs in."
+    },
+    "Step %lld of %lld" : {
+      "comment" : "Accessibility label of the dots at the bottom of setup showing how far along it is.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        }
+      }
     },
     "System Default" : {
       "comment" : "Input device option that follows the macOS sound settings."
@@ -421,11 +513,17 @@
     "Try Again" : {
       "comment" : "Button on the Voice Models page that downloads a speech model again after a failed download."
     },
+    "Try It" : {
+      "comment" : "Accessibility label of the text field on setup's last step for trying dictation."
+    },
     "Tuned Parakeet with better accuracy at the same speed." : {
       "comment" : "Description of Parakeet Ultra, a version of the Parakeet speech model, on the Voice Models page."
     },
     "Type Shortcut" : {
       "comment" : "Placeholder in the shortcut field while it waits for a key."
+    },
+    "Type what you mean, not what you say" : {
+      "comment" : "Title of the setup step for choosing a language model, which refines what was dictated."
     },
     "Updated Qwen3 4B. Follows instructions as well as 8B, but faster." : {
       "comment" : "Description of the Qwen3 4B 2507 language model, a July 2025 update of Qwen3 4B, on the Language Models page. 8B is the Qwen3 8B model."
@@ -439,11 +537,34 @@
     "Voice Bubble Size" : {
       "comment" : "Title of the General setting for how large the floating voice bubble is, set with a slider from small to large."
     },
+    "Voice Model" : {
+      "comment" : "Row on setup's last step showing whether the voice model is ready."
+    },
     "Voice Models" : {
       "comment" : "Title of the settings page for downloading and choosing speech recognition models."
     },
+    "Welcome to Casper" : {
+      "comment" : "Title of the setup window and of its first step."
+    },
+    "You can dictate once your models are downloaded. Downloads continue after setup." : {
+      "comment" : "Note on setup's last step while the models dictation needs download."
+    },
     "You can't undo this." : {
       "comment" : "Message of the dialog that asks before deleting a persona that isn't pinned to any app."
+    },
+    "You say" : {
+      "comment" : "Label in setup above a sentence as someone might say it."
+    },
+    "You say \"%@\", and Casper types \"%@\"" : {
+      "comment" : "Accessibility label of setup's animation of a spoken sentence turning into the sentence Casper types.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You say \"%1$@\", and Casper types \"%2$@\""
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

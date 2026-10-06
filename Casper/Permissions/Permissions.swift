@@ -34,6 +34,8 @@ final class Permissions {
 
   var isMicrophoneAllowed: Bool { microphone == .authorized }
   var isEverythingAllowed: Bool { isMicrophoneAllowed && isAccessibilityTrusted }
+  /// Whether Casper may post notifications, which is `false` until `refreshNotifications()` has read it.
+  var areNotificationsAllowed: Bool { notifications == .authorized || notifications == .provisional }
 
   func refresh() {
     // Assigning an unchanged value would still redraw every view that shows it.

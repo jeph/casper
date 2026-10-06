@@ -299,7 +299,7 @@ final class VoiceBubbleLayout {
 ///
 /// In a window that isn't active, as the bubble's panel never is, glass leaves its own tint out, except clear glass on
 /// macOS 27 and later. Elsewhere the tint is a solid fill beneath the content instead.
-private struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Animatable {
+struct GlassBackground<GlassShape: InsettableShape>: ViewModifier, Animatable {
   let shape: GlassShape
   /// Whether the glass responds to the pointer the way system controls do.
   let isInteractive: Bool

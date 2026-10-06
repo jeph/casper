@@ -33,6 +33,9 @@ struct Hotkey: Equatable, Sendable {
   /// The shortcut as macOS shows it in menus, for example "⌥Space".
   @MainActor var displayName: String { Self.symbols(for: modifiers) + keyName }
 
+  /// The keys pressed together, each as its keycap shows it, for example ["⌥", "Space"].
+  @MainActor var keyLabels: [String] { Self.symbols(for: modifiers).map(String.init) + [keyName] }
+
   /// Modifier symbols in the order macOS menus use.
   static func symbols(for modifiers: NSEvent.ModifierFlags) -> String {
     [(NSEvent.ModifierFlags.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
