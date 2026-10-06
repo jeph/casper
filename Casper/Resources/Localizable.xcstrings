@@ -36,7 +36,7 @@
     "A bubble on screen that shows when Casper is listening. Drag it to move it." : {
       "comment" : "Description of the General setting that shows or hides the floating voice bubble."
     },
-    "A voice model on this Mac turns your speech into text, so your voice never leaves it. Choose one to download. You can change it later in Settings." : {
+    "A voice model on this Mac turns your speech into text. Your data is kept locally and never sent to the cloud. Choose one to download. You can change it later in Settings." : {
       "comment" : "Explanation on the setup step for choosing a voice model."
     },
     "About Casper" : {
@@ -115,7 +115,7 @@
     "Casper needs a voice model" : {
       "comment" : "Voice bubble warning when no voice model is installed."
     },
-    "Casper needs each of these to hear you, type for you, and tell you when it learns a word." : {
+    "Casper needs the microphone to hear you and Accessibility to type for you. Notifications are optional: they tell you when Casper learns a word." : {
       "comment" : "Explanation on the setup step for allowing the microphone, Accessibility and notifications."
     },
     "Casper needs microphone access" : {

@@ -189,16 +189,24 @@ struct DictationDemo: View {
     return 0.15 + 0.85 * abs(sin(bar * 1.7) * cos(bar * 0.63))
   }
 
-  /// The ghost's bars: following the waveform while recording, rising and falling in turn while transcribing, and as
-  /// in the logo otherwise.
+  /// The ghost's bars: gliding between the waveform's latest full bars while recording, as the voice bubble's do,
+  /// rising and falling in turn while transcribing, and as in the logo otherwise.
   private func ghostBarLevels(at date: Date) -> [Double]? {
     guard !reduceMotion else { return nil }
     switch stage {
     case .idle, .typed:
       return nil
     case .recording:
-      let newestBar = Int(date.timeIntervalSince(recordingStart) / Self.barSeconds)
-      return [3, 1, 2].map { Self.level(ofBar: newestBar - $0) }
+      let position = date.timeIntervalSince(recordingStart) / Self.barSeconds
+      let newestBar = Int(position.rounded(.down))
+      let progress = position - Double(newestBar)
+      // Eases in and out of each height rather than moving at a constant speed.
+      let glide = progress * progress * (3 - 2 * progress)
+      return [2, 0, 1]
+        .map { slot in
+          let bar = newestBar - 1 - slot
+          return Self.level(ofBar: bar - 1) + (Self.level(ofBar: bar) - Self.level(ofBar: bar - 1)) * glide
+        }
     case .transcribing:
       let time = date.timeIntervalSinceReferenceDate
       return (0..<3).map { index in 0.2 + 0.5 * (sin(time * 2 * .pi * 1.2 - Double(index) * 0.9) + 1) / 2 }

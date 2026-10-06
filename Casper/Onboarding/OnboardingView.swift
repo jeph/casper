@@ -60,8 +60,8 @@ struct OnboardingView: View {
         title: Text("Casper recognizes your voice", comment: "Title of the setup step for choosing a voice model."),
         message: Text(
           """
-          A voice model on this Mac turns your speech into text, so your voice never leaves it. Choose one to \
-          download. You can change it later in Settings.
+          A voice model on this Mac turns your speech into text. Your data is kept locally and never sent to the \
+          cloud. Choose one to download. You can change it later in Settings.
           """,
           comment: "Explanation on the setup step for choosing a voice model."
         )
@@ -92,7 +92,10 @@ struct OnboardingView: View {
         systemImage: "hand.raised",
         title: Text("Give Casper access", comment: "Title of the setup step for allowing permissions."),
         message: Text(
-          "Casper needs each of these to hear you, type for you, and tell you when it learns a word.",
+          """
+          Casper needs the microphone to hear you and Accessibility to type for you. Notifications are optional: they \
+          tell you when Casper learns a word.
+          """,
           comment: "Explanation on the setup step for allowing the microphone, Accessibility and notifications."
         )
       ) {
@@ -234,7 +237,8 @@ struct OnboardingView: View {
     case .languageModel:
       hasChosen(in: LanguageModel.store, activeID: activeLanguageModelID)
     case .permissions:
-      permissions.isEverythingAllowed && permissions.areNotificationsAllowed
+      // Notifications are only for learned words, so setup asks for them without requiring them.
+      permissions.isEverythingAllowed
     }
   }
 
