@@ -45,6 +45,9 @@
     "Active" : {
       "comment" : "Shown on the Voice Models page next to the speech model dictation uses."
     },
+    "Add App" : {
+      "comment" : "Menu under the list of apps on the Options tab of the Refine page of Settings that pins a persona to another app, and the button of the panel for choosing that app."
+    },
     "Advanced" : {
       "comment" : "Settings tab and window title for advanced settings that tune how Casper works."
     },
@@ -59,6 +62,9 @@
     },
     "Another persona is already named “%@”." : {
       "comment" : "Shown in the persona editor when the name entered is taken. The argument is the name."
+    },
+    "App Personas" : {
+      "comment" : "Header of the list of apps with their own persona, on the Options tab of the Refine page of Settings."
     },
     "Bad values can make Casper slower or less reliable." : {
       "comment" : "Explanation under the warning at the top of Settings > Advanced."
@@ -112,6 +118,9 @@
     "Change these settings only if you know exactly what they do." : {
       "comment" : "Warning at the top of Settings > Advanced."
     },
+    "Choose Other App…" : {
+      "comment" : "Item of the Add App menu on the Refine page of Settings that opens a panel to choose an app that isn't running."
+    },
     "Click to open Language Models" : {
       "comment" : "Shown under a voice bubble warning. Clicking the bubble opens the Language Models page of Settings."
     },
@@ -123,6 +132,9 @@
     },
     "Create" : {
       "comment" : "Button that saves a new persona in the persona editor."
+    },
+    "Default Persona" : {
+      "comment" : "Picker on the Options tab of the Refine page of Settings for the persona transcripts are refined in, such as Formal or Casual, in apps without their own persona."
     },
     "Delete" : {
       "comment" : "Button on the Voice Models page that deletes a downloaded speech model, and the confirming button in the dialogs that ask before deleting a speech model or a persona."
@@ -199,6 +211,9 @@
     "Instructions" : {
       "comment" : "Header of the text the language model follows for a persona, in the persona editor."
     },
+    "Its app pins will also be deleted. You can't undo this." : {
+      "comment" : "Message of the dialog that asks before deleting a persona that's pinned to apps."
+    },
     "Its files are removed from this Mac. You can download it again later." : {
       "comment" : "Message in the confirmation before deleting a downloaded model."
     },
@@ -262,6 +277,12 @@
     "New Persona" : {
       "comment" : "Title of the persona editor when it creates a persona, and the button under the list of personas on the Refine page of Settings that opens it."
     },
+    "No apps have their own persona." : {
+      "comment" : "Shown in place of the list of apps with their own persona, on the Options tab of the Refine page of Settings, while there are none."
+    },
+    "Not installed" : {
+      "comment" : "Shown under the name of an app with its own persona, on the Refine page of Settings, once the app is no longer on this Mac."
+    },
     "Open Casper automatically when you log in to your Mac." : {
       "comment" : "Explanation under the Start at Login toggle in Settings > General."
     },
@@ -271,14 +292,17 @@
     "Open System Settings" : {
       "comment" : "Button in Settings > Permissions that opens the macOS microphone privacy settings after access was denied."
     },
+    "Options" : {
+      "comment" : "Tab of the Refine page of Settings with whether transcripts are refined, the default persona, and the apps with their own persona."
+    },
     "Permissions" : {
       "comment" : "Settings tab and window title for system permissions."
     },
     "Persona" : {
-      "comment" : "Picker on the Refine page of Settings for the persona transcripts are refined in, such as Formal or Casual."
+      "comment" : "Hidden label, read by VoiceOver, of the picker beside an app on the Refine page of Settings for the persona pinned to the app, such as Formal or Casual."
     },
     "Personas" : {
-      "comment" : "Header of the list of personas on the Refine page of Settings. A persona is a style transcripts are rewritten in, with the instructions the language model follows."
+      "comment" : "Tab of the Refine page of Settings that lists the personas. A persona is a style transcripts are rewritten in, with the instructions the language model follows."
     },
     "Press %@ to dictate" : {
       "comment" : "Voice bubble hover text in toggle mode. The argument is the dictation shortcut, such as ⌥Space."
@@ -299,7 +323,7 @@
       "comment" : "Description of the Release Buffer Cache toggle in Settings > Advanced."
     },
     "Refine" : {
-      "comment" : "Settings tab and window title for the settings that clean up transcripts with a language model, and the personas they're written in."
+      "comment" : "Settings tab and window title for the settings that clean up transcripts with a language model, and the personas they're written in. Also the hidden label, read by VoiceOver, of the control that switches between the Refine page's tabs."
     },
     "Refine Transcripts" : {
       "comment" : "Title of the setting on the Refine page of Settings that cleans up each transcript with a local language model before typing it."
@@ -316,6 +340,9 @@
     "Release Buffer Cache" : {
       "comment" : "Toggle in the Memory section of Settings > Advanced that frees the GPU memory MLX, Apple's machine learning framework, keeps for reuse after each transcription and refine. A technical term."
     },
+    "Remove" : {
+      "comment" : "Button and right-click menu item beside an app on the Refine page of Settings that removes the persona pinned to the app."
+    },
     "Remove filler words and fix grammar and punctuation with a language model that runs on this Mac." : {
       "comment" : "Description of the Refine Transcripts setting."
     },
@@ -324,6 +351,9 @@
     },
     "Reset to Default" : {
       "comment" : "Tooltip and accessibility label for the buttons that restore a setting's default: the dictation shortcut, Option-Space, in Settings > General, and Guesses per Pass in Settings > Advanced."
+    },
+    "Running Apps" : {
+      "comment" : "Heading in the Add App menu on the Refine page of Settings above the apps that are open."
     },
     "Save" : {
       "comment" : "Button that saves the changes to a persona in the persona editor."
@@ -403,6 +433,9 @@
     "Use" : {
       "comment" : "Button on the Voice Models page that makes an installed speech model the one dictation uses."
     },
+    "Used in every app without its own persona." : {
+      "comment" : "Description of the Default Persona picker on the Refine page of Settings."
+    },
     "Voice Bubble Size" : {
       "comment" : "Title of the General setting for how large the floating voice bubble is, set with a slider from small to large."
     },
@@ -410,7 +443,7 @@
       "comment" : "Title of the settings page for downloading and choosing speech recognition models."
     },
     "You can't undo this." : {
-      "comment" : "Message of the dialog that asks before deleting a persona."
+      "comment" : "Message of the dialog that asks before deleting a persona that isn't pinned to any app."
     }
   },
   "version" : "1.0"

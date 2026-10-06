@@ -1,4 +1,5 @@
 import AVFoundation
+import AppKit
 import OSLog
 import Observation
 
@@ -16,6 +17,7 @@ final class DictationController {
   private let microphoneKeepAlive: KeepAliveSchedule
   private let readiness: DictationReadiness
   private let personas: PersonaStore
+  private let runningApps: RunningApps
   private let history: DictationHistory
   private let dictionary: DictionaryStore
   private let correctionLearner: CorrectionLearner
@@ -35,9 +37,14 @@ final class DictationController {
   private var refinesTranscripts = TranscriptRefiner.isEnabled
   /// The dictionary setting in effect, compared against the stored one when settings change.
   private var usesDictionary: Bool
-  /// The persona the recording in progress is refined with, or `nil` if it isn't refined, decided when it starts so its
-  /// model loads while the user speaks, and so editing the persona meanwhile doesn't change how it's refined.
+  /// The persona the recording in progress is refined with, or `nil` if it isn't refined, decided when it starts from
+  /// the app in front so its model loads while the user speaks, and so editing the persona meanwhile doesn't change how
+  /// it's refined.
   private var recordingPersona: RefinePersona?
+  /// The number of the latest request for the language model to keep personas' prompts.
+  ///
+  /// The model ignores a request that reaches it after a later one, which can happen while it loads.
+  private var promptRequest = 0
 
   /// How long recording continues after the hotkey is released, or pressed again in toggle mode.
   ///
@@ -48,12 +55,14 @@ final class DictationController {
   init(
     readiness: DictationReadiness,
     personas: PersonaStore,
+    runningApps: RunningApps,
     history: DictationHistory,
     dictionary: DictionaryStore,
     learnedWordNotifier: LearnedWordNotifier
   ) {
     self.readiness = readiness
     self.personas = personas
+    self.runningApps = runningApps
     self.history = history
     self.dictionary = dictionary
     usesDictionary = dictionary.isEnabled
@@ -101,7 +110,7 @@ final class DictationController {
         self?.dictionarySettingMayHaveChanged()
       }
     }
-    cacheChosenPersonaPromptOnChange()
+    cachePersonaPromptsOnChange()
     prepareDictionaryOnChange()
   }
 
@@ -112,7 +121,7 @@ final class DictationController {
     refinesTranscripts = enabled
     if enabled {
       languageModel.keepLoaded()
-      cacheChosenPersonaPrompt()
+      cachePersonaPrompts()
     } else {
       languageModel.release()
     }
@@ -129,7 +138,7 @@ final class DictationController {
     prepareDictionary()
     if refinesTranscripts {
       languageModel.keepLoaded()
-      cacheChosenPersonaPrompt()
+      cachePersonaPrompts()
     }
   }
 
@@ -165,24 +174,33 @@ final class DictationController {
     }
   }
 
-  /// Caches the chosen persona's prompt now and again whenever the user picks another persona or edits it.
-  private func cacheChosenPersonaPromptOnChange() {
+  /// Caches the prompts of the personas in use now and again whenever the user changes a persona, the chosen persona
+  /// or a pin, or an app launches or quits.
+  private func cachePersonaPromptsOnChange() {
     withObservationTracking {
-      _ = personas.selected
+      _ = personas.personasInUse(runningApps: runningApps.bundleIdentifiers)
     } onChange: { [weak self] in
       // Tracking ends with the first change, which is reported before it's made, so tracking starts over after it.
-      Task { @MainActor in self?.cacheChosenPersonaPromptOnChange() }
+      Task { @MainActor in self?.cachePersonaPromptsOnChange() }
     }
-    cacheChosenPersonaPrompt()
+    cachePersonaPrompts()
   }
 
-  /// Has the language model read the chosen persona's prompt start in the background, if refining is on, so the next
-  /// dictation doesn't wait for it.
-  private func cacheChosenPersonaPrompt() {
+  /// Has the language model read the prompt starts of the chosen persona and those pinned to running apps in the
+  /// background, if refining is on, so the next dictation doesn't wait for them, and drop the others.
+  ///
+  /// A persona that a recording uses is read first, and kept along with them.
+  private func cachePersonaPrompts(first recording: RefinePersona? = nil) {
     guard refinesTranscripts, let loading = try? languageModel.model() else { return }
-    let persona = personas.selected
+    var inUse = personas.personasInUse(runningApps: runningApps.bundleIdentifiers)
+    if let recording {
+      inUse = [recording] + inUse.filter { $0 != recording }
+    }
+    promptRequest += 1
+    let request = promptRequest
     Task {
-      try? await loading.value.cachePrompt(for: persona)
+      guard let refiner = try? await loading.value else { return }
+      await refiner.keepPrompts(for: inUse, request: request)
     }
   }
 
@@ -232,14 +250,16 @@ final class DictationController {
     status.isRecording = true
     correctionLearner.dictationStarted()
     speechModel.beginUse()
-    recordingPersona = TranscriptRefiner.isEnabled && LanguageModel.active != nil ? personas.selected : nil
+    recordingPersona =
+      if TranscriptRefiner.isEnabled, LanguageModel.active != nil {
+        personas.persona(forApp: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+      } else {
+        nil
+      }
     guard let persona = recordingPersona else { return }
     languageModel.beginUse()
-    // A model that loads with this recording, after an earlier load failed, reads the prompt while the user speaks.
-    guard let loading = try? languageModel.model() else { return }
-    Task {
-      try? await loading.value.cachePrompt(for: persona)
-    }
+    // A model that loads with this recording, after an earlier load failed, reads the prompts while the user speaks.
+    cachePersonaPrompts(first: persona)
   }
 
   private func finishRecording() {

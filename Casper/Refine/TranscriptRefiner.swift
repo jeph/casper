@@ -6,12 +6,12 @@ import OSLog
 /// Cleans up transcripts with a language model, following a persona's prompt.
 ///
 /// Every prompt for a persona starts the same way, so the model reads that start once, and each transcript continues
-/// from a copy of that state instead of reading it again. Only the last persona's start is kept, since a long one
-/// takes hundreds of megabytes; Casper reads the chosen persona's start as soon as the model loads and whenever the
-/// user picks or edits a persona, so dictations don't wait for it.
+/// from a copy of that state instead of reading it again. A persona's start takes from tens of megabytes to over a
+/// gigabyte, so only the personas dictation can use right now are kept: the chosen one and those pinned to running
+/// apps. Casper reads them as soon as the model loads and whenever that set changes, so dictations don't wait for them.
 ///
-/// The refiner releases MLX's buffer cache after reading a prompt and after each transcript, if the user turned that
-/// on. The persona's cached start is still in use, so releasing never frees it.
+/// The refiner releases MLX's buffer cache after reading or dropping prompts and after each transcript, if the user
+/// turned that on. The cached starts are still in use, so releasing never frees them.
 actor TranscriptRefiner {
   private static let logger = Logger(subsystem: "io.jeph.Casper", category: "Refine")
 
@@ -23,10 +23,6 @@ actor TranscriptRefiner {
 
   /// The start of a persona's prompt, which every transcript's prompt shares, and the model's state after reading it.
   private struct CachedPrompt {
-    /// The persona the start was made from, which identifies a built-in persona's prompt.
-    let personaID: String
-    /// The persona's instructions, the rest of the prompt of a persona the user wrote.
-    let instructions: String
     let tokens: [Int]
     /// Copied for each transcript.
     let cache: [KVCache]
@@ -34,7 +30,7 @@ actor TranscriptRefiner {
 
   private struct Loaded {
     let context: ModelContext
-    var prompt: CachedPrompt?
+    var prompts = PersonaPromptCache<CachedPrompt>()
   }
 
   /// The `UserDefaults` key for whether transcripts are refined, on unless turned off.
@@ -50,9 +46,22 @@ actor TranscriptRefiner {
     loaded = Loaded(context: context)
   }
 
-  /// Reads a persona's prompt start ahead of its first transcript, so refining that transcript doesn't wait for it.
-  func cachePrompt(for persona: RefinePersona) throws {
-    _ = try cachedPrompt(for: persona)
+  /// Keeps the prompt starts of these personas cached and drops the rest, reading the missing ones in order.
+  ///
+  /// `request` numbers the call, counting up, since calls made in order can arrive out of order. A call that arrives
+  /// after a later one does nothing, and a later call takes over reading from an earlier one. Transcripts can be
+  /// refined between reads.
+  func keepPrompts(for personas: [RefinePersona], request: Int) async {
+    // Dropped before any is read, so a persona's old start and its edited one never take memory at once.
+    guard let dropped = loaded?.prompts.keep(personas, request: request) else { return }
+    if dropped {
+      BufferCache.releaseIfEnabled()
+    }
+    for persona in personas {
+      guard loaded?.prompts.request == request else { return }
+      _ = try? cachedPrompt(for: persona)
+      await Task.yield()
+    }
   }
 
   /// Returns the cleaned-up transcript, which is empty if the transcript was only filler words.
@@ -131,17 +140,18 @@ actor TranscriptRefiner {
     MLX.Memory.clearCache()
   }
 
+  /// Returns a persona's prompt start, reading it if it isn't cached, and caching it only if the persona is kept.
   private func cachedPrompt(for persona: RefinePersona) throws -> CachedPrompt {
-    guard let loaded else { throw RefineError.unloaded }
-    if let prompt = loaded.prompt, prompt.personaID == persona.id, prompt.instructions == persona.instructions {
+    guard let context = loaded?.context else { throw RefineError.unloaded }
+    if let prompt = loaded?.prompts.prompt(for: persona) {
       return prompt
     }
-    // The previous start is released before the new one is read, so the two never take memory at once.
-    self.loaded?.prompt = nil
     let start = ContinuousClock.now
-    let prompt = try Self.readPrompt(for: persona, context: loaded.context)
-    self.loaded?.prompt = prompt
-    Self.logger.info("Read \(prompt.tokens.count) prompt tokens in \(ContinuousClock.now - start, privacy: .public)")
+    let prompt = try Self.readPrompt(for: persona, context: context)
+    loaded?.prompts.store(prompt, for: persona)
+    Self.logger.info(
+      "Read \(prompt.tokens.count) prompt tokens for \(persona.id, privacy: .public) in \(ContinuousClock.now - start, privacy: .public)"
+    )
     BufferCache.releaseIfEnabled()
     return prompt
   }
@@ -162,7 +172,7 @@ actor TranscriptRefiner {
       _ = context.model(LMInput.Text(tokens: MLXArray(tokens).expandedDimensions(axis: 0)), cache: cache, state: nil)
       eval(cache)
     }
-    return CachedPrompt(personaID: persona.id, instructions: persona.instructions, tokens: tokens, cache: cache)
+    return CachedPrompt(tokens: tokens, cache: cache)
   }
 
   private static func promptTokens(

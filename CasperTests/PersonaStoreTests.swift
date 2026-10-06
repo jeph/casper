@@ -138,6 +138,152 @@ final class PersonaStoreTests {
     try Data("not json".utf8).write(to: fileURL)
     #expect(makeStore().personas == RefinePersona.builtIns)
   }
+
+  @Test func appsWithoutAPinUseTheChosenPersona() {
+    let store = makeStore()
+    store.selectedID = RefinePersona.casual.id
+    store.pin(RefinePersona.formal.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    #expect(store.persona(forApp: "com.tinyspeck.slackmacgap") == .formal)
+    #expect(store.persona(forApp: "com.apple.mail") == .casual)
+    #expect(store.persona(forApp: nil) == .casual)
+  }
+
+  @Test func anAppHasOnePersona() {
+    let store = makeStore()
+    store.pin(RefinePersona.formal.id, toApp: "com.hnc.Discord", named: "Discord")
+    store.pin(RefinePersona.casual.id, toApp: "com.hnc.Discord", named: "Discord")
+    #expect(store.appPersonas.map(\.personaID) == [RefinePersona.casual.id])
+  }
+
+  @Test func unknownPersonasCantBePinned() {
+    let store = makeStore()
+    store.pin("deleted", toApp: "com.hnc.Discord", named: "Discord")
+    #expect(store.appPersonas.isEmpty)
+  }
+
+  @Test func deletingAPersonaDeletesItsPins() {
+    let store = makeStore()
+    let slack = custom("Slack")
+    store.save(slack)
+    store.pin(slack.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    store.pin(RefinePersona.casual.id, toApp: "com.hnc.Discord", named: "Discord")
+
+    store.delete(slack)
+
+    #expect(store.appPersonas.map(\.bundleIdentifier) == ["com.hnc.Discord"])
+    #expect(makeStore().appPersonas.map(\.bundleIdentifier) == ["com.hnc.Discord"])
+  }
+
+  @Test func duplicatingAPersonaLeavesItsPinsOnTheOriginal() {
+    let store = makeStore()
+    store.pin(RefinePersona.casual.id, toApp: "com.hnc.Discord", named: "Discord")
+    let copy = store.duplicate(.casual)
+    #expect(store.persona(forApp: "com.hnc.Discord") == .casual)
+    #expect(!store.isPinned(copy))
+  }
+
+  @Test func pinsAreRestoredOnLaunch() {
+    let store = makeStore()
+    store.pin(RefinePersona.casual.id, toApp: "com.hnc.Discord", named: "Discord")
+    store.pin(RefinePersona.formal.id, toApp: "com.apple.mail", named: "Mail")
+    #expect(makeStore().appPersonas == store.appPersonas)
+  }
+
+  /// Pins saved by a damaged or older store load without ones to missing personas or a second pin for an app.
+  @Test func storedPinsToMissingPersonasOrRepeatedAppsAreIgnored() throws {
+    let pins = [
+      AppPersona(bundleIdentifier: "com.hnc.Discord", appName: "Discord", personaID: RefinePersona.casual.id),
+      AppPersona(bundleIdentifier: "com.hnc.Discord", appName: "Discord", personaID: RefinePersona.formal.id),
+      AppPersona(bundleIdentifier: "com.apple.mail", appName: "Mail", personaID: "deleted"),
+    ]
+    defaults.set(try JSONEncoder().encode(pins), forKey: PersonaStore.appPersonasStorageKey)
+    #expect(makeStore().appPersonas == [pins[0]])
+  }
+
+  @Test func personasInUseAreTheChosenOneThenThosePinnedToRunningApps() {
+    let store = makeStore()
+    let slack = custom("Slack")
+    store.save(slack)
+    store.pin(slack.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    store.pin(RefinePersona.casual.id, toApp: "com.hnc.Discord", named: "Discord")
+    store.pin(RefinePersona.formal.id, toApp: "com.apple.mail", named: "Mail")
+    store.pin(slack.id, toApp: "com.microsoft.teams2", named: "Teams")
+
+    let inUse = store.personasInUse(runningApps: ["com.apple.mail", "com.microsoft.teams2", "com.hnc.Discord"])
+
+    // Mail's persona is the chosen one, and Teams shares Slack's, so each is kept once.
+    #expect(inUse == [.formal, .casual, slack])
+    #expect(store.personasInUse(runningApps: []) == [.formal])
+  }
+
+  /// Has the cache keep the personas in use, as the refiner does, storing a start for each one it reads, and returns
+  /// whether any start was dropped.
+  private func keepInUse(
+    _ store: PersonaStore,
+    _ cache: inout PersonaPromptCache<String>,
+    running: Set<String>
+  ) -> Bool {
+    let inUse = store.personasInUse(runningApps: running)
+    let dropped = cache.keep(inUse, request: cache.request + 1)
+    for persona in inUse where cache.prompt(for: persona) == nil {
+      cache.store(persona.id, for: persona)
+    }
+    return dropped == true
+  }
+
+  /// Switching an app to another persona drops its old persona's start unless a running app still uses it, and
+  /// switching back has it read again.
+  @Test func repinningAnAppDropsItsOldPersonasStartUnlessAnotherRunningAppUsesIt() {
+    let store = makeStore()
+    var cache = PersonaPromptCache<String>()
+    var running: Set = ["org.mozilla.firefox"]
+    store.pin(RefinePersona.casual.id, toApp: "org.mozilla.firefox", named: "Firefox")
+    _ = keepInUse(store, &cache, running: running)
+
+    store.pin(RefinePersona.formal.id, toApp: "org.mozilla.firefox", named: "Firefox")
+    #expect(keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) == nil)
+
+    store.pin(RefinePersona.casual.id, toApp: "org.mozilla.firefox", named: "Firefox")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) != nil)
+
+    store.pin(RefinePersona.casual.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    running.insert("com.tinyspeck.slackmacgap")
+    store.pin(RefinePersona.formal.id, toApp: "org.mozilla.firefox", named: "Firefox")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) != nil)
+  }
+
+  /// Pinning a running app has its persona's start read, and unpinning it drops that start unless another running
+  /// app still uses it.
+  @Test func addingAndRemovingAppPersonasReadsAndDropsTheirStarts() {
+    let store = makeStore()
+    var cache = PersonaPromptCache<String>()
+    let running: Set = ["org.mozilla.firefox", "com.tinyspeck.slackmacgap"]
+    _ = keepInUse(store, &cache, running: running)
+
+    store.pin(RefinePersona.casual.id, toApp: "com.apple.mail", named: "Mail")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) == nil)
+
+    store.pin(RefinePersona.casual.id, toApp: "org.mozilla.firefox", named: "Firefox")
+    store.pin(RefinePersona.casual.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) != nil)
+
+    store.unpin(app: "org.mozilla.firefox")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) != nil)
+
+    store.unpin(app: "com.tinyspeck.slackmacgap")
+    #expect(keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) == nil)
+
+    store.pin(RefinePersona.casual.id, toApp: "com.tinyspeck.slackmacgap", named: "Slack")
+    #expect(!keepInUse(store, &cache, running: running))
+    #expect(cache.prompt(for: .casual) != nil)
+  }
 }
 
 struct RefinePersonaTests {

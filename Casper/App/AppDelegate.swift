@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let readiness = DictationReadiness()
   let settingsNavigation = SettingsNavigation()
   let personas = PersonaStore()
+  let runningApps = RunningApps()
   let history = DictationHistory()
   let dictionary = DictionaryStore()
   private lazy var learnedWordNotifier = LearnedWordNotifier(
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let dictation = DictationController(
       readiness: readiness,
       personas: personas,
+      runningApps: runningApps,
       history: history,
       dictionary: dictionary,
       learnedWordNotifier: learnedWordNotifier

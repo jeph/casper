@@ -104,6 +104,7 @@ targets:
       - Casper/Dictionary/ReplayCheck.swift
       - Casper/History/HistoryDatabase.swift
       - Casper/History/HistorySearch.swift
+      - Casper/Refine/PersonaPromptCache.swift
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift
       - Casper/Refine/RefinePrompt.swift
