@@ -22,7 +22,7 @@ packages:
     exactVersion: 0.0.28
   FluidAudio:
     url: https://github.com/FluidInference/FluidAudio
-    exactVersion: 0.17.4
+    exactVersion: 0.17.7
     # Casper only uses FluidAudio's speech recognition, which doesn't need the prebuilt NeMo text-normalization
     # library that the default NemoTextProcessing trait links.
     traits: []
