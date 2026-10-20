@@ -74,6 +74,7 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")" = "$BUILD_NUMBER"
           test "$(lipo -archs "$app/Contents/MacOS/Casper")" = arm64
           test -s "$app/Contents/Resources/Acknowledgements.txt"
+          test -z "$(find "$app/Contents/Resources" -name 'luxtts_*')"
           test "$(codesign --display --entitlements - --xml "$app" | plutil -convert json -o - -)" = "$ENTITLEMENTS"
 
       - name: Prepare build artifact
