@@ -21,6 +21,7 @@ Contents
   Grisu2 (part of JSON for Modern C++)
   UTF-8 decoder (part of JSON for Modern C++)
   Abseil (part of JSON for Modern C++)
+  Hedley (part of JSON for Modern C++)
   speech-swift
   FluidAudio
   swift-transformers
@@ -651,6 +652,31 @@ Copyright 2018 The Abseil Authors
 
 Licensed under the Apache License, Version 2.0. The full text of the license is
 reproduced in the metal-cpp section.
+
+================================================================================
+Hedley (part of JSON for Modern C++)
+https://nemequ.github.io/hedley
+================================================================================
+
+Copyright (c) 2016-2021 Evan Nemerson <evan@nemerson.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ================================================================================
 speech-swift
@@ -2153,6 +2179,92 @@ FluidAudio third-party notice: KokoroANE-v3/mattmireles-LICENSE
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+--------------------------------------------------------------------------------
+FluidAudio port: FunASR (Paraformer CIF, FSMN VAD)
+https://github.com/modelscope/FunASR
+--------------------------------------------------------------------------------
+
+FluidAudio's Paraformer integrate-and-fire and FSMN voice activity detection
+are Swift ports of FunASR code.
+
+MIT License
+Copyright (c) 2025 FunASR
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+FluidAudio and speech-swift port: NVIDIA NeMo (Sortformer, CTC word spotter)
+https://github.com/NVIDIA/NeMo
+--------------------------------------------------------------------------------
+
+FluidAudio's Sortformer and Nemotron diarization state updaters and its CTC
+word spotter, and speech-swift's Sortformer state updater, are Swift ports of
+NeMo code.
+
+Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+Licensed under the Apache License, Version 2.0. The full text of the license is
+reproduced in the metal-cpp section.
+
+--------------------------------------------------------------------------------
+FluidAudio port: Chatterbox (alignment stream analyzer)
+https://github.com/resemble-ai/chatterbox
+--------------------------------------------------------------------------------
+
+FluidAudio's Chatterbox alignment analyzer is a Swift port of Chatterbox's
+AlignmentStreamAnalyzer.
+
+MIT License
+
+Copyright (c) 2025 Resemble AI
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+FluidAudio port: ZipVoice (English text normalizer, Vocos mel frontend)
+https://github.com/k2-fsa/ZipVoice
+--------------------------------------------------------------------------------
+
+FluidAudio's LuxTTS English text normalizer and mel frontend are Swift ports
+of ZipVoice code.
+
+Copyright 2024 Xiaomi Corp. (authors: Han Zhu)
+
+Licensed under the Apache License, Version 2.0. The full text of the license is
+reproduced in the metal-cpp section.
 
 ================================================================================
 swift-transformers
