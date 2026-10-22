@@ -38,6 +38,8 @@ For each component, copy its license file verbatim, add any Apache `NOTICE` file
 
 Packages also port code from other projects without shipping that project's notice, so search the linked sources for comments such as "port of" and "ported from", and add the upstream project's license and copyright for each port. Today that covers FluidAudio's ports of FunASR, NVIDIA NeMo, Chatterbox, and ZipVoice, and speech-swift's port of NeMo. A "port" that only converts model weights, such as FluidAudio's Core ML port of LocalVQE, needs no entry while the app doesn't bundle the model.
 
+The website ships third-party code to browsers too, so `website/public/third-party-licenses.txt` holds the notices for everything a build of `website/` serves, and `website/public/pagefind/SOURCE.txt` points to the source of Pagefind's search WebAssembly. Starlight's search uses that WebAssembly, and it includes the GPL-3.0 crate `pagefind_microjson`; Casper serves it unmodified, with the GPL text and source links in those two files. Update both files in the same change whenever you add, remove, or upgrade a website package, including the Pagefind version Starlight pulls in. To list what a build serves, build with `vite: { build: { sourcemap: true } }` and read each map's `sources`; then, at the Pagefind tag the lockfile resolves, run `cargo tree -e normal,no-proc-macro --target wasm32-unknown-unknown` in `pagefind_web` and read the dependencies of the `pagefind_ui` and `pagefind_web_js` packages.
+
 Before adding a dependency, check its license. Don't add copyleft code (GPL, LGPL, AGPL) without asking first, since it would change how Casper can be distributed.
 
 ## Releases
