@@ -1,0 +1,12 @@
+The scripts, styles, and WebAssembly in this folder are Pagefind 1.5.2's,
+served unmodified; the other files are this site's search index.
+wasm.en.pagefind and wasm.unknown.pagefind include pagefind_microjson, which is
+licensed under the GNU General Public License, version 3, and are conveyed
+under that license.
+
+Corresponding Source:
+  https://github.com/Pagefind/pagefind/tree/v1.5.2
+  https://crates.io/crates/pagefind_microjson/0.1.4
+
+Licenses and notices for this folder and the rest of the site:
+  /third-party-licenses.txt
