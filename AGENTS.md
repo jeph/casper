@@ -36,6 +36,8 @@ List what ends up in the app, starting from a fresh `make archive` rather than a
 
 For each component, copy its license file verbatim, add any Apache `NOTICE` file, and include what it vendors or links statically, down to license headers inside individual source files. Today that means the libraries vendored inside mlx-swift's `Cmlx` directory, along with the file-level notices in MLX and JSON for Modern C++, and FluidAudio's `ThirdPartyLicenses/` folder. `project.yml` turns off FluidAudio's `NemoTextProcessing` trait, so its prebuilt Rust library isn't linked. If you turn it back on, add text-processing-rs and its Rust crates (list them with `cargo tree -e normal --features ffi,fst-engine --target aarch64-apple-darwin` at the tag FluidAudio's `Package.swift` pins, leaving out compile-time-only proc-macro crates).
 
+Packages also port code from other projects without shipping that project's notice, so search the linked sources for comments such as "port of" and "ported from", and add the upstream project's license and copyright for each port. Today that covers FluidAudio's ports of FunASR, NVIDIA NeMo, Chatterbox, and ZipVoice, and speech-swift's port of NeMo. A "port" that only converts model weights, such as FluidAudio's Core ML port of LocalVQE, needs no entry while the app doesn't bundle the model.
+
 Before adding a dependency, check its license. Don't add copyleft code (GPL, LGPL, AGPL) without asking first, since it would change how Casper can be distributed.
 
 ## Releases
