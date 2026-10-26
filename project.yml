@@ -121,6 +121,7 @@ targets:
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift
       - Casper/Refine/RefinePrompt.swift
+      - Casper/VoiceBubble/FullScreenVideo.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.jeph.CasperTests

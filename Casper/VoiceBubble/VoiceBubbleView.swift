@@ -20,8 +20,6 @@ struct VoiceBubbleView: View {
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @State private var recordingStart = ContinuousClock.now
   @State private var isHovered = false
-  /// Whether the warning callout stays up after a hotkey press, without the bubble being hovered.
-  @State private var isWarningPinned = false
   /// How far the bubble has faded to its dictating colors, from 0 for not at all to 1 for fully.
   @State private var dictationColorAmount = 0.0
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -85,6 +83,10 @@ struct VoiceBubbleView: View {
     .frame(width: panelSize.width, height: panelSize.height, alignment: .leading)
     .animation(.spring(duration: Self.resizeDuration, bounce: 0.2), value: isRecording)
     .animation(.spring(duration: Self.resizeDuration, bounce: 0.2), value: metrics)
+    // Fading the content rather than the panel leaves nothing drawn, so clicks pass through the faded bubble the way
+    // they pass through the rest of the transparent panel.
+    .opacity(layout.isFaded ? 0 : 1)
+    .animation(.easeInOut(duration: 0.25), value: layout.isFaded)
     .onChange(of: isRecording) { _, isRecording in
       if isRecording {
         recordingStart = .now
@@ -97,10 +99,10 @@ struct VoiceBubbleView: View {
     }
     .task(id: status.pressesWhileNotReady) {
       guard status.pressesWhileNotReady > 0 else { return }
-      isWarningPinned = true
+      layout.isWarningPinned = true
       // A later press restarts the wait rather than hiding the callout early.
       guard (try? await Task.sleep(for: Self.warningDuration)) != nil else { return }
-      isWarningPinned = false
+      layout.isWarningPinned = false
     }
     .onChange(of: layout.clicks) {
       if let warning = readiness.warning {
@@ -152,7 +154,7 @@ struct VoiceBubbleView: View {
   private var isDictating: Bool { status.phase != .idle }
 
   private var callout: Callout? {
-    if let warning = readiness.warning, isHovered || isWarningPinned {
+    if let warning = readiness.warning, isHovered || layout.isWarningPinned {
       return .warning(warning)
     }
     return isHovered && status.phase == .idle ? .hotkey : nil
@@ -276,7 +278,8 @@ struct VoiceBubbleView: View {
 }
 
 /// The voice bubble's size, how far the ghost sits from the panel's center, where it places its callout and how far the
-/// grown bubble slides left to stay on screen where it sits, and the clicks the panel receives on it.
+/// grown bubble slides left to stay on screen where it sits, whether its warning stays up, whether it's faded out, and
+/// the clicks the panel receives on it.
 @MainActor
 @Observable
 final class VoiceBubbleLayout {
@@ -287,6 +290,10 @@ final class VoiceBubbleLayout {
   var ghostOffset = CGSize.zero
   var showsCalloutBelow = false
   var calloutAlignment = HorizontalAlignment.center
+  /// Whether the warning callout stays up after a hotkey press, without the bubble being hovered.
+  var isWarningPinned = false
+  /// Whether the bubble is faded out, while video plays in full screen on its screen.
+  var isFaded = false
   /// Counts clicks on the bubble that didn't drag it.
   var clicks = 0
 

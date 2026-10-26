@@ -6,6 +6,10 @@ import SwiftUI
 /// The panel never becomes key or activates Casper, so dictation keeps typing into the app in front, including while
 /// the bubble is dragged. Its position is saved as the ghost's center and kept on screen. Clicking the bubble opens
 /// Settings, on the page that fixes it while something dictation needs is missing.
+///
+/// The bubble fades out while its screen shows an app in full screen that's playing video, and comes back for
+/// dictation and its warning, so it covers neither the video nor hides what Casper is doing. A full-screen app that
+/// isn't playing video, such as a terminal, keeps the bubble.
 @MainActor
 final class VoiceBubble {
   /// The `UserDefaults` key for whether the voice bubble is shown, on unless turned off.
@@ -14,10 +18,20 @@ final class VoiceBubble {
   static let sizeStorageKey = "voiceBubbleSize"
   private static let centerStorageKey = "voiceBubbleCenter"
 
+  private let status: DictationStatus
   private let panel: VoiceBubblePanel
   private let layout = VoiceBubbleLayout(metrics: VoiceBubbleMetrics(size: storedSize))
+  /// The full-screen app on the bubble's screen last seen playing video, and when, while the bubble fades for it.
+  private var videoApp: (pid: pid_t, lastPlaying: ContinuousClock.Instant)?
+  /// Checks the full-screen app for video every second while the bubble's screen shows one.
+  private var videoWatch: Task<Void, Never>?
+
+  /// How long the full-screen app must stop playing before the bubble returns, so it stays away while the video
+  /// buffers or is paused for a moment.
+  private static let videoStopDelay = Duration.seconds(3)
 
   init(status: DictationStatus, readiness: DictationReadiness, settingsNavigation: SettingsNavigation) {
+    self.status = status
     panel = VoiceBubblePanel(size: VoiceBubbleMetrics.panelSize)
     let hostingView = NSHostingView(
       rootView: VoiceBubbleView(
@@ -36,7 +50,10 @@ final class VoiceBubble {
     let center = NotificationCenter.default
     center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) {
       [weak self] _ in
-      MainActor.assumeIsolated { self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter) }
+      MainActor.assumeIsolated {
+        self?.move(toCenter: Self.savedCenter ?? self?.ghostCenter)
+        self?.checkForVideo()
+      }
     }
     center.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
       MainActor.assumeIsolated {
@@ -44,7 +61,15 @@ final class VoiceBubble {
         self?.updateSize()
       }
     }
+    NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.activeSpaceDidChangeNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.checkForVideo() }
+    }
     updateVisibility()
+    fadeOnDictationChange()
   }
 
   private static var storedSize: Int {
@@ -74,6 +99,56 @@ final class VoiceBubble {
     } else {
       panel.orderOut(nil)
     }
+    checkForVideo()
+  }
+
+  /// Fades the bubble out or in now and again whenever dictation starts or stops, or its warning comes or goes.
+  private func fadeOnDictationChange() {
+    withObservationTracking {
+      _ = status.phase != .idle || layout.isWarningPinned
+    } onChange: { [weak self] in
+      // Tracking ends with the first change, which is reported before it's made, so tracking starts over after it.
+      Task { @MainActor in self?.fadeOnDictationChange() }
+    }
+    updateFade()
+  }
+
+  /// Looks for an app playing video in full screen on the bubble's screen, and keeps checking every second while
+  /// there's a full-screen app, since apps don't say when they start or stop playing.
+  ///
+  /// The bubble fades as soon as video plays, but only returns once the app has stopped for `videoStopDelay`, or right
+  /// away when the screen no longer shows that app.
+  private func checkForVideo() {
+    guard panel.isVisible, let app = panel.screen.flatMap(FullScreenVideo.app(on:)) else {
+      videoWatch?.cancel()
+      videoWatch = nil
+      videoApp = nil
+      updateFade()
+      return
+    }
+    if FullScreenVideo.isPlaying(in: app) {
+      videoApp = (app, .now)
+    } else if let videoApp, videoApp.pid != app || videoApp.lastPlaying.duration(to: .now) >= Self.videoStopDelay {
+      self.videoApp = nil
+    }
+    updateFade()
+    guard videoWatch == nil else { return }
+    videoWatch = Task { [weak self] in
+      while (try? await Task.sleep(for: .seconds(1))) != nil {
+        self?.checkForVideo()
+      }
+    }
+  }
+
+  /// Fades the bubble out while video plays in full screen on its screen, unless it's showing dictation or its warning.
+  ///
+  /// The panel's `ignoresMouseEvents` stays unset: setting it, even to `false`, makes the whole panel catch clicks,
+  /// including its transparent area around the bubble.
+  private func updateFade() {
+    let fades = videoApp != nil && status.phase == .idle && !layout.isWarningPinned
+    if fades != layout.isFaded {
+      layout.isFaded = fades
+    }
   }
 
   private var ghostCenter: NSPoint {
@@ -88,6 +163,8 @@ final class VoiceBubble {
   private func dragEnded() {
     move(toCenter: ghostCenter)
     UserDefaults.standard.set(NSStringFromPoint(ghostCenter), forKey: Self.centerStorageKey)
+    // The bubble may have moved to another screen.
+    checkForVideo()
   }
 
   /// Puts the ghost's center at the given point, pulled onto the nearest screen, or at the bottom center of the main
