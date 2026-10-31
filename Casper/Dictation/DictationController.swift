@@ -41,6 +41,9 @@ final class DictationController {
   /// the app in front so its model loads while the user speaks, and so editing the persona meanwhile doesn't change how
   /// it's refined.
   private var recordingPersona: RefinePersona?
+  /// The bundle identifier of the app in front when the recording in progress started, which the dictation is typed
+  /// into, or `nil` if no app was in front.
+  private var recordingApp: String?
   /// Transcribes the recording in progress while it's recorded, or `nil` if it's transcribed once it ends.
   private var liveDictation: LiveDictation?
   /// The number of the latest request for the language model to keep personas' prompts.
@@ -252,9 +255,10 @@ final class DictationController {
     status.isRecording = true
     correctionLearner.dictationStarted()
     speechModel.beginUse()
+    recordingApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
     recordingPersona =
       if TranscriptRefiner.isEnabled, LanguageModel.active != nil {
-        personas.persona(forApp: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+        personas.persona(forApp: recordingApp)
       } else {
         nil
       }
@@ -312,6 +316,8 @@ final class DictationController {
     let dictation = nextDictation
     nextDictation += 1
     let persona = recordingPersona
+    let app = recordingApp
+    let duration = Double(samples.count) / SpeechModel.sampleRate
     // Dated when the recording ends, so the history lists dictations in the order they were spoken.
     let recordedAt = Date.now
     // Each dictation is transcribed and refined as soon as it can be, alongside earlier ones still in progress. Only
@@ -324,7 +330,7 @@ final class DictationController {
         }
         correctionLearner.dictationEnded()
       }
-      var finished = FinishedDictation(text: "", recordedAt: recordedAt, evidence: nil)
+      var finished = FinishedDictation(text: "", recordedAt: recordedAt, duration: duration, app: app, evidence: nil)
       let ended = ContinuousClock.now
       do {
         let transcribed =
@@ -348,10 +354,13 @@ final class DictationController {
     }
   }
 
-  /// A dictation's final text, when its recording ended, and what checking the user's corrections to it needs.
+  /// A dictation's final text, when its recording ended and how long it was in seconds, the app it went into, and what
+  /// checking the user's corrections to it needs.
   private struct FinishedDictation {
     var text: String
     let recordedAt: Date
+    let duration: TimeInterval
+    let app: String?
     /// `nil` unless corrections are added to the dictionary.
     var evidence: CorrectionLearner.Dictation?
   }
@@ -367,7 +376,7 @@ final class DictationController {
     nextDelivery += ready.count
     undelivered = undelivered.filter { $0.key >= nextDelivery }
     for dictation in ready {
-      history.save(dictation.text, recordedAt: dictation.recordedAt)
+      history.save(dictation.text, recordedAt: dictation.recordedAt, duration: dictation.duration, app: dictation.app)
     }
     // A trailing space lets the next dictation, or typing, continue the sentence without joining words.
     let text =

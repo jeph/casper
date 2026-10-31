@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Testing
 
 final class HistoryDatabaseTests {
@@ -128,5 +129,49 @@ final class HistoryDatabaseTests {
     let saved = try await database.insert("Remember me", date: date(1))
     let reopened = HistoryDatabase(fileURL: directory.appending(path: "History.sqlite"))
     #expect(try await reopened.page(matching: "remember", before: nil, limit: 10) == [saved])
+  }
+
+  @Test func keepsEachDictationsLengthAndApp() async throws {
+    let chat = try await database.insert("Chat", date: date(1), duration: 4.2, app: "com.example.chat")
+    let unknown = try await database.insert("No app in front", date: date(2), duration: 0.5, app: nil)
+    #expect(try await allPages(size: 10) == [unknown, chat])
+    #expect(chat.duration == 4.2 && chat.app == "com.example.chat")
+  }
+
+  /// A history from before Casper kept recording lengths and apps is deleted, words and all, rather than upgraded.
+  @Test func historiesFromBeforeLengthsAndAppsAreDeleted() async throws {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let file = directory.appending(path: "History.sqlite")
+    var old: OpaquePointer?
+    #expect(sqlite3_open(file.path(percentEncoded: false), &old) == SQLITE_OK)
+    let created = """
+      CREATE TABLE dictation (id INTEGER PRIMARY KEY, date REAL NOT NULL, text TEXT NOT NULL);
+      INSERT INTO dictation (date, text) VALUES (1, 'My password is quixoticzebra');
+      """
+    #expect(sqlite3_exec(old, created, nil, nil, nil) == SQLITE_OK)
+    sqlite3_close(old)
+
+    #expect(try await database.count(matching: "") == 0)
+    let added = try await database.insert("New dictation", date: date(2), duration: 1, app: nil)
+    #expect(try await allPages(size: 10) == [added])
+    let bytes = try Data(contentsOf: file)
+    #expect(bytes.firstRange(of: Data("quixoticzebra".utf8)) == nil)
+  }
+
+  @Test func statsLeaveOutDeletedDictations() async throws {
+    let kept = try await database.insert("Two words", date: date(1))
+    let deleted = try await database.insert("Three more words", date: date(2))
+    try await database.delete([deleted.id])
+    let stats = try await database.stats(calendar: .current, now: kept.date)
+    #expect(stats.dictations == 1)
+    #expect(stats.words == 2)
+  }
+}
+
+extension HistoryDatabase {
+  /// Saves a one-second dictation with no app, for tests that only care about its text and date.
+  @discardableResult
+  fileprivate func insert(_ text: String, date: Date) throws -> Dictation {
+    try insert(text, date: date, duration: 1, app: nil)
   }
 }

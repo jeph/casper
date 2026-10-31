@@ -27,13 +27,14 @@ final class DictationHistory {
     Task { await updateCount() }
   }
 
-  /// Saves the text Casper typed for a dictation whose recording ended at `date`, unless history is off.
-  func save(_ text: String, recordedAt date: Date) {
+  /// Saves the text Casper typed for a dictation whose recording ended at `date` after `duration` seconds, into the
+  /// app with the bundle identifier `app`, unless history is off.
+  func save(_ text: String, recordedAt date: Date, duration: TimeInterval, app: String?) {
     let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard Self.isEnabled, !text.isEmpty else { return }
     Task {
       do {
-        try await database.insert(text, date: date)
+        try await database.insert(text, date: date, duration: duration, app: app)
         count += 1
         saves += 1
       } catch {
@@ -52,6 +53,11 @@ final class DictationHistory {
 
   func count(matching query: String) async throws -> Int {
     try await database.count(matching: query)
+  }
+
+  /// Stats about every saved dictation, dated in the user's calendar, with streaks up to today.
+  func stats() async throws -> HistoryStats {
+    try await database.stats(calendar: .current, now: .now)
   }
 
   func delete(_ ids: Set<Int64>) async throws {

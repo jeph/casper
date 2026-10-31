@@ -2,15 +2,30 @@ import AppKit
 import ServiceManagement
 import SwiftUI
 
+/// The General page, which opens the Stats page in its place from a row at the top.
 struct GeneralView: View {
+  @Environment(DictationHistory.self) private var history
   @State private var launchAtLoginStatus = LaunchAtLogin.status
+  @State private var showsStats = false
+  @State private var stats: HistoryStats?
   @AppStorage(DictationMode.storageKey) private var dictationMode = DictationMode.defaultValue
   @AppStorage(VoiceBubble.visibleStorageKey) private var showsVoiceBubble = true
   @AppStorage(VoiceBubble.sizeStorageKey) private var voiceBubbleSize = VoiceBubbleMetrics.defaultSize
   @AppStorage(SettingsPane.advancedEnabledStorageKey) private var showsAdvancedSettings = false
 
   var body: some View {
+    if showsStats {
+      StatsView { showsStats = false }
+    } else {
+      form
+    }
+  }
+
+  private var form: some View {
     Form {
+      Section {
+        statsRow
+      }
       Section {
         InputDevicePicker {
           Label {
@@ -111,6 +126,41 @@ struct GeneralView: View {
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
       launchAtLoginStatus = LaunchAtLogin.status
     }
+    .task(id: [history.count, history.saves]) {
+      stats = try? await history.stats()
+    }
+  }
+
+  /// Opens the Stats page, summing it up once there's a dictation in the history.
+  private var statsRow: some View {
+    Button {
+      showsStats = true
+    } label: {
+      HStack {
+        Label {
+          Text("Stats")
+          statsSummary
+        } icon: {
+          Image(systemName: "chart.bar.xaxis")
+        }
+        Spacer()
+        Image(systemName: "chevron.right")
+          .foregroundStyle(.tertiary)
+      }
+      .contentShape(.rect)
+    }
+    .buttonStyle(.plain)
+  }
+
+  private var statsSummary: Text {
+    guard let stats, stats.dictations > 0 else {
+      return Text("Time saved, speaking speed, and more from your history.")
+    }
+    let saved = durationText(stats.timeSaved)
+    guard stats.currentStreak > 0 else {
+      return Text("\(saved) saved · ^[\(stats.words) word](inflect: true)")
+    }
+    return Text("\(saved) saved · ^[\(stats.words) word](inflect: true) · \(stats.currentStreak)-day streak")
   }
 
   private var sizeRange: ClosedRange<Double> {

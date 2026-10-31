@@ -117,6 +117,7 @@ targets:
       - Casper/Dictionary/ReplayCheck.swift
       - Casper/History/HistoryDatabase.swift
       - Casper/History/HistorySearch.swift
+      - Casper/History/HistoryStats.swift
       - Casper/Models/DownloadableModel.swift
       - Casper/Models/ModelDownloader.swift
       - Casper/Models/ModelStore.swift
