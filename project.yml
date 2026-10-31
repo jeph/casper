@@ -121,6 +121,7 @@ targets:
       - Casper/Models/DownloadableModel.swift
       - Casper/Models/ModelDownloader.swift
       - Casper/Models/ModelStore.swift
+      - Casper/Refine/CasualStyle.swift
       - Casper/Refine/PersonaPromptCache.swift
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift

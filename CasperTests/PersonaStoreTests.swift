@@ -325,7 +325,7 @@ struct RefinePromptTests {
   }
 
   /// A duplicate of a built-in persona sends the built-in's prompt written out as its instructions, not the
-  /// built-in's own prompt, which the user couldn't see or edit.
+  /// built-in's own prompt, which the user couldn't see or edit, and its output is typed as the model wrote it.
   @Test(arguments: RefinePersona.builtIns)
   func duplicateOfBuiltInSendsItsInstructions(builtIn: RefinePersona) {
     let duplicate = RefinePersona(
@@ -339,6 +339,13 @@ struct RefinePromptTests {
     #expect(messages.count == 2)
     #expect(messages.first?["content"] == builtIn.instructions)
     #expect(RefinePrompt.messages(for: "hey", persona: builtIn).count > 2)
+    #expect(RefinePrompt.finished("Thank you, see you soon.", persona: duplicate) == "Thank you, see you soon.")
+  }
+
+  /// Only the casual persona's output becomes a text message.
+  @Test func onlyCasualOutputIsStyled() {
+    #expect(RefinePrompt.finished("Okay, see you soon.", persona: .formal) == "Okay, see you soon.")
+    #expect(RefinePrompt.finished("Okay, see you soon.", persona: .casual) == "Ok see u soon")
   }
 
   /// Everything before the transcript is the same for every transcript, so the refiner can cache it.

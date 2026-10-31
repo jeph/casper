@@ -335,14 +335,13 @@ final class DictationController {
       do {
         let transcribed =
           if let live { try await finish(live, recording: samples) } else { try await transcribe(samples) }
-        finished.text =
-          if let refined = transcribed.refined {
-            refined
-          } else if let persona {
-            await refine(transcribed.text, persona: persona)
-          } else {
-            transcribed.text
-          }
+        if let persona {
+          let refined =
+            if let refined = transcribed.refined { refined } else { await refine(transcribed.text, persona: persona) }
+          finished.text = RefinePrompt.finished(refined, persona: persona)
+        } else {
+          finished.text = transcribed.text
+        }
         finished.evidence = transcribed.evidence
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
