@@ -2,7 +2,7 @@ import AppKit
 import ServiceManagement
 import SwiftUI
 
-/// The General page, which opens the Stats page in its place from a row at the top.
+/// The General page, which opens the Stats page in its place from a row near the bottom.
 struct GeneralView: View {
   @Environment(DictationHistory.self) private var history
   @Environment(AppUpdater.self) private var updater
@@ -24,9 +24,6 @@ struct GeneralView: View {
 
   private var form: some View {
     Form {
-      Section {
-        statsRow
-      }
       Section {
         InputDevicePicker {
           Label {
@@ -122,6 +119,7 @@ struct GeneralView: View {
             }
           }
         }
+        statsRow
         Toggle(isOn: $showsAdvancedSettings) {
           Label {
             Text("Show Advanced Settings")
