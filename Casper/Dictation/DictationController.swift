@@ -282,9 +282,9 @@ final class DictationController {
     return LiveDictation(
       samples: { recorder.samples(from: $0, ofRecording: recording) },
       sampleRate: SpeechModel.sampleRate,
-      transcribe: { [weak self] samples, offset, kept, previous in
+      transcribe: { [weak self] audio, previous in
         guard let self else { throw CancellationError() }
-        return try await transcribe(samples, from: offset, keeping: kept, after: previous)
+        return try await transcribe(audio, after: previous)
       },
       refine: refine
     )
@@ -428,7 +428,8 @@ final class DictationController {
 
   /// Finishes a recording transcribed while it was in progress, then ends its use of the speech model.
   ///
-  /// Its silence isn't shortened, since only its last few seconds are transcribed after it ends.
+  /// Checking corrections replays the whole recording, with its silence, since each segment's silence was shortened on
+  /// its own.
   private func finish(_ live: LiveDictation, recording: [Float]) async throws -> Transcribed {
     defer { speechModel.endUse() }
     let modelID = SpeechModel.active?.id
@@ -443,35 +444,26 @@ final class DictationController {
     )
   }
 
-  /// Transcribes the samples in `kept` of part of a recording in progress, with the audio around them as context,
-  /// leaving out words that repeat the last of `previous`, and swaps Sounds Like spellings for their words.
+  /// Transcribes a segment of a recording in progress, with the audio around it as context, leaving out words that
+  /// repeat the last of `previous`, and swaps Sounds Like spellings for their words.
   private func transcribe(
-    _ samples: [Float],
-    from offset: Int,
-    keeping kept: Range<Int>,
-    after previous: [ParakeetTranscriber.SpokenWord]
-  ) async throws -> (text: String, words: [ParakeetTranscriber.SpokenWord]) {
+    _ audio: SegmentAudio,
+    after previous: [SpokenWord]
+  ) async throws -> (text: String, words: [SpokenWord]) {
     let words = dictionary.wordsForDictation
     let transcriber = try await speechModel.model().value
     let transcribed =
       if let parakeet = transcriber as? ParakeetTranscriber {
-        try await parakeet.transcribe(
-          samples,
-          from: offset,
-          keeping: kept,
-          after: previous,
-          sampleRate: SpeechModel.sampleRate,
-          dictionary: words
-        )
+        try await parakeet.transcribe(audio, after: previous, sampleRate: SpeechModel.sampleRate, dictionary: words)
       } else {
-        // The user switched to a model without timings while recording, so it hears only the samples it keeps.
+        // The user switched to a model without timings while recording, so it hears only the segment.
         (
           text: try await transcriber.transcribe(
-            Array(samples[kept]),
+            Array(audio.segmentSamples),
             sampleRate: SpeechModel.sampleRate,
             dictionary: words
           ),
-          words: [ParakeetTranscriber.SpokenWord]()
+          words: [SpokenWord]()
         )
       }
     return (await Self.swapSoundsLike(in: transcribed.text, dictionary: words), transcribed.words)

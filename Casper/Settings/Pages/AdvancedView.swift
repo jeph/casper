@@ -3,6 +3,7 @@ import SwiftUI
 struct AdvancedView: View {
   @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
   @AppStorage(LiveDictation.enabledStorageKey) private var transcribesWhileRecording = true
+  @AppStorage(LiveDictation.openWordsStorageKey) private var openWords = LiveDictation.defaultOpenWords
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
   @AppStorage(PromptLookupTokenIterator.enabledStorageKey) private var promptLookupDecoding = true
   @AppStorage(PromptLookupTokenIterator.mostGuessesStorageKey) private var mostGuesses =
@@ -45,6 +46,35 @@ struct AdvancedView: View {
         Text("Transcription")
       }
       Section {
+        LabeledContent {
+          HStack {
+            if openWords != LiveDictation.defaultOpenWords {
+              Button("Reset to Default", systemImage: "arrow.counterclockwise") {
+                openWords = LiveDictation.defaultOpenWords
+              }
+              .labelStyle(.iconOnly)
+              .buttonStyle(.borderless)
+              .help(Text("Reset to Default"))
+            }
+            Picker("Words Refined Again", selection: $openWords) {
+              ForEach(LiveDictation.openWordsChoices, id: \.self) { count in
+                Text(count, format: .number).tag(count)
+              }
+            }
+            .labelsHidden()
+            .fixedSize()
+          }
+        } label: {
+          Label {
+            Text("Words Refined Again")
+            Text(
+              "When transcribing while recording, at least this many of the latest refined words are refined again with the next sentences, so taking something back can still change them. Higher values are more accurate but slower."
+            )
+          } icon: {
+            Image(systemName: "arrow.uturn.backward")
+          }
+        }
+        .disabled(!transcribesWhileRecording)
         Toggle(isOn: $promptLookupDecoding) {
           Label {
             Text("Speculative Decoding")

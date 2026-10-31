@@ -37,28 +37,45 @@ struct SilenceTrimmer: Sendable {
   /// The length of the slices whose loudness is measured, in seconds.
   static let sliceDuration = 0.01
   /// How long the audio on either side of a cut fades into the other, in seconds, so the cut doesn't click.
-  private static let crossfadeDuration = 0.01
+  static let crossfadeDuration = 0.01
 
   /// Returns the recording with its silence shortened, or unchanged if it has none to shorten.
   func trim(_ samples: [Float], sampleRate: Double) -> [Float] {
     let kept = keptRanges(of: samples, sampleRate: sampleRate)
     guard kept.count > 1 || kept.first != samples.indices else { return samples }
-    let crossfadeLength = Int(Self.crossfadeDuration * sampleRate)
-    var trimmed: [Float] = []
-    trimmed.reserveCapacity(kept.reduce(0) { $0 + $1.count })
-    trimmed.append(contentsOf: samples[kept[0]])
-    for range in kept.dropFirst() {
+    return Self.splice(kept, of: samples, sampleRate: sampleRate).samples
+  }
+
+  /// Joins ranges of samples, each crossfading into the next, returning the joined samples and where each range
+  /// starts in them.
+  ///
+  /// Each range must be longer than the crossfade, which overlaps the end of one range with the start of the next.
+  static func splice(
+    _ ranges: [Range<Int>],
+    of samples: [Float],
+    sampleRate: Double
+  ) -> (
+    samples: [Float], starts: [Int]
+  ) {
+    guard let first = ranges.first else { return ([], []) }
+    let crossfadeLength = Int(crossfadeDuration * sampleRate)
+    var spliced: [Float] = []
+    spliced.reserveCapacity(ranges.reduce(0) { $0 + $1.count })
+    spliced.append(contentsOf: samples[first])
+    var starts = [0]
+    for range in ranges.dropFirst() {
       // The end of the audio so far fades out as the start of the next range fades in, keeping the loudness of the
       // background even across the cut.
-      let fadeStart = trimmed.count - crossfadeLength
+      let fadeStart = spliced.count - crossfadeLength
+      starts.append(fadeStart)
       for offset in 0..<crossfadeLength {
         let angle = Float.pi / 2 * Float(offset + 1) / Float(crossfadeLength + 1)
         let fadingIn = samples[range.lowerBound + offset] * sin(angle)
-        trimmed[fadeStart + offset] = trimmed[fadeStart + offset] * cos(angle) + fadingIn
+        spliced[fadeStart + offset] = spliced[fadeStart + offset] * cos(angle) + fadingIn
       }
-      trimmed.append(contentsOf: samples[(range.lowerBound + crossfadeLength)..<range.upperBound])
+      spliced.append(contentsOf: samples[(range.lowerBound + crossfadeLength)..<range.upperBound])
     }
-    return trimmed
+    return (spliced, starts)
   }
 
   /// The ranges of samples to keep, in order.

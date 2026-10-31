@@ -107,7 +107,9 @@ targets:
       - CasperTests
       - Casper/Audio/SilenceTrimmer.swift
       - Casper/Dictation/DictationMode.swift
+      - Casper/Dictation/LiveRefinement.swift
       - Casper/Dictation/LiveSegmenter.swift
+      - Casper/Dictation/SegmentAudio.swift
       - Casper/Dictionary/CorrectionFinder.swift
       - Casper/Dictionary/DictionaryCorrection.swift
       - Casper/Dictionary/DictionaryStore.swift
@@ -122,6 +124,7 @@ targets:
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift
       - Casper/Refine/RefinePrompt.swift
+      - Casper/Transcription/SpokenWord.swift
       - Casper/VoiceBubble/FullScreenVideo.swift
     settings:
       base:

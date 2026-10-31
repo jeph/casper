@@ -552,6 +552,12 @@
     "Welcome to Casper" : {
       "comment" : "Title of the setup window and of its first step."
     },
+    "When transcribing while recording, at least this many of the latest refined words are refined again with the next sentences, so taking something back can still change them. Higher values are more accurate but slower." : {
+      "comment" : "Description of the Words Refined Again setting in Settings > Advanced. Casper refines a dictation in pieces while the user speaks, and refines the last of the refined text again with each new piece."
+    },
+    "Words Refined Again" : {
+      "comment" : "Picker in Settings > Advanced for the fewest words of refined text refined again with the next sentences while a dictation is transcribed during recording, from 0 to 100."
+    },
     "You can dictate once your models are downloaded. Downloads continue after setup." : {
       "comment" : "Note on setup's last step while the models dictation needs download."
     },

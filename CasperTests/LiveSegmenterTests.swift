@@ -8,10 +8,22 @@ struct LiveSegmenterTests {
     #expect(segmenter.cut(levels: levels, from: 0) == 450)
   }
 
-  @Test func waitsForAudioAfterTheCut() {
+  @Test func waitsForAudioAfterThePause() {
     let levels = Self.speech(4) + Self.pause(1) + Self.speech(0.4)
     #expect(segmenter.cut(levels: levels, from: 0) == nil)
-    #expect(segmenter.cut(levels: levels + Self.speech(1.1), from: 0) == 450)
+    #expect(segmenter.cut(levels: levels + Self.speech(0.6), from: 0) == 450)
+  }
+
+  /// The user may have stopped speaking, so a long pause is cut without audio after it, in its middle so far.
+  @Test func stopsWaitingForAudioAfterALongPause() {
+    #expect(segmenter.cut(levels: Self.speech(4) + Self.pause(1.8), from: 0) == nil)
+    #expect(segmenter.cut(levels: Self.speech(4) + Self.pause(1.9), from: 0) == 495)
+  }
+
+  /// A pause that's still too short to cut in waits for audio rather than letting speech be cut at its quietest.
+  @Test func waitsForAPauseInsteadOfCuttingThroughSpeech() {
+    let levels = Self.pause(1) + Self.speech(11) + Self.pause(0.5)
+    #expect(segmenter.cut(levels: levels, from: 100) == nil)
   }
 
   @Test func skipsPausesThatEndBeforeTheShortestSegment() {

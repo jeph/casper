@@ -62,64 +62,58 @@ actor ParakeetTranscriber: Transcriber {
     return DictionaryCorrection.replace(replacements, in: result.text).trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
-  /// A word Parakeet heard, and when it starts, in seconds from the start of the recording.
-  struct SpokenWord: Sendable, Equatable {
-    let text: String
-    let start: TimeInterval
-  }
-
-  /// How far apart two transcriptions of the same audio can place a word, in seconds.
+  /// Transcribes a segment of a recording in progress along with the audio around it, but returns only the segment's
+  /// words.
   ///
-  /// Parakeet's timing for a word after a pause can come early by a few frames, and by different amounts depending on
-  /// the audio around it.
-  static let timingTolerance = 0.35
-
-  /// Transcribes part of a recording, `samples`, but returns only the words spoken in `kept`, a range of its indices.
-  ///
-  /// The audio on either side gives the model context, so the words at the edges of `kept` are heard, capitalized and
-  /// punctuated as they are within the whole recording. A word belongs to `kept` if it starts there. Since timings
-  /// shift between transcriptions, a word up to `timingTolerance` before `kept` counts too, unless it's one of the
-  /// `previous` words, the last ones kept from the audio before.
+  /// The audio on either side gives the model context, so the words at the segment's edges are heard, capitalized and
+  /// punctuated as they are within the whole recording. The words after the overlap with `previous`, the last words
+  /// kept from the audio before, are the segment's, up to the first that starts after it. Without an overlap, a word
+  /// belongs to the segment if it starts there, or up to `SpokenWord.timingTolerance` before, since timings shift
+  /// between transcriptions.
   ///
   /// - Parameters:
-  ///   - samples: The part of the recording to transcribe.
-  ///   - offset: The index in the recording of the first of `samples`.
-  ///   - kept: The indices in `samples` whose words to return.
-  ///   - previous: The last words kept from the audio before `kept`.
+  ///   - audio: The segment and the audio around it.
+  ///   - previous: The last words kept from the audio before the segment.
   ///   - sampleRate: The recording's sample rate, in hertz.
   ///   - dictionary: The dictionary's words.
-  /// - Returns: The text of the words in `kept`, and the words as Parakeet heard them.
+  /// - Returns: The text of the segment's words, and the words as Parakeet heard them.
   /// - Throws: `TranscriptionError.unloaded` once the model is unloaded, or FluidAudio's error if transcribing fails.
   func transcribe(
-    _ samples: [Float],
-    from offset: Int,
-    keeping kept: Range<Int>,
+    _ audio: SegmentAudio,
     after previous: [SpokenWord],
     sampleRate: Double,
     dictionary: [DictionaryWord]
   ) async throws -> (text: String, words: [SpokenWord]) {
     guard let manager else { throw TranscriptionError.unloaded }
     var decoderState = TdtDecoderState.make(decoderLayers: decoderLayers)
+    let samples = audio.samples
     let result = try await manager.transcribe(samples, decoderState: &decoderState)
     guard let tokenTimings = result.tokenTimings, !tokenTimings.isEmpty else {
       // Without timings the words can't be placed, and repeating a few words beats losing them.
       return (result.text.trimmingCharacters(in: .whitespacesAndNewlines), [])
     }
-    let offsetSeconds = Double(offset) / sampleRate
-    let start = Double(kept.lowerBound) / sampleRate
-    let end = Double(kept.upperBound) / sampleRate
-    var words = Self.words(in: tokenTimings).filter { $0.start >= start - Self.timingTolerance && $0.start < end }
-    let spoken = { (word: (tokens: ArraySlice<TokenTiming>, start: TimeInterval)) in
-      SpokenWord(text: word.tokens.map(\.token).joined(), start: offsetSeconds + word.start)
+    let heard = Self.words(in: tokenTimings)
+    let spoken = heard.map { word in
+      SpokenWord(
+        text: word.tokens.map(\.token).joined(),
+        start: Double(audio.recordingIndex(of: Int(word.start * sampleRate))) / sampleRate
+      )
     }
-    words.removeFirst(Self.repeatedCount(of: words.map(spoken), after: previous))
+    let segmentStart = Double(audio.segment.lowerBound) / sampleRate
+    let segmentEnd = Double(audio.segment.upperBound) / sampleRate
+    let firstKept =
+      SpokenWord.firstNew(in: spoken, after: previous)
+      ?? spoken.firstIndex { $0.start >= segmentStart - SpokenWord.timingTolerance } ?? spoken.endIndex
+    let lastKept = spoken[firstKept...].firstIndex { $0.start >= segmentEnd } ?? spoken.endIndex
+    let words = heard[firstKept..<lastKept]
+    let keptSpoken = Array(spoken[firstKept..<lastKept])
     guard let first = words.first, let last = words.last else { return ("", []) }
     let keptTokens = words.flatMap(\.tokens)
     // The kept words are found in the transcript by the length of the tokens before them, which needs the transcript
     // to be its tokens.
     guard result.text == tokenTimings.map(\.token).joined().trimmingCharacters(in: .whitespaces) else {
       Self.logger.error("Parakeet's transcript isn't its tokens, so the word spotter doesn't check it")
-      return (keptTokens.map(\.token).joined().trimmingCharacters(in: .whitespaces), words.map(spoken))
+      return (keptTokens.map(\.token).joined().trimmingCharacters(in: .whitespaces), keptSpoken)
     }
     // The word spotter checks the whole transcript against all the audio, as it does a whole recording, since a word
     // it finds in the audio around the kept words would otherwise be matched to a kept one.
@@ -152,7 +146,7 @@ actor ParakeetTranscriber: Transcriber {
       return DictionaryCorrection.Replacement(range: start..<end, word: replacement.word)
     }
     let text = DictionaryCorrection.replace(keptReplacements, in: keptText)
-    return (text.trimmingCharacters(in: .whitespacesAndNewlines), words.map(spoken))
+    return (text.trimmingCharacters(in: .whitespacesAndNewlines), keptSpoken)
   }
 
   /// The tokens of each word, along with the punctuation after it, and when the word starts.
@@ -164,23 +158,6 @@ actor ParakeetTranscriber: Transcriber {
       let end = index + 1 < starts.count ? starts[index + 1] : timings.endIndex
       return (timings[starts[index]..<end], timings[starts[index]].startTime)
     }
-  }
-
-  /// How many of the first `words` repeat the last of `previous`: the same words, ignoring case and punctuation, at
-  /// about the same time.
-  static func repeatedCount(of words: [SpokenWord], after previous: [SpokenWord]) -> Int {
-    func matches(_ word: SpokenWord, _ earlier: SpokenWord) -> Bool {
-      normalized(word.text) == normalized(earlier.text) && abs(word.start - earlier.start) <= timingTolerance
-    }
-    let longest = min(words.count, previous.count)
-    return (0...longest)
-      .last { count in
-        zip(words.prefix(count), previous.suffix(count)).allSatisfy(matches)
-      } ?? 0
-  }
-
-  private static func normalized(_ word: String) -> String {
-    String(word.lowercased().filter { $0.isLetter || $0.isNumber })
   }
 
   func prepare(for dictionary: [DictionaryWord]) async {
