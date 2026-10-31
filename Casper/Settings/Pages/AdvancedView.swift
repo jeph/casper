@@ -26,7 +26,7 @@ struct AdvancedView: View {
           Label {
             Text("Transcribe While Recording")
             Text(
-              "Transcribe Parakeet dictations, and refine them with a built-in persona, while you speak, so text arrives sooner after you stop."
+              "Transcribe and refine Parakeet dictations while you speak, so text arrives sooner after you stop. Personas that rewrite a whole dictation, such as into an email, may work better with this off."
             )
           } icon: {
             Image(systemName: "waveform.badge.mic")

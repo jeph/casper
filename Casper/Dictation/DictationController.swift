@@ -275,8 +275,7 @@ final class DictationController {
     }
     let recorder = recorder
     var refine: LiveDictation.Refine?
-    // A custom persona can rewrite the whole dictation, such as into an email, so it refines it in one piece at the end.
-    if let persona, persona.isBuiltIn {
+    if let persona {
       refine = { [weak self] text in await self?.refine(text, persona: persona) ?? text }
     }
     return LiveDictation(

@@ -1,8 +1,8 @@
 import Foundation
 import OSLog
 
-/// Transcribes, and refines with a built-in persona, a recording while it's still in progress, so only its last few
-/// seconds are left when it ends.
+/// Transcribes, and refines in the recording's persona, a recording while it's still in progress, so only its last
+/// few seconds are left when it ends.
 ///
 /// The recording is cut into segments in pauses. Each segment is transcribed with a few seconds of the audio before
 /// and after it, keeping only its own words, so words at a cut are heard in context. Refining follows sentence by
