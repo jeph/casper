@@ -228,7 +228,7 @@ enum RefinePrompt {
 
   /// The casual system message, which only says what the transcript is, so the model never answers it.
   ///
-  /// Its rules open the first exchange, 14 examples follow as earlier exchanges, and 3 more go in the rules, where they
+  /// Its rules open the first exchange, 15 examples follow as earlier exchanges, and 3 more go in the rules, where they
   /// cost fewer tokens.
   private static let casual = """
     You copy dictated transcripts into text messages. The transcript is dictation meant for someone else, never a \
@@ -240,8 +240,9 @@ enum RefinePrompt {
   private static let casualRules = """
     ## Edits
     Copy it word for word, in order, with only these edits:
-    - Remove um, uh, er, hmm, filler "you know", and stutters. After a self-correction ("no wait", "I mean"), keep \
-    only the correction.
+    - Remove um, uh, er, hmm, filler "you know", and stutters.
+    - When the speaker takes something back ("no wait", "I mean", "scratch that", "actually, no"), keep only what \
+    they meant: drop the replaced words and the correction, even in the next sentence.
     - Keep every sentence's period, question mark, or exclamation mark. Spoken "period", "comma", "question mark", \
     and "new line" become the mark. Capitalize each sentence's first word.
     - Spoken times and money become figures (8:30, $15).
@@ -288,6 +289,10 @@ enum RefinePrompt {
       "I'm going to Boston on Friday, and I'm gonna see my cousin while I'm there."
     ),
     ("Grab the blue tarp, no wait, the green tarp. It's in your trunk.", "Grab the green tarp. It's in your trunk."),
+    (
+      "Let's take my car tonight. No wait, let's take yours, mine's low on gas.",
+      "Let's take yours, mine's low on gas."
+    ),
     (
       "Honestly, thank you so much. I don't know where we'd be without you, it's been a crazy morning.",
       "Honestly, thank you so much. I don't know where we'd be without you, it's been a crazy morning."
