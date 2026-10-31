@@ -47,14 +47,22 @@ final class AudioRecorder {
     updateMicrophone()
   }
 
-  /// Starts recording, turning the microphone on first if needed.
+  /// Starts recording, turning the microphone on first if needed, and returns the recording's number, which reads its
+  /// samples while it's in progress.
   ///
   /// This returns without waiting for the microphone, which records from when it's on. A device that couldn't be
   /// turned on is tried again, and again after short delays if it still fails.
-  func start() {
-    recording.begin()
+  @discardableResult
+  func start() -> Int {
+    let number = recording.begin()
     microphone.isWanted.withLock { $0 = true }
     Task { [microphone] in await microphone.recordingStarted() }
+    return number
+  }
+
+  /// The samples recording `number` has recorded from sample `start` on, or `nil` once it has ended.
+  func samples(from start: Int, ofRecording number: Int) -> [Float]? {
+    recording.samples(from: start, ofRecording: number)
   }
 
   /// Stops recording and returns the samples recorded since `start()`, leaving the microphone on.
@@ -288,11 +296,21 @@ private final class Recording: Sendable {
     state.withLock { $0.samples == nil ? nil : $0.number }
   }
 
-  func begin() {
+  /// Starts a new recording and returns its number.
+  func begin() -> Int {
     meter.reset()
-    state.withLock { state in
+    return state.withLock { state in
       state.number += 1
       state.samples = []
+      return state.number
+    }
+  }
+
+  /// The samples recording `number` has recorded from sample `start` on, or `nil` if it isn't the one in progress.
+  func samples(from start: Int, ofRecording number: Int) -> [Float]? {
+    state.withLock { state in
+      guard state.number == number, let samples = state.samples else { return nil }
+      return start < samples.count ? Array(samples[start...]) : []
     }
   }
 

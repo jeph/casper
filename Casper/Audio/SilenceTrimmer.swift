@@ -35,7 +35,7 @@ struct SilenceTrimmer: Sendable {
   var minimumContrast = 20.0
 
   /// The length of the slices whose loudness is measured, in seconds.
-  private static let sliceDuration = 0.01
+  static let sliceDuration = 0.01
   /// How long the audio on either side of a cut fades into the other, in seconds, so the cut doesn't click.
   private static let crossfadeDuration = 0.01
 
@@ -97,7 +97,7 @@ struct SilenceTrimmer: Sendable {
   }
 
   /// The loudness of each slice of the recording in decibels, the last slice possibly shorter than the rest.
-  private static func sliceLevels(of samples: [Float], sliceLength: Int) -> [Double] {
+  static func sliceLevels(of samples: [Float], sliceLength: Int) -> [Double] {
     stride(from: 0, to: samples.count, by: sliceLength)
       .map { start in
         let meanSquare = vDSP.meanSquare(samples[start..<min(start + sliceLength, samples.count)])

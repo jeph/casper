@@ -501,6 +501,12 @@
     "Toggle" : {
       "comment" : "Option in the Shortcut Mode setting: pressing the shortcut starts dictation and pressing it again stops it."
     },
+    "Transcribe Parakeet dictations, and refine them with a built-in persona, while you speak, so text arrives sooner after you stop." : {
+      "comment" : "Description of the Transcribe While Recording setting in Settings > Advanced. Parakeet is a speech model's name. Built-in personas are the Formal and Casual refine styles Casper comes with."
+    },
+    "Transcribe While Recording" : {
+      "comment" : "Toggle in the Transcription section of Settings > Advanced that transcribes dictations while the user is still speaking."
+    },
     "Transcribing" : {
       "comment" : "Accessibility value of the voice bubble while a recording is being transcribed."
     },

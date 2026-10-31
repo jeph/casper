@@ -41,6 +41,8 @@ final class DictationController {
   /// the app in front so its model loads while the user speaks, and so editing the persona meanwhile doesn't change how
   /// it's refined.
   private var recordingPersona: RefinePersona?
+  /// Transcribes the recording in progress while it's recorded, or `nil` if it's transcribed once it ends.
+  private var liveDictation: LiveDictation?
   /// The number of the latest request for the language model to keep personas' prompts.
   ///
   /// The model ignores a request that reaches it after a later one, which can happen while it loads.
@@ -246,7 +248,7 @@ final class DictationController {
   private func startRecording() {
     guard !recorder.isRecording else { return }
     microphoneKeepAlive.useStarted()
-    recorder.start()
+    let recording = recorder.start()
     status.isRecording = true
     correctionLearner.dictationStarted()
     speechModel.beginUse()
@@ -256,15 +258,43 @@ final class DictationController {
       } else {
         nil
       }
+    liveDictation = makeLiveDictation(recording: recording, persona: recordingPersona)
     guard let persona = recordingPersona else { return }
     languageModel.beginUse()
     // A model that loads with this recording, after an earlier load failed, reads the prompts while the user speaks.
     cachePersonaPrompts(first: persona)
   }
 
+  /// Starts transcribing the recording while it's in progress, if that's on and the speech model is Parakeet, whose
+  /// timings let a segment be transcribed with the audio around it.
+  private func makeLiveDictation(recording: Int, persona: RefinePersona?) -> LiveDictation? {
+    guard LiveDictation.isEnabled else { return nil }
+    switch SpeechModel.active?.family {
+    case .parakeetTDT, .parakeetUltra: break
+    case .qwen3ASR, nil: return nil
+    }
+    let recorder = recorder
+    var refine: LiveDictation.Refine?
+    // A custom persona can rewrite the whole dictation, such as into an email, so it refines it in one piece at the end.
+    if let persona, persona.isBuiltIn {
+      refine = { [weak self] text in await self?.refine(text, persona: persona) ?? text }
+    }
+    return LiveDictation(
+      samples: { recorder.samples(from: $0, ofRecording: recording) },
+      sampleRate: SpeechModel.sampleRate,
+      transcribe: { [weak self] samples, offset, kept, previous in
+        guard let self else { throw CancellationError() }
+        return try await transcribe(samples, from: offset, keeping: kept, after: previous)
+      },
+      refine: refine
+    )
+  }
+
   private func finishRecording() {
     guard recorder.isRecording else { return }
     let samples = recorder.stop()
+    let live = liveDictation
+    liveDictation = nil
     // Counted before the recording ends, so the voice bubble goes straight from recording to transcribing.
     if !samples.isEmpty {
       status.transcriptionsInProgress += 1
@@ -272,6 +302,7 @@ final class DictationController {
     status.isRecording = false
     microphoneKeepAlive.apply()
     guard !samples.isEmpty else {
+      live?.cancel()
       if recordingPersona != nil {
         languageModel.endUse()
       }
@@ -295,13 +326,25 @@ final class DictationController {
         correctionLearner.dictationEnded()
       }
       var finished = FinishedDictation(text: "", recordedAt: recordedAt, evidence: nil)
+      let ended = ContinuousClock.now
       do {
-        let transcribed = try await transcribe(samples)
-        finished.text = if let persona { await refine(transcribed.text, persona: persona) } else { transcribed.text }
+        let transcribed =
+          if let live { try await finish(live, recording: samples) } else { try await transcribe(samples) }
+        finished.text =
+          if let refined = transcribed.refined {
+            refined
+          } else if let persona {
+            await refine(transcribed.text, persona: persona)
+          } else {
+            transcribed.text
+          }
         finished.evidence = transcribed.evidence
       } catch {
         Self.logger.error("Couldn't transcribe: \(error)")
       }
+      Self.logger.info(
+        "Finished the dictation \(ContinuousClock.now - ended, privacy: .public) after the recording ended"
+      )
       deliver(finished, number: dictation)
     }
   }
@@ -337,6 +380,15 @@ final class DictationController {
     correctionLearner.pasted(text, from: ready.compactMap(\.evidence))
   }
 
+  /// A recording's transcript, its refined text if it was refined while being recorded, and what checking the user's
+  /// corrections to it needs.
+  private struct Transcribed {
+    let text: String
+    var refined: String?
+    /// `nil` unless corrections are added to the dictionary.
+    let evidence: CorrectionLearner.Dictation?
+  }
+
   /// Transcribes a recording, with its silence shortened unless that's turned off, then ends its use of the speech
   /// model.
   ///
@@ -344,7 +396,7 @@ final class DictationController {
   ///
   /// The dictionary is read as the recording goes to the speech model, so a change made while recording applies.
   /// Sounds Like spellings are swapped for their words afterward, whatever the model did with them.
-  private func transcribe(_ recording: [Float]) async throws -> (text: String, evidence: CorrectionLearner.Dictation?) {
+  private func transcribe(_ recording: [Float]) async throws -> Transcribed {
     defer { speechModel.endUse() }
     let start = ContinuousClock.now
     let speech = await Self.shortenSilence(in: recording)
@@ -367,8 +419,62 @@ final class DictationController {
       with \(words.count) dictionary words in \(ContinuousClock.now - trimmed, privacy: .public)
       """
     )
-    guard dictionary.learnsCorrections, let modelID else { return (text, nil) }
-    return (text, CorrectionLearner.Dictation(speech: speech, transcript: text, modelID: modelID))
+    guard dictionary.learnsCorrections, let modelID else { return Transcribed(text: text, evidence: nil) }
+    return Transcribed(
+      text: text,
+      evidence: CorrectionLearner.Dictation(speech: speech, transcript: text, modelID: modelID)
+    )
+  }
+
+  /// Finishes a recording transcribed while it was in progress, then ends its use of the speech model.
+  ///
+  /// Its silence isn't shortened, since only its last few seconds are transcribed after it ends.
+  private func finish(_ live: LiveDictation, recording: [Float]) async throws -> Transcribed {
+    defer { speechModel.endUse() }
+    let modelID = SpeechModel.active?.id
+    let (text, refined) = try await live.finish(recording)
+    guard dictionary.learnsCorrections, let modelID else {
+      return Transcribed(text: text, refined: refined, evidence: nil)
+    }
+    return Transcribed(
+      text: text,
+      refined: refined,
+      evidence: CorrectionLearner.Dictation(speech: recording, transcript: text, modelID: modelID)
+    )
+  }
+
+  /// Transcribes the samples in `kept` of part of a recording in progress, with the audio around them as context,
+  /// leaving out words that repeat the last of `previous`, and swaps Sounds Like spellings for their words.
+  private func transcribe(
+    _ samples: [Float],
+    from offset: Int,
+    keeping kept: Range<Int>,
+    after previous: [ParakeetTranscriber.SpokenWord]
+  ) async throws -> (text: String, words: [ParakeetTranscriber.SpokenWord]) {
+    let words = dictionary.wordsForDictation
+    let transcriber = try await speechModel.model().value
+    let transcribed =
+      if let parakeet = transcriber as? ParakeetTranscriber {
+        try await parakeet.transcribe(
+          samples,
+          from: offset,
+          keeping: kept,
+          after: previous,
+          sampleRate: SpeechModel.sampleRate,
+          dictionary: words
+        )
+      } else {
+        // The user switched to a model without timings while recording, so it hears only the samples it keeps.
+        (
+          text: try await transcriber.transcribe(
+            Array(samples[kept]),
+            sampleRate: SpeechModel.sampleRate,
+            dictionary: words
+          ),
+          words: [ParakeetTranscriber.SpokenWord]()
+        )
+      }
+    return (await Self.swapSoundsLike(in: transcribed.text, dictionary: words), transcribed.words)
   }
 
   /// Runs off the main actor, since the work grows with the transcript and the dictionary.

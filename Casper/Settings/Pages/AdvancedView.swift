@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AdvancedView: View {
   @AppStorage(SilenceTrimmer.enabledStorageKey) private var trimsSilence = true
+  @AppStorage(LiveDictation.enabledStorageKey) private var transcribesWhileRecording = true
   @AppStorage(TranscriptRefiner.enabledStorageKey) private var refinesTranscripts = true
   @AppStorage(PromptLookupTokenIterator.enabledStorageKey) private var promptLookupDecoding = true
   @AppStorage(PromptLookupTokenIterator.mostGuessesStorageKey) private var mostGuesses =
@@ -20,6 +21,16 @@ struct AdvancedView: View {
         }
       }
       Section {
+        Toggle(isOn: $transcribesWhileRecording) {
+          Label {
+            Text("Transcribe While Recording")
+            Text(
+              "Transcribe Parakeet dictations, and refine them with a built-in persona, while you speak, so text arrives sooner after you stop."
+            )
+          } icon: {
+            Image(systemName: "waveform.badge.mic")
+          }
+        }
         Toggle(isOn: $trimsSilence) {
           Label {
             Text("Trim Silence")

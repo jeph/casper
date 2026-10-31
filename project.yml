@@ -107,6 +107,7 @@ targets:
       - CasperTests
       - Casper/Audio/SilenceTrimmer.swift
       - Casper/Dictation/DictationMode.swift
+      - Casper/Dictation/LiveSegmenter.swift
       - Casper/Dictionary/CorrectionFinder.swift
       - Casper/Dictionary/DictionaryCorrection.swift
       - Casper/Dictionary/DictionaryStore.swift
