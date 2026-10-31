@@ -21,14 +21,21 @@ struct LiveRefinementTests {
     #expect(refinement.takeText() == "Seven eight nine. Ten eleven. Twelve.")
   }
 
-  /// "No, Saturday" reaches back to the open sentence it corrects.
+  /// "No, sorry, Saturday", transcribed after "Friday" was already refined, reaches back to the open sentence it
+  /// corrects, while the settled sentence before it stays as it was.
   @Test func givesTheOpenTextToTheNextRefine() {
-    var refinement = LiveRefinement(openWords: 25)
-    refinement.append(transcript: "Let's ship on Friday. No, sorry, Saturday. Thanks.")
-    #expect(refinement.takeText() == "Let's ship on Friday. No, sorry, Saturday.")
-    refinement.refined("Let's ship on Saturday.")
-    #expect(refinement.takeLastText() == "Let's ship on Saturday. Thanks.")
-    #expect(refinement.finished(lastRefined: "Let's ship on Saturday. Thanks.") == "Let's ship on Saturday. Thanks.")
+    var refinement = LiveRefinement(openWords: 3)
+    refinement.append(transcript: "We finished the onboarding. Let's ship on Friday. Sarah sends the invoice.")
+    #expect(refinement.takeText() == "We finished the onboarding. Let's ship on Friday.")
+    refinement.refined("We finished the onboarding. Let's ship on Friday.")
+    refinement.append(transcript: "No, sorry, Saturday. Thanks.")
+    #expect(refinement.takeText() == "Let's ship on Friday. Sarah sends the invoice. No, sorry, Saturday.")
+    refinement.refined("Let's ship on Saturday. Sarah sends the invoice.")
+    #expect(refinement.takeLastText() == "Sarah sends the invoice. Thanks.")
+    #expect(
+      refinement.finished(lastRefined: "Sarah sends the invoice. Thanks.")
+        == "We finished the onboarding. Let's ship on Saturday. Sarah sends the invoice. Thanks."
+    )
   }
 
   /// A blank line for a new paragraph isn't a sentence, so it doesn't take the place of one that's kept open.
