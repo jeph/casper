@@ -23,6 +23,9 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   XCODEGEN_VERSION: 2.46.0
   XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+  # Sparkle's tools for writing the appcast. Must match the Sparkle version in project.yml.
+  SPARKLE_VERSION: 2.10.1
+  SPARKLE_SHA256: 1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27
   # Must match the entitlements in project.yml.
   ENTITLEMENTS: '{"com.apple.security.device.audio-input":true}'
 
@@ -155,10 +158,17 @@ jobs:
           ditto -x -k unsigned/Casper-unsigned.zip "$RUNNER_TEMP/app"
           app="$RUNNER_TEMP/app/Casper.app"
 
-          # Nested code first, then the app, keeping the entitlements the build embedded.
+          # Nested code first, inside out, then the app, keeping the entitlements the build embedded. Sparkle's
+          # helpers come signed ad hoc, and its downloader keeps its own sandbox entitlements.
           find "$app/Contents/Frameworks" -name '*.dylib' -print0 | while IFS= read -r -d '' library; do
             sign --options runtime "$library"
           done
+          sparkle="$app/Contents/Frameworks/Sparkle.framework"
+          sign --options runtime "$sparkle/Versions/B/XPCServices/Installer.xpc"
+          sign --options runtime --preserve-metadata=entitlements "$sparkle/Versions/B/XPCServices/Downloader.xpc"
+          sign --options runtime "$sparkle/Versions/B/Autoupdate"
+          sign --options runtime "$sparkle/Versions/B/Updater.app"
+          sign --options runtime "$sparkle"
           sign --options runtime --preserve-metadata=entitlements "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
           # Entitlements carry over from the build artifact, so refuse anything beyond what Casper declares.
@@ -180,6 +190,25 @@ jobs:
           spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
 
           cp "unsigned/Casper-$VERSION-dSYMs.zip" dist/
+
+      # Sparkle in the app reads the appcast from the latest release, and refuses the appcast or the DMG unless both
+      # are signed with Casper's update key.
+      - name: Write appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          : "${SPARKLE_ED_PRIVATE_KEY:?missing Sparkle key}"
+          archive="$RUNNER_TEMP/sparkle.tar.xz"
+          curl --fail --silent --show-error --location --output "$archive" \
+            "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz"
+          echo "$SPARKLE_SHA256  $archive" | shasum --algorithm 256 --check
+          mkdir "$RUNNER_TEMP/sparkle" "$RUNNER_TEMP/updates"
+          tar -xf "$archive" -C "$RUNNER_TEMP/sparkle"
+
+          cp "dist/Casper-$VERSION.dmg" "$RUNNER_TEMP/updates/"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$RUNNER_TEMP/sparkle/bin/generate_appcast" --ed-key-file - \
+            --download-url-prefix "https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/" \
+            -o "$GITHUB_WORKSPACE/dist/appcast.xml" "$RUNNER_TEMP/updates"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -250,6 +279,8 @@ jobs:
             name "Casper"
             desc "Private, on-device dictation"
             homepage "https://github.com/$GITHUB_REPOSITORY"
+
+            auto_updates true
 
             depends_on arch: :arm64
             depends_on macos: :sequoia

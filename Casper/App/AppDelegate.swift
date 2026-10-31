@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let runningApps = RunningApps()
   let history = DictationHistory()
   let dictionary = DictionaryStore()
+  let updater = AppUpdater()
   private lazy var learnedWordNotifier = LearnedWordNotifier(
     dictionary: dictionary,
     settingsNavigation: settingsNavigation
@@ -43,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     self.dictation = dictation
     voiceBubble = VoiceBubble(status: dictation.status, readiness: readiness, settingsNavigation: settingsNavigation)
     LaunchAtLogin.applyDefaultOnFirstLaunch()
+    updater.start()
     NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) {
       notification in
       let closingWindow = (notification.object as AnyObject?).map(ObjectIdentifier.init)

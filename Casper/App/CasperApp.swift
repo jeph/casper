@@ -7,6 +7,7 @@ struct CasperApp: App {
   var body: some Scene {
     MenuBarExtra {
       MenuBarMenu()
+        .environment(appDelegate.updater)
     } label: {
       MenuBarIcon()
         .environment(appDelegate.settingsNavigation)
@@ -20,6 +21,7 @@ struct CasperApp: App {
         .environment(appDelegate.runningApps)
         .environment(appDelegate.history)
         .environment(appDelegate.dictionary)
+        .environment(appDelegate.updater)
     }
     Window(
       Text("Welcome to Casper", comment: "Title of the setup window and of its first step."),

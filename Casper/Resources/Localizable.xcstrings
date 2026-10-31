@@ -151,6 +151,12 @@
     "Change these settings only if you know exactly what they do." : {
       "comment" : "Warning at the top of Settings > Advanced."
     },
+    "Check for Updates" : {
+      "comment" : "Toggle in Settings > General that checks for a newer version of Casper once a day."
+    },
+    "Check for Updates…" : {
+      "comment" : "Menu bar menu item that checks for a newer version of Casper."
+    },
     "Choose Other App…" : {
       "comment" : "Item of the Add App menu on the Refine page of Settings that opens a panel to choose an app that isn't running."
     },
@@ -271,6 +277,9 @@
     "Input Device" : {
       "comment" : "Title of the microphone picker in Settings > General and in the menu bar menu."
     },
+    "Install Casper %@…" : {
+      "comment" : "Menu bar menu item shown when a newer version of Casper is available. The number is its version."
+    },
     "Instructions" : {
       "comment" : "Header of the text the language model follows for a persona, in the persona editor."
     },
@@ -297,6 +306,9 @@
     },
     "Listening" : {
       "comment" : "Accessibility value of the voice bubble while dictation is recording."
+    },
+    "Look for a new version of Casper once a day, and ask before installing it." : {
+      "comment" : "Description of the Check for Updates toggle in Settings > General."
     },
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."

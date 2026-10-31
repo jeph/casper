@@ -70,6 +70,8 @@ brew install --cask jeph/tap/casper
 
 Or download `Casper-<version>.dmg` from the [latest release](https://github.com/jeph/casper/releases/latest), open it, and drag Casper to Applications.
 
+Casper checks for a new version once a day and asks before installing it. You can turn the daily check off in Settings > General, or check any time from the menu bar with Check for Updates.
+
 The first time Casper launches, a short setup walks you through it: choose a voice model and a language model, which start downloading right away, allow microphone and Accessibility access, optionally allow notifications, and learn to dictate with ⌥Space or a shortcut of your own. Finishing setup opens Settings. Until you finish, setup starts over each time Casper launches.
 
 ## Build from source

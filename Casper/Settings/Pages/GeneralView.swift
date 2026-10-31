@@ -5,6 +5,7 @@ import SwiftUI
 /// The General page, which opens the Stats page in its place from a row at the top.
 struct GeneralView: View {
   @Environment(DictationHistory.self) private var history
+  @Environment(AppUpdater.self) private var updater
   @State private var launchAtLoginStatus = LaunchAtLogin.status
   @State private var showsStats = false
   @State private var stats: HistoryStats?
@@ -109,6 +110,16 @@ struct GeneralView: View {
           } label: {
             Text("Casper is turned off in Login Items in System Settings.")
               .foregroundStyle(.secondary)
+          }
+        }
+        if updater.isEnabled {
+          Toggle(isOn: Bindable(updater).checksAutomatically) {
+            Label {
+              Text("Check for Updates")
+              Text("Look for a new version of Casper once a day, and ask before installing it.")
+            } icon: {
+              Image(systemName: "arrow.down.circle")
+            }
           }
         }
         Toggle(isOn: $showsAdvancedSettings) {
