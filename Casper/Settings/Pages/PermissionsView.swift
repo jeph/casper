@@ -82,6 +82,7 @@ struct PermissionsView: View {
       Button("Allow Access") {
         Task {
           await AVCaptureDevice.requestAccess(for: .audio)
+          NSApp.returnToFront()
           permissions.refresh()
         }
       }

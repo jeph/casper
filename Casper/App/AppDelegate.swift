@@ -76,13 +76,25 @@ extension NSApplication {
     activate()
     open()
     // SwiftUI creates the Settings window after this call returns.
-    Task {
-      let frontToBack = (NSWindow.windowNumbers(options: []) ?? [])
-        .compactMap { window(withWindowNumber: $0.intValue) }
-        .filter { $0.styleMask.contains(.titled) }
-      for window in frontToBack.reversed() {
-        window.orderFrontRegardless()
-      }
+    Task { orderWindowsFront() }
+  }
+
+  /// Brings Casper and its windows back in front after a system prompt, such as the one asking for microphone access.
+  ///
+  /// The prompt takes the focus while it's open, and when it closes macOS can hand the focus to another app instead.
+  /// The windows are ordered after `activate()` is processed, for the reason `openWindowInFront(_:)` gives.
+  func returnToFront() {
+    activate()
+    Task { orderWindowsFront() }
+  }
+
+  /// Moves Casper's titled windows in front of other apps' windows, keeping their order among themselves.
+  private func orderWindowsFront() {
+    let frontToBack = (NSWindow.windowNumbers(options: []) ?? [])
+      .compactMap { window(withWindowNumber: $0.intValue) }
+      .filter { $0.styleMask.contains(.titled) }
+    for window in frontToBack.reversed() {
+      window.orderFrontRegardless()
     }
   }
 }
