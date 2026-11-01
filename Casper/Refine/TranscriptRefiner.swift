@@ -80,8 +80,8 @@ actor TranscriptRefiner {
     let unread = continuesPrompt ? tokens[prompt.tokens.count...] : tokens[...]
     // A cleaned-up transcript is rarely longer than the transcript, so a model still writing past twice its length has
     // started answering it or repeating itself.
-    let transcriptLength = context.tokenizer.encode(text: transcript, addSpecialTokens: false).count
-    let maxTokens = max(64, 2 * transcriptLength)
+    let transcriptTokens = context.tokenizer.encode(text: transcript, addSpecialTokens: false)
+    let maxTokens = max(64, 2 * transcriptTokens.count)
     let input = LMInput(tokens: MLXArray(Array(unread)))
     let cache = continuesPrompt ? prompt.cache.map { $0.copy() } : context.model.newCache(parameters: nil)
     let stream: AsyncStream<Generation>
@@ -91,7 +91,7 @@ actor TranscriptRefiner {
     if PromptLookupTokenIterator.isEnabled, canTrimPromptCache(cache) {
       let iterator = try PromptLookupTokenIterator(
         input: input,
-        prompt: tokens,
+        transcript: transcriptTokens,
         model: context.model,
         cache: cache,
         sampler: ArgMaxSampler(),
