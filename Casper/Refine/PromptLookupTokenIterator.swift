@@ -4,17 +4,13 @@ import MLXLMCommon
 
 /// Generates tokens with prompt lookup decoding, which guesses the next tokens and has the model check them together.
 ///
-/// The guess is whatever followed the latest few tokens where they last appeared in the transcript or output, and the
-/// start of the transcript before anything is written. A refined transcript mostly repeats the transcript, so guesses
-/// are often right, and each right guess saves a pass through the model. The rest of the prompt isn't searched: its
-/// examples matched the latest tokens more recently than the transcript did and led guesses astray, and the end of the
-/// last example's answer was always the first guess. The model checks every guess and writes its own token where one
-/// is wrong, so the output is what it writes without guessing, except where two tokens score within rounding of each
-/// other: reading several tokens in one pass rounds a little differently than reading them one at a time, which can
-/// pick the other token. Rejected guesses are dropped from the cache, which only caches that can be trimmed support.
+/// The guesses come from the transcript, as `TranscriptLookup` finds them. A refined transcript mostly repeats the
+/// transcript, so guesses are often right, and each right guess saves a pass through the model. The model checks every
+/// guess and writes its own token where one is wrong, so the output is what it writes without guessing, except where
+/// two tokens score within rounding of each other: reading several tokens in one pass rounds a little differently than
+/// reading them one at a time, which can pick the other token. Rejected guesses are dropped from the cache, which only
+/// caches that can be trimmed support.
 struct PromptLookupTokenIterator: TokenIteratorProtocol {
-  /// The longest run of latest tokens looked up, since longer matches make better guesses.
-  private static let longestMatch = 3
   /// The `UserDefaults` key for whether refining guesses ahead with models that support it, on unless turned off.
   static let enabledStorageKey = "promptLookupDecoding"
   /// The `UserDefaults` key for the most tokens guessed at once.
@@ -46,10 +42,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
   private let cache: [KVCache]
   private var state: LMOutput.State?
   private let sampler: LogitSampler
-  /// The transcript followed by the tokens written so far, where guesses are looked up.
-  private var searched: [Int]
-  /// How many tokens of `searched` are the transcript's.
-  private let transcriptLength: Int
+  private var lookup: TranscriptLookup
   /// Tokens the model reads next: what's left of the prompt at first, then the last token it wrote.
   private var unread: [Int] = []
   /// Tokens the model wrote in its latest pass that haven't been returned yet.
@@ -76,8 +69,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
     self.sampler = sampler
     self.maxTokens = maxTokens
     self.mostGuesses = mostGuesses
-    searched = transcript
-    transcriptLength = transcript.count
+    lookup = TranscriptLookup(transcript: transcript)
     let start = Date.timeIntervalSinceReferenceDate
     switch try model.prepare(input, cache: cache, windowSize: nil) {
     case .tokens(let rest):
@@ -87,7 +79,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
       let token = sampler.sample(logits: result.logits[0..., -1, 0...]).item(Int.self)
       unread = [token]
       written = [token]
-      searched.append(token)
+      lookup.append(written: [token])
     }
     promptPrefillTime = Date.timeIntervalSinceReferenceDate - start
   }
@@ -109,7 +101,7 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
   private mutating func writeTokens() {
     // Each pass writes the right guesses plus one token, which mustn't pass the limit.
     let room = maxTokens.map { $0 - tokenCount - 1 } ?? mostGuesses
-    let guesses = Array(guess().prefix(Swift.max(0, Swift.min(room, mostGuesses))))
+    let guesses = Array(lookup.guess(count: Swift.max(0, Swift.min(room, mostGuesses))))
     let input = unread + guesses
     let result = model(LMInput.Text(tokens: MLXArray(input))[text: .newAxis], cache: cache, state: state)
     state = result.state
@@ -120,24 +112,8 @@ struct PromptLookupTokenIterator: TokenIteratorProtocol {
     trimPromptCache(cache, numTokens: guesses.count - agreed)
     let tokens = guesses[..<agreed] + [predicted[agreed]]
     written = tokens
-    searched += tokens
+    lookup.append(written: tokens)
     unread = [predicted[agreed]]
-  }
-
-  /// The tokens that followed the latest written tokens where they last appeared before, trying the longest match
-  /// first, or the start of the transcript before anything is written.
-  private func guess() -> ArraySlice<Int> {
-    let writtenCount = searched.count - transcriptLength
-    guard writtenCount > 0 else { return searched.prefix(mostGuesses) }
-    for length in stride(from: Swift.min(Self.longestMatch, writtenCount), through: 1, by: -1) {
-      let latest = searched.suffix(length)
-      for start in stride(from: searched.count - length - 1, through: 0, by: -1)
-      where searched[start..<(start + length)].elementsEqual(latest) {
-        let next = start + length
-        return searched[next..<Swift.min(next + mostGuesses, searched.count)]
-      }
-    }
-    return []
   }
 
   /// Thrown for a cache that can't drop rejected guesses.

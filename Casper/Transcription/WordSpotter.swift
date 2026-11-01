@@ -11,11 +11,8 @@ import Foundation
 /// with Casper's other models. The model is English only.
 ///
 /// Scoring the audio is split from checking the transcript, since it needs only the audio and can run while Parakeet
-/// transcribes. It repeats what FluidAudio's `CtcKeywordSpotter.spotKeywordsWithLogProbs` does to get the scores, from
-/// `CtcKeywordSpotter+Inference.swift` in FluidAudio 0.17.7 (https://github.com/FluidInference/FluidAudio), but copies
-/// samples and scores through memory rather than an `NSNumber` at a time, which took about 100 ms of its 125 per
-/// recording, and skips the keyword detections Casper doesn't use. FluidAudio is licensed under the Apache License,
-/// Version 2.0, which `Acknowledgements.txt` includes.
+/// transcribes. It runs the model as FluidAudio's `CtcKeywordSpotter.spotKeywordsWithLogProbs` does, with the steps
+/// around it in `CtcScoring`, and skips the keyword detections Casper doesn't use.
 struct WordSpotter: Sendable {
   /// The dictionary as terms the word spotter checks transcripts against.
   struct Vocabulary: Sendable {
@@ -31,10 +28,6 @@ struct WordSpotter: Sendable {
     fileprivate let logProbs: [[Float]]
     /// The length of a frame, in seconds.
     fileprivate let frameDuration: Double
-  }
-
-  enum ScoringError: Error {
-    case unexpectedModel
   }
 
   private let spotter: CtcKeywordSpotter
@@ -126,7 +119,12 @@ struct WordSpotter: Sendable {
   func scores(for samples: [Float]) async throws -> AudioScores? {
     guard !samples.isEmpty else { return nil }
     let (padded, lastWindowSamples) = Self.paddedToWholeWindows(samples)
-    let (logProbs, frameDuration) = try await logProbs(ofWindowsIn: padded)
+    let (logProbs, frameDuration) = try await CtcScoring.joinedWindows(
+      of: padded,
+      window: Self.window,
+      stride: Self.windowStride,
+      sampleRate: Double(ASRConstants.sampleRate)
+    ) { try await logProbs(ofWindow: $0) }
     guard frameDuration > 0, !logProbs.isEmpty else { return nil }
     let trimmed = Self.trimmedToAudio(
       logProbs,
@@ -203,33 +201,6 @@ struct WordSpotter: Sendable {
     return (trimmed, Double(sampleCount) / Double(keptFrames) / sampleRate)
   }
 
-  /// The log-probabilities of samples padded to whole windows, joined where windows overlap as FluidAudio joins them,
-  /// and the length of a frame in seconds.
-  private func logProbs(ofWindowsIn samples: [Float]) async throws -> (logProbs: [[Float]], frameDuration: Double) {
-    var joined: [[Float]] = []
-    var overlapFrames = 0
-    var frameDuration = 0.0
-    for start in stride(from: 0, to: samples.count - Self.window + 1, by: Self.windowStride) {
-      let logProbs = try await logProbs(ofWindow: samples[start..<(start + Self.window)])
-      guard !logProbs.isEmpty else { continue }
-      guard !joined.isEmpty else {
-        joined = logProbs
-        frameDuration = Double(Self.window) / Double(logProbs.count) / Double(ASRConstants.sampleRate)
-        let overlapSeconds = Double(Self.window - Self.windowStride) / Double(ASRConstants.sampleRate)
-        overlapFrames = Int(overlapSeconds / frameDuration)
-        continue
-      }
-      // The frames both windows heard are averaged in probability, the rest of this window's appended.
-      let overlap = min(overlapFrames, joined.count, logProbs.count)
-      for index in 0..<overlap {
-        let joinedIndex = joined.count - overlap + index
-        joined[joinedIndex] = Self.meanInProbability(joined[joinedIndex], logProbs[index])
-      }
-      joined += logProbs[overlap...]
-    }
-    return (joined, frameDuration)
-  }
-
   /// The log-probabilities of one window of samples, from the mel spectrogram and encoder models.
   private func logProbs(ofWindow samples: ArraySlice<Float>) async throws -> [[Float]] {
     let options = AsrModels.optimizedPredictionOptions()
@@ -239,7 +210,7 @@ struct WordSpotter: Sendable {
     ])
     let melOutput = try await models.melSpectrogram.compatPrediction(from: melInput, options: options)
     guard let features = melOutput.featureValue(for: "melspectrogram_features")?.multiArrayValue else {
-      throw ScoringError.unexpectedModel
+      throw CtcScoring.ScoringError.unexpectedModel
     }
     let melLength =
       features.shape.count == 4
@@ -261,72 +232,20 @@ struct WordSpotter: Sendable {
     guard
       let logits = encoderOutput.featureValue(for: "ctc_head_raw_output")?.multiArrayValue
         ?? encoderOutput.featureValue(for: "ctc_head_output")?.multiArrayValue
-    else { throw ScoringError.unexpectedModel }
-    return CtcKeywordSpotter.applyLogSoftmax(rawLogits: try Self.frames(of: logits), blankId: spotter.blankId)
+    else { throw CtcScoring.ScoringError.unexpectedModel }
+    return CtcKeywordSpotter.applyLogSoftmax(rawLogits: try CtcScoring.logits(of: logits), blankId: spotter.blankId)
   }
 
-  /// The samples in the type and shape the mel spectrogram model takes them.
+  /// The samples in the shape and type the mel spectrogram model takes them.
   private func audioArray(_ samples: ArraySlice<Float>) throws -> MLMultiArray {
-    guard
-      let constraint = models.melSpectrogram.modelDescription.inputDescriptionsByName["audio"]?.multiArrayConstraint,
-      constraint.shape.reduce(1, { $0 * $1.intValue }) == samples.count
-    else { throw ScoringError.unexpectedModel }
-    let array = try MLMultiArray(shape: constraint.shape, dataType: constraint.dataType)
-    switch array.dataType {
-    case .float16:
-      array.withUnsafeMutableBufferPointer(ofType: Float16.self) { buffer, _ in
-        for (index, sample) in zip(buffer.indices, samples) {
-          buffer[index] = Float16(sample)
-        }
-      }
-    case .float32:
-      array.withUnsafeMutableBufferPointer(ofType: Float.self) { buffer, _ in
-        _ = buffer.update(fromContentsOf: samples)
-      }
-    default:
-      throw ScoringError.unexpectedModel
-    }
-    return array
+    guard let constraint = models.melSpectrogram.modelDescription.inputDescriptionsByName["audio"]?.multiArrayConstraint
+    else { throw CtcScoring.ScoringError.unexpectedModel }
+    return try CtcScoring.audioArray(samples, shape: constraint.shape, dataType: constraint.dataType)
   }
 
   private static func int32Array(_ value: Int) throws -> MLMultiArray {
     let array = try MLMultiArray(shape: [1], dataType: .int32)
     array[0] = NSNumber(value: value)
     return array
-  }
-
-  /// The logits of each frame, from the encoder's output shaped [1, frames, tokens] or [1, tokens, 1, frames].
-  private static func frames(of logits: MLMultiArray) throws -> [[Float]] {
-    let shape = logits.shape.map(\.intValue)
-    let strides = logits.strides.map(\.intValue)
-    let (frameCount, tokenCount, frameStride, tokenStride) =
-      switch shape.count {
-      case 3: (shape[1], shape[2], strides[1], strides[2])
-      case 4: (shape[3], shape[1], strides[3], strides[1])
-      default: throw ScoringError.unexpectedModel
-      }
-    func read<Element: BinaryFloatingPoint & MLShapedArrayScalar>(_: Element.Type) -> [[Float]] {
-      logits.withUnsafeBufferPointer(ofType: Element.self) { buffer in
-        (0..<frameCount)
-          .map { frame in
-            (0..<tokenCount).map { token in Float(buffer[frame * frameStride + token * tokenStride]) }
-          }
-      }
-    }
-    switch logits.dataType {
-    case .float16: return read(Float16.self)
-    case .float32: return read(Float.self)
-    default: throw ScoringError.unexpectedModel
-    }
-  }
-
-  /// The mean of two frames' probabilities, as log-probabilities, which FluidAudio uses where windows overlap.
-  private static func meanInProbability(_ first: [Float], _ second: [Float]) -> [Float] {
-    zip(first, second)
-      .map { first, second in
-        let largest = max(first, second)
-        guard largest != -.infinity else { return -.infinity }
-        return largest + logf(expf(first - largest) + expf(second - largest)) - logf(2)
-      }
   }
 }

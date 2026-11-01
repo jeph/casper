@@ -140,6 +140,8 @@ targets:
       - Casper/Refine/PersonaStore.swift
       - Casper/Refine/RefinePersona.swift
       - Casper/Refine/RefinePrompt.swift
+      - Casper/Refine/TranscriptLookup.swift
+      - Casper/Transcription/CtcScoring.swift
       - Casper/Transcription/SpokenWord.swift
       - Casper/VoiceBubble/FullScreenVideo.swift
     settings:
