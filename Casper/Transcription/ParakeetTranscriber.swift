@@ -50,13 +50,16 @@ actor ParakeetTranscriber: Transcriber {
   /// FluidAudio takes samples at 16 kHz only, which `SpeechModel.sampleRate` records at.
   func transcribe(_ samples: [Float], sampleRate: Double, dictionary: [DictionaryWord]) async throws -> String {
     guard let manager else { throw TranscriptionError.unloaded }
+    let spotter = wordSpotter(for: dictionary)
+    async let scores = Self.scores(of: samples, spotter: spotter)
     // Each recording is transcribed on its own, so the decoder starts fresh rather than continuing the last one.
     var decoderState = TdtDecoderState.make(decoderLayers: decoderLayers)
     let result = try await manager.transcribe(samples, decoderState: &decoderState)
     let replacements = await replacements(
       in: result.text,
       tokenTimings: result.tokenTimings,
-      samples: samples,
+      scores: await scores,
+      spotter: spotter,
       dictionary: dictionary
     )
     return DictionaryCorrection.replace(replacements, in: result.text).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -85,8 +88,10 @@ actor ParakeetTranscriber: Transcriber {
     dictionary: [DictionaryWord]
   ) async throws -> (text: String, words: [SpokenWord]) {
     guard let manager else { throw TranscriptionError.unloaded }
-    var decoderState = TdtDecoderState.make(decoderLayers: decoderLayers)
     let samples = audio.samples
+    let spotter = wordSpotter(for: dictionary)
+    async let scores = Self.scores(of: samples, spotter: spotter)
+    var decoderState = TdtDecoderState.make(decoderLayers: decoderLayers)
     let result = try await manager.transcribe(samples, decoderState: &decoderState)
     guard let tokenTimings = result.tokenTimings, !tokenTimings.isEmpty else {
       // Without timings the words can't be placed, and repeating a few words beats losing them.
@@ -120,7 +125,8 @@ actor ParakeetTranscriber: Transcriber {
     let replacements = await replacements(
       in: result.text,
       tokenTimings: tokenTimings,
-      samples: samples,
+      scores: await scores,
+      spotter: spotter,
       dictionary: dictionary
     )
     // The kept words' place in the transcript, which leaves out the space the first token starts with.
@@ -176,32 +182,46 @@ actor ParakeetTranscriber: Transcriber {
     wordSpotter = .failed
   }
 
-  /// The dictionary words the audio supports in place of words in Parakeet's transcript.
+  /// The word spotter, if the dictionary has words for it to check and it's loaded.
+  private func wordSpotter(for dictionary: [DictionaryWord]) -> WordSpotter? {
+    guard !dictionary.isEmpty, case .loaded(let spotter) = startLoadingInstalledWordSpotter() else { return nil }
+    return spotter
+  }
+
+  /// The word spotter's scores for the audio, worked out off the actor while Parakeet transcribes, since they need only
+  /// the audio.
   ///
-  /// Without the word spotter, or if checking fails, there are none, so the dictionary can never stop a dictation.
+  /// Without the word spotter, or if scoring fails, there are none, so the dictionary can never stop a dictation.
+  @concurrent
+  nonisolated private static func scores(of samples: [Float], spotter: WordSpotter?) async -> WordSpotter.AudioScores? {
+    guard let spotter else { return nil }
+    do {
+      return try await spotter.scores(for: samples)
+    } catch {
+      logger.error("Couldn't score the audio with the word spotter: \(error)")
+      return nil
+    }
+  }
+
+  /// The dictionary words the scored audio supports in place of words in Parakeet's transcript.
   private func replacements(
     in text: String,
     tokenTimings: [TokenTiming]?,
-    samples: [Float],
+    scores: WordSpotter.AudioScores?,
+    spotter: WordSpotter?,
     dictionary: [DictionaryWord]
   ) async -> [DictionaryCorrection.Replacement] {
-    guard !dictionary.isEmpty, case .loaded(let spotter) = startLoadingInstalledWordSpotter(),
-      let tokenTimings, !tokenTimings.isEmpty,
+    guard let spotter, let scores, let tokenTimings, !tokenTimings.isEmpty,
       let vocabulary = await vocabulary(for: dictionary, spotter: spotter)
     else { return [] }
-    do {
-      let replacements = try await spotter.replacements(
-        in: text,
-        tokenTimings: tokenTimings,
-        samples: samples,
-        vocabulary: vocabulary
-      )
-      Self.logger.info("The word spotter replaced \(replacements.count) words")
-      return replacements
-    } catch {
-      Self.logger.error("Couldn't check the transcript with the word spotter: \(error)")
-      return []
-    }
+    let replacements = spotter.replacements(
+      in: text,
+      tokenTimings: tokenTimings,
+      scores: scores,
+      vocabulary: vocabulary
+    )
+    Self.logger.info("The word spotter replaced \(replacements.count) words")
+    return replacements
   }
 
   /// The word spotter's terms for a dictionary, reusing the last ones while the dictionary is unchanged.
