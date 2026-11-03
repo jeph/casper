@@ -74,13 +74,17 @@ targets:
         LSUIElement: true
         NSHumanReadableCopyright: Copyright © 2026 Jeph. MIT License.
         NSMicrophoneUsageDescription: Casper records your voice to transcribe it on this Mac. Audio never leaves your device.
-        # Sparkle checks the latest release's appcast once a day and asks before installing; Casper never installs an
-        # update on its own. Local builds, numbered 0, don't check at all; see AppUpdater.
+        # Sparkle checks the latest release's appcast once a day. Unless the user turns it off in Settings > General, it
+        # downloads the update it finds and installs it when Casper quits, and the impatient interval matching the check
+        # interval brings up the update alert again each day until it's installed or skipped. Local builds, numbered 0,
+        # don't check at all; see AppUpdater.
         SUFeedURL: https://github.com/jeph/casper/releases/latest/download/appcast.xml
         SUPublicEDKey: GtGQUn4MSX94Go6DNixIKnR+uGQqCPyU1+MnEW9OhAg=
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
-        SUAllowsAutomaticUpdates: false
+        SUScheduledImpatientCheckInterval: 86400
+        SUAllowsAutomaticUpdates: true
+        SUAutomaticallyUpdate: true
         SUShowReleaseNotes: false
         SUVerifyUpdateBeforeExtraction: true
         SURequireSignedFeed: true

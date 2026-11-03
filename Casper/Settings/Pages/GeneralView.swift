@@ -109,16 +109,6 @@ struct GeneralView: View {
               .foregroundStyle(.secondary)
           }
         }
-        if updater.isEnabled {
-          Toggle(isOn: Bindable(updater).checksAutomatically) {
-            Label {
-              Text("Check for Updates")
-              Text("Look for a new version of Casper once a day, and ask before installing it.")
-            } icon: {
-              Image(systemName: "arrow.down.circle")
-            }
-          }
-        }
         statsRow
         Toggle(isOn: $showsAdvancedSettings) {
           Label {
@@ -127,6 +117,9 @@ struct GeneralView: View {
             Image(systemName: "wrench.and.screwdriver")
           }
         }
+      }
+      if updater.isEnabled {
+        UpdatesSection()
       }
     }
     .formStyle(.grouped)

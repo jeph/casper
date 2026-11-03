@@ -10,6 +10,8 @@ struct MenuBarMenu: View {
       Button("Install Casper \(version)…", systemImage: "arrow.down.circle") {
         NSApp.openWindowInFront { updater.checkForUpdates() }
       }
+      // Off during a background download, when Sparkle can't start another session.
+      .disabled(!updater.canCheckForUpdates)
       Divider()
     }
     InputDevicePicker {
@@ -23,6 +25,7 @@ struct MenuBarMenu: View {
       Button("Check for Updates…") {
         NSApp.openWindowInFront { updater.checkForUpdates() }
       }
+      .disabled(!updater.canCheckForUpdates)
     }
     Button("Settings…") {
       NSApp.openWindowInFront { openSettings() }

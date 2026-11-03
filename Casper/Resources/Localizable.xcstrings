@@ -106,6 +106,15 @@
       "comment" : "App name, used as the accessibility label of the menu bar icon and the voice bubble.",
       "shouldTranslate" : false
     },
+    "Casper %@ is available." : {
+      "comment" : "Status in Settings > General when a newer version of Casper was found. The argument is its version."
+    },
+    "Casper couldn't check for updates." : {
+      "comment" : "Status in Settings > General when the last check for a newer version of Casper failed."
+    },
+    "Casper hasn't checked for updates yet." : {
+      "comment" : "Status in Settings > General before Casper's first check for a newer version."
+    },
     "Casper is turned off in Login Items in System Settings." : {
       "comment" : "Note in Settings > General when the user has turned Casper off in the macOS Login Items settings."
     },
@@ -151,11 +160,17 @@
     "Change these settings only if you know exactly what they do." : {
       "comment" : "Warning at the top of Settings > Advanced."
     },
-    "Check for Updates" : {
+    "Check for Updates Automatically" : {
       "comment" : "Toggle in Settings > General that checks for a newer version of Casper once a day."
     },
     "Check for Updates…" : {
       "comment" : "Menu bar menu item that checks for a newer version of Casper."
+    },
+    "Check Now" : {
+      "comment" : "Button in Settings > General that checks for a newer version of Casper right away."
+    },
+    "Checking for updates…" : {
+      "comment" : "Status in Settings > General while Casper checks for a newer version."
     },
     "Choose Other App…" : {
       "comment" : "Item of the Add App menu on the Refine page of Settings that opens a panel to choose an app that isn't running."
@@ -207,6 +222,9 @@
     },
     "Download failed" : {
       "comment" : "Shown on the Voice Models page when a speech model couldn't be downloaded."
+    },
+    "Download new versions in the background and install them when Casper quits." : {
+      "comment" : "Description of the Install Updates Automatically toggle in Settings > General."
     },
     "Downloaded" : {
       "comment" : "Shown in setup beside a model that's already on this Mac."
@@ -280,6 +298,12 @@
     "Install Casper %@…" : {
       "comment" : "Menu bar menu item shown when a newer version of Casper is available. The number is its version."
     },
+    "Install Updates Automatically" : {
+      "comment" : "Toggle in Settings > General that downloads new versions of Casper and installs them when it quits."
+    },
+    "Install Update…" : {
+      "comment" : "Button in Settings > General that offers to install the newer version of Casper found."
+    },
     "Instructions" : {
       "comment" : "Header of the text the language model follows for a persona, in the persona editor."
     },
@@ -301,14 +325,20 @@
     "Language Models" : {
       "comment" : "Title of the settings page for downloading and choosing the language models that refine transcripts."
     },
+    "Last checked %@" : {
+      "comment" : "Line in Settings > General with when Casper last checked for a newer version. The argument is a relative time, such as \"2 hours ago\" or \"yesterday\"."
+    },
+    "Last checked just now" : {
+      "comment" : "Line in Settings > General when Casper checked for a newer version less than a minute ago."
+    },
     "Least memory, but often ignores instructions." : {
       "comment" : "Description of the Qwen3 0.6B language model on the Language Models page."
     },
     "Listening" : {
       "comment" : "Accessibility value of the voice bubble while dictation is recording."
     },
-    "Look for a new version of Casper once a day, and ask before installing it." : {
-      "comment" : "Description of the Check for Updates toggle in Settings > General."
+    "Look for a new version of Casper once a day." : {
+      "comment" : "Description of the Check for Updates Automatically toggle in Settings > General."
     },
     "MLX" : {
       "comment" : "Heading on the Voice Models page for the models that run on the GPU with MLX, Apple's machine learning framework. A name, usually left untranslated."
@@ -589,6 +619,9 @@
           }
         }
       }
+    },
+    "You're up to date." : {
+      "comment" : "Status in Settings > General when the last check found no newer version of Casper."
     }
   },
   "version" : "1.0"
